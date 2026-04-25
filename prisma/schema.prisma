@@ -1,0 +1,276 @@
+// Orochat Database Schema
+// PostgreSQL with Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Model - Core user account
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String    // Hashed with bcrypt
+  name          String
+  bio           String?
+  avatar        String?
+  title         String?   // Professional title
+  company       String?
+  location      String?   // City, Country format
+  qualifications String?  // JSON array of qualifications
+  workHistory    String?  // JSON array of work history entries
+  
+  // Qualification & Status
+  isPartner     Boolean   @default(false) // Orochat Partner status
+  qualifiedAt   DateTime? // When they achieved qualification
+  
+  // Qualification Metrics
+  verifiedOrosCount Int @default(0) // Cached count of verified connections
+  compassMembershipsCount Int @default(0) // Cached count of Compass communities
+  
+  // TES (Total Engagement Score)
+  currentTES    Float     @default(0)
+  lastTESUpdate DateTime? @default(now())
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  sentConnections     Connection[] @relation("ConnectionSender")
+  receivedConnections Connection[] @relation("ConnectionReceiver")
+  sentMessages        Message[] @relation("MessageSender")
+  receivedMessages    Message[] @relation("MessageReceiver")
+  compassMemberships  CompassMembership[]
+  compassCommunities  Compass[] @relation("CompassCreator")
+  feedPosts           FeedPost[]
+  tesLogs             TESLog[]
+  passwordResetTokens PasswordResetToken[]
+  revenueDistributions RevenueDistribution[]
+  postLikes           PostLike[]
+  postComments        PostComment[]
+  
+  @@index([email])
+  @@index([isPartner])
+}
+
+// Connection Model - Oros (verified professional connections)
+model Connection {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  status      ConnectionStatus @default(PENDING)
+  verifiedAt  DateTime? // When connection was verified/accepted
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  sender      User @relation("ConnectionSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User @relation("ConnectionReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  BLOCKED
+}
+
+// Compass Model - Professional communities
+model Compass {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String
+  image       String?
+  
+  // Only Orochat Partners can create/moderate
+  creatorId   String
+  creator     User @relation("CompassCreator", fields: [creatorId], references: [id])
+  
+  // Sponsorship (B2B Advertising)
+  isSponsored Boolean  @default(false)
+  sponsorName String?
+  sponsorLogo String?
+  sponsorLink String?
+  sponsorExpiresAt DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  memberships CompassMembership[]
+  posts       FeedPost[]
+  
+  @@index([slug])
+  @@index([creatorId])
+}
+
+// Compass Membership - User's membership in communities
+model CompassMembership {
+  id        String   @id @default(cuid())
+  userId    String
+  compassId String
+  role      CompassRole @default(MEMBER)
+  
+  joinedAt  DateTime @default(now())
+  
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  compass   Compass @relation(fields: [compassId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, compassId])
+  @@index([userId])
+  @@index([compassId])
+}
+
+enum CompassRole {
+  MEMBER
+  MODERATOR
+  ADMIN
+}
+
+// Message Model - Collab Tool messages
+model Message {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  content     String
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  sender      User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  @@index([senderId, receiverId])
+  @@index([receiverId, isRead])
+}
+
+// Feed Post Model - Activity feed posts
+model FeedPost {
+  id          String   @id @default(cuid())
+  authorId    String
+  compassId   String?  // If posted in a Compass community
+  content     String
+  imageUrl    String?
+  
+  likesCount  Int      @default(0)
+  commentsCount Int    @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  author      User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  compass     Compass? @relation(fields: [compassId], references: [id], onDelete: SetNull)
+  likes       PostLike[]
+  comments    PostComment[]
+  
+  @@index([authorId])
+  @@index([compassId])
+  @@index([createdAt])
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+  
+  post      FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model PostComment {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  
+  post      FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([postId])
+  @@index([userId])
+}
+
+// TES Log Model - Track TES changes for revenue distribution
+model TESLog {
+  id          String   @id @default(cuid())
+  userId      String
+  tesValue    Float
+  changeReason String  // e.g., "Collab usage", "Feed activity"
+  
+  createdAt   DateTime @default(now())
+  
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// Password Reset Token Model
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+// Ad Revenue Pool Model - Monthly revenue distribution pool
+model AdRevenuePool {
+  id          String   @id @default(cuid())
+  month       Int      // 1-12
+  year        Int
+  totalAmount Float
+  distributed Boolean  @default(false)
+  distributedAt DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  distributions RevenueDistribution[]
+
+  @@unique([month, year])
+  @@index([year, month])
+}
+
+// Revenue Distribution Model - Individual user payouts
+model RevenueDistribution {
+  id          String   @id @default(cuid())
+  poolId      String
+  userId      String
+  tesShare    Float    // User's TES contribution to total pool TES
+  amount      Float    // Calculated payout amount
+  paid        Boolean  @default(false)
+  paidAt      DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  pool      AdRevenuePool @relation(fields: [poolId], references: [id])
+  user      User @relation(fields: [userId], references: [id])
+
+  @@index([poolId])
+  @@index([userId])
+  @@index([paid])
+}
+
