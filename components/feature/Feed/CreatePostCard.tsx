@@ -59,11 +59,19 @@ export default function CreatePostCard({ userName, userAvatar }: Props) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-6 mb-4 md:mb-6">
       <div className="flex items-center space-x-3 md:space-x-4">
-        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-[#458B9E] to-[#5BA3B8] flex items-center justify-center flex-shrink-0 overflow-hidden">
-          {userAvatar ? (
-            <img src={userAvatar} alt={userName} className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-white font-semibold text-base md:text-lg">{initials}</span>
+        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-linear-to-br from-[#458B9E] to-[#5BA3B8] flex items-center justify-center shrink-0 overflow-hidden relative">
+          {userAvatar && !error && (
+            <img
+              src={userAvatar}
+              alt={userName}
+              className="w-full h-full object-cover relative z-10"
+              onError={() => setError('avatar-fail')}
+            />
+          )}
+          {(!userAvatar || error === 'avatar-fail') && (
+            <span className="flex items-center justify-center text-white font-semibold text-base md:text-lg">
+              {initials}
+            </span>
           )}
         </div>
 
@@ -87,7 +95,7 @@ export default function CreatePostCard({ userName, userAvatar }: Props) {
                 className="w-full px-3 py-2 text-sm md:text-base text-[#333333] bg-gray-50 border border-gray-200 rounded-xl resize-none focus:outline-none focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 transition-all"
               />
 
-              {error && (
+              {error && error !== 'avatar-fail' && (
                 <p className="text-red-500 text-sm mt-1">{error}</p>
               )}
 

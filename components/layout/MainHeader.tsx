@@ -4,14 +4,30 @@ import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { Search, User, LogOut, Settings } from 'lucide-react';
+import { Search, LogOut, Settings, User } from 'lucide-react';
 import NovuInbox from '../feature/Notifications/NovuInbox';
-import { useState } from 'react';
+import UserAvatar from '@/components/ui/UserAvatar';
+import { useState, useEffect } from 'react';
+import { getProfile } from '@/features/auth/actions';
 
 export default function MainHeader() {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const pathname = usePathname();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [freshAvatar, setFreshAvatar] = useState<string | null>(session?.user?.avatar || null);
+
+  useEffect(() => {
+    if (session?.user?.id && !session?.user?.avatar) {
+      getProfile(session.user.id).then(result => {
+        if (result.success && result.user?.avatar) {
+          setFreshAvatar(result.user.avatar);
+          update({ avatar: result.user.avatar });
+        }
+      });
+    }
+  }, [session?.user?.id, session?.user?.avatar, update]);
+
+  const avatarToDisplay = freshAvatar || session?.user?.avatar;
 
   const navItems = [
     { href: '/feed', label: 'Feed' },
@@ -26,12 +42,12 @@ export default function MainHeader() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/feed" className="flex items-center">
-            <Image 
-              src="/logo.png" 
-              alt="Orochat Logo" 
-              width={120} 
-              height={40} 
-              className="h-10 w-auto" 
+            <Image
+              src="/logo.png"
+              alt="Orochat Logo"
+              width={120}
+              height={40}
+              className="h-10 w-auto"
               priority
             />
           </Link>
@@ -73,20 +89,13 @@ export default function MainHeader() {
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center space-x-2 p-2 rounded-lg hover:bg-[#F0F3F7] transition-colors cursor-pointer"
               >
-                {session?.user?.avatar ? (
-                  <Image
-                    src={session.user.avatar}
-                    alt={session.user.name || 'User'}
-                    width={32}
-                    height={32}
-                    className="w-8 h-8 rounded-full object-cover"
+                {session?.user?.id && (
+                  <UserAvatar
+                    userId={session.user.id}
+                    name={session.user.name ?? ''}
+                    avatarUrl={avatarToDisplay}
+                    size="sm"
                   />
-                ) : (
-                  <div className="w-8 h-8 bg-[#458B9E] rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-semibold">
-                      {session?.user?.name?.charAt(0).toUpperCase() ?? <User className="w-4 h-4" />}
-                    </span>
-                  </div>
                 )}
                 {session?.user?.isPartner && (
                   <span className="px-2 py-0.5 bg-[#FFC93C] text-[#333333] text-xs font-semibold rounded-full">
@@ -133,4 +142,3 @@ export default function MainHeader() {
     </header>
   );
 }
-

@@ -17,20 +17,25 @@ export async function ensureBucket() {
   const exists = await minioClient.bucketExists(bucketName);
   if (!exists) {
     await minioClient.makeBucket(bucketName, 'us-east-1');
-    
-    // Set bucket policy for public read access to objects
-    const policy = {
-      Version: '2012-10-17',
-      Statement: [
-        {
-          Effect: 'Allow',
-          Principal: { AWS: ['*'] },
-          Action: ['s3:GetObject'],
-          Resource: [`arn:aws:s3:::${bucketName}/*`],
-        },
-      ],
-    };
+  }
+
+  // Always ensure the bucket policy is set for public read access to objects
+  const policy = {
+    Version: '2012-10-17',
+    Statement: [
+      {
+        Effect: 'Allow',
+        Principal: { AWS: ['*'] },
+        Action: ['s3:GetObject'],
+        Resource: [`arn:aws:s3:::${bucketName}/*`],
+      },
+    ],
+  };
+  
+  try {
     await minioClient.setBucketPolicy(bucketName, JSON.stringify(policy));
+  } catch (error) {
+    console.error('Error setting MinIO bucket policy:', error);
   }
 }
 
@@ -51,7 +56,7 @@ export async function uploadFile(
   });
   
   const baseUrl = process.env.NEXT_PUBLIC_MINIO_URL || `http://${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}`;
-  return `${baseUrl}/${bucketName}/${objectName}`;
+  return `${baseUrl}/${bucketName}/${encodeURIComponent(objectName)}`;
 }
 
 /**

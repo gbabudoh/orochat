@@ -2,11 +2,12 @@
 
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import { updateProfile } from '@/features/auth/actions';
-import { User, Upload, X, Plus } from 'lucide-react';
+import { updateProfile, getProfile } from '@/features/auth/actions';
+import { User, Upload, X, Plus, Loader2 } from 'lucide-react';
 
 interface WorkHistoryEntry {
   company: string;
@@ -31,43 +32,62 @@ export default function ProfileSettingsPage() {
   const [avatar, setAvatar] = useState('');
   const [avatarPreview, setAvatarPreview] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load user data on mount
   useEffect(() => {
-    if (session?.user) {
-      setName(session.user.name || '');
-      setBio(session.user.bio || '');
-      setTitle(session.user.title || '');
-      setCompany(session.user.company || '');
-      setLocation(session.user.location || '');
-      setAvatar(session.user.avatar || '');
-      setAvatarPreview(session.user.avatar || '');
+    const loadProfile = async () => {
+      if (!session?.user?.id) return;
+      
+      try {
+        const result = await getProfile(session.user.id);
+        if (result.success && result.user) {
+          const u = result.user;
+          setName(u.name || '');
+          setBio(u.bio || '');
+          setTitle(u.title || '');
+          setCompany(u.company || '');
+          setLocation(u.location || '');
+          setAvatar(u.avatar || '');
+          setAvatarPreview(u.avatar || '');
 
-      // Parse qualifications
-      if (session.user.qualifications) {
-        try {
-          const quals = JSON.parse(session.user.qualifications as string);
-          setQualifications(Array.isArray(quals) && quals.length > 0 ? quals : ['']);
-        } catch {
-          setQualifications(['']);
-        }
-      }
+          // Parse qualifications
+          if (u.qualifications) {
+            try {
+              const quals = typeof u.qualifications === 'string' 
+                ? JSON.parse(u.qualifications) 
+                : u.qualifications;
+              setQualifications(Array.isArray(quals) && quals.length > 0 ? quals : ['']);
+            } catch {
+              setQualifications(['']);
+            }
+          }
 
-      // Parse work history
-      if (session.user.workHistory) {
-        try {
-          const history = JSON.parse(session.user.workHistory as string);
-          setWorkHistory(Array.isArray(history) && history.length > 0 ? history : [
-            { company: '', position: '', startDate: '', endDate: '', current: false, description: '' }
-          ]);
-        } catch {
-          setWorkHistory([{ company: '', position: '', startDate: '', endDate: '', current: false, description: '' }]);
+          // Parse work history
+          if (u.workHistory) {
+            try {
+              const history = typeof u.workHistory === 'string' 
+                ? JSON.parse(u.workHistory) 
+                : u.workHistory;
+              setWorkHistory(Array.isArray(history) && history.length > 0 ? history : [
+                { company: '', position: '', startDate: '', endDate: '', current: false, description: '' }
+              ]);
+            } catch {
+              setWorkHistory([{ company: '', position: '', startDate: '', endDate: '', current: false, description: '' }]);
+            }
+          }
         }
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+      } finally {
+        setIsFetching(false);
       }
-    }
-  }, [session]);
+    };
+
+    loadProfile();
+  }, [session?.user?.id]);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -112,7 +132,7 @@ export default function ProfileSettingsPage() {
         setMessage({ type: 'error', text: data.error || 'Failed to upload photo' });
         setAvatarPreview('');
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'Failed to upload photo' });
       setAvatarPreview('');
     }
@@ -175,20 +195,29 @@ export default function ProfileSettingsPage() {
       const result = await updateProfile(session.user.id, formData);
       if (result.success) {
         setMessage({ type: 'success', text: 'Profile updated successfully' });
-        update();
+        update({ name, avatar });
       } else {
         setMessage({ type: 'error', text: result.error || 'Failed to update profile' });
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'An error occurred' });
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (isFetching) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 text-[#458B9E] animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold text-[#333333] mb-6">Profile Settings</h1>
+
       
       <Card padding="lg">
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -198,9 +227,9 @@ export default function ProfileSettingsPage() {
               Profile Photo
             </label>
             <div className="flex items-center space-x-4">
-              <div className="w-24 h-24 rounded-full bg-[#458B9E] flex items-center justify-center overflow-hidden flex-shrink-0">
+              <div className="w-24 h-24 rounded-full bg-[#458B9E] flex items-center justify-center overflow-hidden flex-shrink-0 relative">
                 {avatarPreview ? (
-                  <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
+                  <Image src={avatarPreview} alt="Profile" fill className="object-cover" />
                 ) : (
                   <User className="w-12 h-12 text-white" />
                 )}

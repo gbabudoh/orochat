@@ -30,3 +30,12 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+/* Global Button Styles */
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}

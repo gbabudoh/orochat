@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
+import { uploadFile } from '@/lib/storage';
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,27 +27,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File size must be less than 2MB' }, { status: 400 });
     }
 
-    // Convert file to base64 for database storage
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64 = buffer.toString('base64');
-    const dataUrl = `data:${file.type};base64,${base64}`;
-
-    // Alternatively, save to public/uploads directory
-    // For now, we'll use base64 stored in database
-    // In production, you'd upload to cloud storage (S3, Cloudinary, etc.)
+    // Upload to MinIO instead of Base64
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const url = await uploadFile(buffer, file.name, file.type);
 
     return NextResponse.json({ 
       success: true, 
-      url: dataUrl,
+      url: url,
       filename: file.name 
     });
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json(
-      { error: 'Failed to upload avatar' },
+      { error: 'Failed to upload avatar to cloud storage' },
       { status: 500 }
     );
   }
 }
-

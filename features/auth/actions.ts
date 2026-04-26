@@ -252,3 +252,31 @@ export async function changePassword(formData: FormData) {
     return { error: 'Failed to update password' };
   }
 }
+
+export async function getProfile(userId: string) {
+  try {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        bio: true,
+        avatar: true,
+        title: true,
+        company: true,
+        location: true,
+        qualifications: true,
+        workHistory: true,
+        isPartner: true,
+      }
+    });
+
+    if (!user) return { error: 'User not found' };
+    return { success: true, user };
+  } catch (error) {
+    console.error('Fetch profile error:', error);
+    return { error: 'Failed to fetch profile' };
+  }
+}
+

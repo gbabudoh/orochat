@@ -73,41 +73,35 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user, trigger, session: updateData }) {
       // On sign in, set user data
       if (user) {
         const u = user as unknown as ExtendedUser;
         token.id = u.id;
-        token.bio = u.bio;
+        token.name = u.name;
         token.avatar = u.avatar;
-        token.title = u.title;
-        token.company = u.company;
-        token.location = u.location;
-        token.qualifications = u.qualifications;
-        token.workHistory = u.workHistory;
         token.isPartner = u.isPartner || false;
-        token.verifiedOrosCount = u.verifiedOrosCount || 0;
-        token.compassMembershipsCount = u.compassMembershipsCount || 0;
       }
       
-      // Refresh user data from database when session is updated
-      if (trigger === 'update' && token.id) {
-        const freshUser = await db.user.findUnique({
-          where: { id: token.id as string },
-        });
-        
-        if (freshUser) {
-          const u = freshUser as unknown as ExtendedUser;
-          token.bio = u.bio;
-          token.avatar = u.avatar;
-          token.title = u.title;
-          token.company = u.company;
-          token.location = u.location;
-          token.qualifications = u.qualifications;
-          token.workHistory = u.workHistory;
-          token.isPartner = u.isPartner;
-          token.verifiedOrosCount = u.verifiedOrosCount;
-          token.compassMembershipsCount = u.compassMembershipsCount;
+      // Refresh essential user data when session is updated
+      if (trigger === 'update') {
+        // If data was passed to update(), use it
+        if (updateData) {
+          if (updateData.name) token.name = updateData.name;
+          if (updateData.avatar) token.avatar = updateData.avatar;
+          if (updateData.isPartner !== undefined) token.isPartner = updateData.isPartner;
+        } else if (token.id) {
+          // Fallback: Refresh from DB if no data passed to update()
+          const freshUser = await db.user.findUnique({
+            where: { id: token.id as string },
+            select: { avatar: true, isPartner: true, name: true }
+          });
+          
+          if (freshUser) {
+            token.avatar = freshUser.avatar;
+            token.isPartner = freshUser.isPartner;
+            token.name = freshUser.name;
+          }
         }
       }
       
@@ -115,17 +109,10 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id;
-        session.user.bio = token.bio;
-        session.user.avatar = token.avatar;
-        session.user.title = token.title;
-        session.user.company = token.company;
-        session.user.location = token.location;
-        session.user.qualifications = token.qualifications;
-        session.user.workHistory = token.workHistory;
-        session.user.isPartner = token.isPartner;
-        session.user.verifiedOrosCount = token.verifiedOrosCount;
-        session.user.compassMembershipsCount = token.compassMembershipsCount;
+        session.user.id = token.id as string;
+        session.user.name = token.name as string;
+        session.user.avatar = token.avatar as string | null;
+        session.user.isPartner = token.isPartner as boolean;
       }
       return session;
     },

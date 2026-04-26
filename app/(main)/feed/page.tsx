@@ -138,8 +138,8 @@ export default async function FeedPage() {
 
       {/* Create Post */}
       <CreatePostCard
-        userName={session.user.name ?? ''}
-        userAvatar={(session.user as { avatar?: string | null }).avatar}
+        userName={user?.name ?? session.user.name ?? ''}
+        userAvatar={`/api/user/${session.user.id}/avatar`}
       />
 
       {posts.length === 0 ? (
