@@ -197,9 +197,18 @@ export default async function FeedPage() {
                         )}
                       </div>
                     </div>
-                    <span className="text-xs md:text-sm text-gray-400 ml-2 md:ml-4 shrink-0">
-                      {formatRelativeTime(post.createdAt)}
-                    </span>
+                    <div className="flex items-center space-x-2 ml-2 md:ml-4 shrink-0">
+                      <Image
+                        src="/icon.png"
+                        alt="Orochat"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6"
+                      />
+                      <span className="text-xs md:text-sm text-gray-400">
+                        {formatRelativeTime(post.createdAt)}
+                      </span>
+                    </div>
                   </div>
 
                   <p className="text-sm md:text-base text-[#333333] mb-3 md:mb-4 whitespace-pre-wrap leading-relaxed">
