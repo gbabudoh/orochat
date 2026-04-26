@@ -45,9 +45,9 @@ export default function MainHeader() {
             <Image
               src="/logo.png"
               alt="Orochat Logo"
-              width={120}
-              height={40}
-              className="h-10 w-auto"
+              width={180}
+              height={60}
+              className="h-14 w-auto"
               priority
             />
           </Link>
