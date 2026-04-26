@@ -10,12 +10,13 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Send } from 'lucide-react';
 import { subscribeToChat } from '@/services/realtime.service';
+import { ChatMessage } from '@/types/chat';
 
 export default function ChatPage() {
   const { data: session } = useSession();
   const params = useParams();
   const oroId = params.oroId as string;
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);

@@ -1,5 +1,6 @@
 import Pusher from 'pusher';
 import PusherClient from 'pusher-js';
+import { ChatMessage } from '@/types/chat';
 
 /**
  * Realtime Service
@@ -43,7 +44,7 @@ export function getPusherClient(): PusherClient {
 /**
  * Broadcast a new message to the chat channel
  */
-export function broadcastMessage(channel: string, event: string, data: any) {
+export function broadcastMessage(channel: string, event: string, data: Record<string, unknown> | ChatMessage) {
   const pusher = getPusherServer();
   pusher.trigger(channel, event, data);
 }
@@ -59,7 +60,7 @@ export function getChatChannel(userId1: string, userId2: string): string {
 /**
  * Subscribe to a chat channel (client-side)
  */
-export function subscribeToChat(userId1: string, userId2: string, callback: (data: any) => void) {
+export function subscribeToChat(userId1: string, userId2: string, callback: (data: ChatMessage) => void) {
   const pusher = getPusherClient();
   const channel = getChatChannel(userId1, userId2);
   
