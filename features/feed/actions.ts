@@ -28,14 +28,18 @@ export async function createPost(formData: FormData) {
   if (!content) return { error: 'Post content cannot be empty.' };
   if (content.length > 3000) return { error: 'Post must be under 3,000 characters.' };
 
+  const isPublic = formData.get('visibility') === 'PUBLIC';
+
   const post = await db.feedPost.create({
     data: {
       authorId: session.user.id,
       content,
+      visibility: isPublic ? 'PUBLIC' : 'PRIVATE',
     },
   });
 
   revalidatePath('/feed');
+  if (isPublic) revalidatePath('/global');
 
   return { success: true, postId: post.id };
 }
@@ -66,6 +70,7 @@ export async function toggleLike(postId: string) {
         });
       });
       revalidatePath('/feed');
+      revalidatePath('/global');
       return { success: true, liked: false };
     } else {
       await db.$transaction(async (tx) => {
@@ -94,6 +99,7 @@ export async function toggleLike(postId: string) {
       }
 
       revalidatePath('/feed');
+      revalidatePath('/global');
       return { success: true, liked: true };
     }
   } catch (error) {
@@ -144,6 +150,7 @@ export async function addComment(postId: string, content: string) {
     }
 
     revalidatePath('/feed');
+    revalidatePath('/global');
     return { success: true, comment };
   } catch (error) {
     console.error('Comment error:', error);

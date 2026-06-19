@@ -495,7 +495,7 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
                     <Award className="w-6 h-6 text-[#333333]" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Licenses & Certifications</h2>
+                    <h2 className="text-2xl font-bold text-gray-900">Qualifications & Certifications</h2>
                     <p className="text-sm text-gray-600">Professional credentials and achievements</p>
                   </div>
                 </div>

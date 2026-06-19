@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getPusherServer } from '@/services/realtime.service';
+import { db } from '@/lib/db';
 
 export async function POST(req: Request) {
   try {
@@ -15,13 +16,15 @@ export async function POST(req: Request) {
     const socketId = body.get('socket_id') as string;
     const channelName = body.get('channel_name') as string;
 
-    // Validate that the user belongs to the channel they are trying to join
-    // Channel format: private-chat-user1Id-user2Id
-    if (channelName.startsWith('private-chat-')) {
-      const parts = channelName.replace('private-chat-', '').split('-');
-      const isAllowed = parts.includes(session.user.id);
+    // Channel format: private-conversation-{conversationId} — only actual
+    // participants of that conversation may subscribe.
+    if (channelName.startsWith('private-conversation-')) {
+      const conversationId = channelName.replace('private-conversation-', '');
+      const participant = await db.conversationParticipant.findUnique({
+        where: { conversationId_userId: { conversationId, userId: session.user.id } },
+      });
 
-      if (!isAllowed) {
+      if (!participant) {
         return new NextResponse('Forbidden', { status: 403 });
       }
     }

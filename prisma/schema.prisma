@@ -16,11 +16,13 @@ model User {
   email         String    @unique
   password      String    // Hashed with bcrypt
   name          String
+  username      String?   @unique // Public @handle, shown on the Global feed
   bio           String?
   avatar        String?
   title         String?   // Professional title
   company       String?
   location      String?   // City, Country format
+  countryCode   String?   // ISO 3166-1 alpha-2, used for the Global feed flag badge
   qualifications String?  // JSON array of qualifications
   workHistory    String?  // JSON array of work history entries
   
@@ -44,7 +46,7 @@ model User {
   sentConnections     Connection[] @relation("ConnectionSender")
   receivedConnections Connection[] @relation("ConnectionReceiver")
   sentMessages        Message[] @relation("MessageSender")
-  receivedMessages    Message[] @relation("MessageReceiver")
+  conversations       ConversationParticipant[]
   compassMemberships  CompassMembership[]
   compassCommunities  Compass[] @relation("CompassCreator")
   feedPosts           FeedPost[]
@@ -107,9 +109,10 @@ model Compass {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
-  memberships CompassMembership[]
-  posts       FeedPost[]
-  
+  memberships  CompassMembership[]
+  posts        FeedPost[]
+  conversation Conversation?
+
   @@index([slug])
   @@index([creatorId])
 }
@@ -137,22 +140,51 @@ enum CompassRole {
   ADMIN
 }
 
+// Conversation Model - Collab Tool chat thread (1:1 or group)
+model Conversation {
+  id        String   @id @default(cuid())
+  isGroup   Boolean  @default(false)
+  name      String?  // group display name; null for 1:1 chats
+  compassId String?  @unique // set when this is a Compass community's auto-created group chat
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  compass      Compass?                  @relation(fields: [compassId], references: [id], onDelete: Cascade)
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([updatedAt])
+}
+
+model ConversationParticipant {
+  id             String    @id @default(cuid())
+  conversationId String
+  userId         String
+  joinedAt       DateTime  @default(now())
+  lastReadAt     DateTime? // messages with createdAt after this are "unread" for this participant
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
 // Message Model - Collab Tool messages
 model Message {
-  id          String   @id @default(cuid())
-  senderId    String
-  receiverId  String
-  content     String
-  isRead      Boolean  @default(false)
-  readAt      DateTime?
-  
-  createdAt   DateTime @default(now())
-  
-  sender      User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver    User @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  
-  @@index([senderId, receiverId])
-  @@index([receiverId, isRead])
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
 }
 
 // Feed Post Model - Activity feed posts
@@ -162,21 +194,28 @@ model FeedPost {
   compassId   String?  // If posted in a Compass community
   content     String
   imageUrl    String?
-  
+  visibility  PostVisibility @default(PRIVATE) // PUBLIC posts appear on the Global feed
+
   likesCount  Int      @default(0)
   commentsCount Int    @default(0)
-  
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   author      User @relation(fields: [authorId], references: [id], onDelete: Cascade)
   compass     Compass? @relation(fields: [compassId], references: [id], onDelete: SetNull)
   likes       PostLike[]
   comments    PostComment[]
-  
+
   @@index([authorId])
   @@index([compassId])
   @@index([createdAt])
+  @@index([visibility, createdAt])
+}
+
+enum PostVisibility {
+  PRIVATE // Visible to Oros + Compass members only
+  PUBLIC  // Also visible on the Global feed
 }
 
 model PostLike {

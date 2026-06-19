@@ -135,7 +135,7 @@ export default function PostActions({
                   <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden relative">
                     {comment.user.avatar ? (
                       <Image
-                        src={comment.user.avatar}
+                        src={`/api/user/${comment.user.id}/avatar`}
                         alt={comment.user.name}
                         fill
                         className="object-cover"

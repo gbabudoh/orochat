@@ -1,13 +1,13 @@
 export interface ChatMessage {
   id: string;
+  conversationId: string;
   senderId: string;
-  receiverId: string;
   content: string;
-  isRead: boolean;
   createdAt: Date | string;
   sender: {
     id: string;
     name: string;
     avatar?: string | null;
+    title?: string | null;
   };
 }

@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPost } from '@/features/feed/actions';
 import Button from '@/components/ui/Button';
+import { Globe, Lock } from 'lucide-react';
 
 interface Props {
   userName: string;
@@ -14,6 +15,7 @@ export default function CreatePostCard({ userName, userAvatar }: Props) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [content, setContent] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -38,12 +40,14 @@ export default function CreatePostCard({ userName, userAvatar }: Props) {
     try {
       const formData = new FormData();
       formData.append('content', content);
+      formData.append('visibility', isPublic ? 'PUBLIC' : 'PRIVATE');
       const result = await createPost(formData);
 
       if (result.error) {
         setError(result.error);
       } else {
         setContent('');
+        setIsPublic(false);
         setExpanded(false);
         router.refresh();
       }
@@ -100,24 +104,38 @@ export default function CreatePostCard({ userName, userAvatar }: Props) {
               )}
 
               <div className="flex items-center justify-between mt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsPublic((v) => !v)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    isPublic
+                      ? 'bg-[#458B9E]/10 text-[#458B9E]'
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  }`}
+                  title={isPublic ? 'Visible to everyone on the Global feed' : 'Visible to your Oros and Compass communities only'}
+                >
+                  {isPublic ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                  {isPublic ? 'Public' : 'Network only'}
+                </button>
                 <span className="text-xs text-gray-400">{content.length} / 3,000</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="px-4 py-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <Button
-                    type="submit"
-                    size="sm"
-                    isLoading={isLoading}
-                    disabled={!content.trim()}
-                  >
-                    Post
-                  </Button>
-                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="px-4 py-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  isLoading={isLoading}
+                  disabled={!content.trim()}
+                >
+                  Post
+                </Button>
               </div>
             </form>
           </div>

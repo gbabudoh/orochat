@@ -2,13 +2,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import Card from '@/components/ui/Card';
-import Image from 'next/image';
 import CreatePostCard from '@/components/feature/Feed/CreatePostCard';
-import PostActions from '@/components/feature/Feed/PostActions';
-import { formatRelativeTime } from '@/lib/utils/formatters';
-import { MessageCircle } from 'lucide-react';
+import PostCard from '@/components/feature/Feed/PostCard';
+import { Globe, MessageCircle, Compass as CompassIcon, Users } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { CompassMembership, Connection } from '.prisma/client';
+import { getPostMeta } from '@/lib/feed/postMeta';
 
 export default async function FeedPage() {
   const session = await getServerSession(authOptions);
@@ -38,205 +38,172 @@ export default async function FeedPage() {
     conn.senderId === session.user.id ? conn.receiverId : conn.senderId
   );
 
-  const posts = await db.feedPost.findMany({
-    where: {
-      OR: [
-        { authorId: session.user.id },
-        { authorId: { in: oroIds } },
-        { compassId: { in: compassIds } },
-      ],
-    },
-    include: {
-      author: {
-        select: {
-          id: true,
-          name: true,
-          avatar: true,
-          title: true,
-          company: true,
+  const [posts, suggestedCompasses, suggestedOros] = await Promise.all([
+    db.feedPost.findMany({
+      where: {
+        OR: [
+          { authorId: session.user.id },
+          { authorId: { in: oroIds } },
+          { compassId: { in: compassIds } },
+        ],
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+            title: true,
+            company: true,
+            username: true,
+            countryCode: true,
+          },
+        },
+        compass: {
+          select: { id: true, name: true, slug: true },
         },
       },
-      compass: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-        },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    }),
+    db.compass.findMany({
+      where: { id: { notIn: compassIds } },
+      orderBy: { memberships: { _count: 'desc' } },
+      take: 3,
+      select: { id: true, slug: true, name: true, image: true, _count: { select: { memberships: true } } },
+    }),
+    db.user.findMany({
+      where: {
+        id: { notIn: [session.user.id, ...oroIds] },
       },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 20,
-  });
+      orderBy: { verifiedOrosCount: 'desc' },
+      take: 3,
+      select: { id: true, name: true, avatar: true, title: true, company: true },
+    }),
+  ]);
 
   const postIds = posts.map(p => p.id);
-
-  const likedPostIds = new Set<string>();
-  try {
-    const extendedDb = db as unknown as { 
-      postLike: { 
-        findMany: (args: { 
-          where: { userId: string; postId: { in: string[] } }; 
-          select: { postId: true } 
-        }) => Promise<{ postId: string }[]> 
-      } 
-    };
-    
-    const likes = await extendedDb.postLike.findMany({
-      where: {
-        userId: session.user.id,
-        postId: { in: postIds }
-      },
-      select: { postId: true }
-    });
-    likes.forEach((l) => likedPostIds.add(l.postId));
-  } catch (err) {
-    console.error('Error fetching likes:', err);
-  }
-
-  // Fetch comments separately to bypass stale types
-  let allComments: unknown[] = [];
-  try {
-    const extendedDb = db as unknown as {
-      postComment: {
-        findMany: (args: unknown) => Promise<unknown[]>
-      }
-    };
-    allComments = await extendedDb.postComment.findMany({
-      where: { postId: { in: postIds } },
-      include: {
-        user: {
-          select: { id: true, name: true, avatar: true }
-        }
-      },
-      orderBy: { createdAt: 'asc' }
-    });
-  } catch (err) {
-    console.error('Error fetching comments:', err);
-  }
-
-  interface FeedComment {
-    id: string;
-    postId: string;
-    content: string;
-    createdAt: Date;
-    user: { id: string; name: string; avatar: string | null };
-  }
-
-  const commentsByPostId = (allComments as FeedComment[]).reduce((acc, comment) => {
-    if (!acc[comment.postId]) acc[comment.postId] = [];
-    acc[comment.postId].push(comment);
-    return acc;
-  }, {} as Record<string, FeedComment[]>);
+  const { likedPostIds, commentsByPostId } = await getPostMeta(postIds, session.user.id);
 
   return (
-    <div className="max-w-4xl mx-auto px-2 sm:px-0">
+    <div className="max-w-6xl mx-auto px-2 sm:px-0">
       {/* Header Section */}
-      <div className="mb-6 md:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-1 md:mb-2">Feed</h1>
-        <p className="text-sm sm:text-base text-gray-600">Stay updated with your professional network</p>
+      <div className="flex items-center justify-between mb-6 md:mb-8">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-1 md:mb-2">Feed</h1>
+          <p className="text-sm sm:text-base text-gray-600">Stay updated with your professional network</p>
+        </div>
+        <Link
+          href="/global"
+          className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium text-[#458B9E] bg-[#458B9E]/10 hover:bg-[#458B9E]/20 transition-colors shrink-0"
+        >
+          <Globe className="w-4 h-4" />
+          Global Feed
+        </Link>
       </div>
 
-      {/* Create Post */}
-      <CreatePostCard
-        userName={user?.name ?? session.user.name ?? ''}
-        userAvatar={`/api/user/${session.user.id}/avatar`}
-      />
+      <div className="grid lg:grid-cols-[1fr_300px] gap-6">
+        <div>
+          {/* Create Post */}
+          <CreatePostCard
+            userName={user?.name ?? session.user.name ?? ''}
+            userAvatar={`/api/user/${session.user.id}/avatar`}
+          />
 
-      {posts.length === 0 ? (
-        <Card>
-          <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-              <MessageCircle className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-[#333333] mb-2">No posts yet</h3>
-            <p className="text-gray-500 max-w-md mx-auto">
-              Connect with Oros and join Compass communities to see activity in your feed
-            </p>
-          </div>
-        </Card>
-      ) : (
-        <div className="space-y-4 md:space-y-6">
-          {posts.map((post) => (
-            <Card key={post.id} className="hover:shadow-lg transition-shadow">
-              <div className="flex items-start space-x-3 md:space-x-4">
-                <Link href={`/oro/${post.author.id}`} className="shrink-0">
-                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-linear-to-br from-[#458B9E] to-[#5BA3B8] flex items-center justify-center overflow-hidden">
-                    {post.author.avatar ? (
-                      <Image
-                        src={post.author.avatar}
-                        alt={post.author.name}
-                        width={48}
-                        height={48}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-white font-semibold text-base md:text-lg">
-                        {post.author.name.charAt(0).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 min-w-0">
-                      <Link href={`/oro/${post.author.id}`} className="font-semibold text-[#333333] text-base md:text-lg hover:text-[#458B9E] transition-colors">
-                        {post.author.name}
-                      </Link>
-                      <div className="flex items-center space-x-2 text-xs md:text-sm text-gray-500">
-                        {post.author.title && (
-                          <span className="truncate">{post.author.title}</span>
-                        )}
-                        {post.author.title && post.compass && <span>•</span>}
-                        {post.compass && (
-                          <Link
-                            href={`/compass/${post.compass.slug}`}
-                            className="text-[#458B9E] hover:underline truncate"
-                          >
-                            {post.compass.name}
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2 ml-2 md:ml-4 shrink-0">
-                      <Image
-                        src="/icon.png"
-                        alt="Orochat"
-                        width={24}
-                        height={24}
-                        className="w-6 h-6"
-                      />
-                      <span className="text-xs md:text-sm text-gray-400">
-                        {formatRelativeTime(post.createdAt)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="text-sm md:text-base text-[#333333] mb-3 md:mb-4 whitespace-pre-wrap leading-relaxed">
-                    {post.content}
-                  </p>
-
-                  {post.imageUrl && (
-                    <Image
-                      src={post.imageUrl}
-                      alt="Post image"
-                      width={800}
-                      height={450}
-                      className="w-full rounded-xl mb-3 md:mb-4 max-h-96 object-cover"
-                    />
-                  )}
-
-                  <PostActions 
-                    postId={post.id}
-                    initialLikes={post.likesCount}
-                    isLikedInitially={likedPostIds.has(post.id)}
-                    comments={commentsByPostId[post.id] || []}
-                  />
+          {posts.length === 0 ? (
+            <Card>
+              <div className="text-center py-16">
+                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                  <MessageCircle className="w-8 h-8 text-gray-400" />
                 </div>
+                <h3 className="text-lg font-semibold text-[#333333] mb-2">No posts yet</h3>
+                <p className="text-gray-500 max-w-md mx-auto">
+                  Connect with Oros and join Compass communities to see activity in your feed
+                </p>
               </div>
             </Card>
-          ))}
+          ) : (
+            <div className="space-y-4 md:space-y-6">
+              {posts.map((post, index) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  index={index}
+                  isLiked={likedPostIds.has(post.id)}
+                  comments={commentsByPostId[post.id] || []}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Right sidebar */}
+        <div className="hidden lg:block space-y-4">
+          <Card padding="sm">
+            <h3 className="font-semibold text-[#333333] mb-3 flex items-center gap-2 text-sm">
+              <CompassIcon className="w-4 h-4 text-[#458B9E]" />
+              Suggested Compass Communities
+            </h3>
+            {suggestedCompasses.length === 0 ? (
+              <p className="text-xs text-gray-400">You&apos;ve joined all available communities</p>
+            ) : (
+              <div className="space-y-3">
+                {suggestedCompasses.map((c) => (
+                  <Link key={c.id} href={`/compass/${c.slug}`} className="flex items-center gap-3 group">
+                    <div className="w-9 h-9 rounded-lg bg-linear-to-br from-[#458B9E] to-[#3a7585] flex items-center justify-center overflow-hidden shrink-0">
+                      {c.image ? (
+                        <Image src={c.image} alt={c.name} width={36} height={36} className="w-full h-full object-cover" />
+                      ) : (
+                        <CompassIcon className="w-4 h-4 text-white" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#333333] group-hover:text-[#458B9E] truncate">{c.name}</p>
+                      <p className="text-xs text-gray-400">{c._count.memberships} members</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <Card padding="sm">
+            <h3 className="font-semibold text-[#333333] mb-3 flex items-center gap-2 text-sm">
+              <Users className="w-4 h-4 text-[#458B9E]" />
+              People You May Know
+            </h3>
+            {suggestedOros.length === 0 ? (
+              <p className="text-xs text-gray-400">No suggestions right now</p>
+            ) : (
+              <div className="space-y-3">
+                {suggestedOros.map((o) => (
+                  <Link key={o.id} href={`/oro/${o.id}`} className="flex items-center gap-3 group">
+                    <div className="w-9 h-9 rounded-full bg-linear-to-br from-[#458B9E] to-[#5BA3B8] flex items-center justify-center overflow-hidden shrink-0">
+                      {o.avatar ? (
+                        <Image src={`/api/user/${o.id}/avatar`} alt={o.name} width={36} height={36} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-white text-xs font-semibold">{o.name.charAt(0).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#333333] group-hover:text-[#458B9E] truncate">{o.name}</p>
+                      {o.title && <p className="text-xs text-gray-400 truncate">{o.title}</p>}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <Link
+            href="/global"
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-medium text-white bg-linear-to-r from-[#458B9E] to-[#3a7585] hover:opacity-90 transition-opacity"
+          >
+            <Globe className="w-4 h-4" />
+            Explore Global Feed
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

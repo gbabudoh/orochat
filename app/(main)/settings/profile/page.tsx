@@ -8,6 +8,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { updateProfile, getProfile } from '@/features/auth/actions';
 import { User, Upload, X, Plus, Loader2 } from 'lucide-react';
+import { COUNTRIES, countryCodeToFlag } from '@/lib/constants/countries';
 
 interface WorkHistoryEntry {
   company: string;
@@ -25,12 +26,15 @@ export default function ProfileSettingsPage() {
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
   const [location, setLocation] = useState('');
+  const [username, setUsername] = useState('');
+  const [countryCode, setCountryCode] = useState('');
   const [qualifications, setQualifications] = useState<string[]>(['']);
   const [workHistory, setWorkHistory] = useState<WorkHistoryEntry[]>([
     { company: '', position: '', startDate: '', endDate: '', current: false, description: '' }
   ]);
   const [avatar, setAvatar] = useState('');
   const [avatarPreview, setAvatarPreview] = useState('');
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -50,6 +54,8 @@ export default function ProfileSettingsPage() {
           setTitle(u.title || '');
           setCompany(u.company || '');
           setLocation(u.location || '');
+          setUsername(u.username || '');
+          setCountryCode(u.countryCode || '');
           setAvatar(u.avatar || '');
           setAvatarPreview(u.avatar || '');
 
@@ -114,6 +120,7 @@ export default function ProfileSettingsPage() {
     reader.readAsDataURL(file);
 
     // Upload file
+    setIsUploadingAvatar(true);
     try {
       const uploadFormData = new FormData();
       uploadFormData.append('file', file);
@@ -135,40 +142,51 @@ export default function ProfileSettingsPage() {
     } catch {
       setMessage({ type: 'error', text: 'Failed to upload photo' });
       setAvatarPreview('');
+    } finally {
+      setIsUploadingAvatar(false);
     }
   };
 
   const addQualification = () => {
-    setQualifications([...qualifications, '']);
+    setQualifications((prev) => [...prev, '']);
   };
 
   const removeQualification = (index: number) => {
-    setQualifications(qualifications.filter((_, i) => i !== index));
+    setQualifications((prev) => prev.filter((_, i) => i !== index));
   };
 
   const updateQualification = (index: number, value: string) => {
-    const updated = [...qualifications];
-    updated[index] = value;
-    setQualifications(updated);
+    setQualifications((prev) => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
   };
 
   const addWorkHistory = () => {
-    setWorkHistory([...workHistory, { company: '', position: '', startDate: '', endDate: '', current: false, description: '' }]);
+    setWorkHistory((prev) => [...prev, { company: '', position: '', startDate: '', endDate: '', current: false, description: '' }]);
   };
 
   const removeWorkHistory = (index: number) => {
-    setWorkHistory(workHistory.filter((_, i) => i !== index));
+    setWorkHistory((prev) => prev.filter((_, i) => i !== index));
   };
 
   const updateWorkHistory = (index: number, field: keyof WorkHistoryEntry, value: string | boolean) => {
-    const updated = [...workHistory];
-    updated[index] = { ...updated[index], [field]: value };
-    setWorkHistory(updated);
+    setWorkHistory((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session?.user?.id) return;
+
+    if (isUploadingAvatar) {
+      setMessage({ type: 'error', text: 'Your photo is still uploading — please wait a moment and try again.' });
+      return;
+    }
 
     setIsLoading(true);
     setMessage(null);
@@ -180,6 +198,8 @@ export default function ProfileSettingsPage() {
       formData.append('title', title);
       formData.append('company', company);
       formData.append('location', location);
+      formData.append('username', username);
+      formData.append('countryCode', countryCode);
       formData.append('avatar', avatar);
       
       // Filter out empty qualifications
@@ -232,6 +252,11 @@ export default function ProfileSettingsPage() {
                   <Image src={avatarPreview} alt="Profile" fill className="object-cover" />
                 ) : (
                   <User className="w-12 h-12 text-white" />
+                )}
+                {isUploadingAvatar && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  </div>
                 )}
               </div>
               <div>
@@ -303,6 +328,46 @@ export default function ProfileSettingsPage() {
             onChange={(e) => setLocation(e.target.value)}
             placeholder="e.g., San Francisco, CA or London, UK"
           />
+
+          {/* Handle + Country (used on the Global feed) */}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[#333333] mb-1.5">
+                Handle
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">@</span>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
+                  placeholder="yourhandle"
+                  maxLength={20}
+                  className="w-full pl-8 pr-4 py-2.5 rounded-lg border-2 transition-all duration-200 bg-white text-[#333333] placeholder:text-gray-400 border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Shown on your public posts in the Global feed</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[#333333] mb-1.5">
+                Country
+              </label>
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-lg border-2 transition-all duration-200 bg-white text-[#333333] border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20"
+              >
+                <option value="">Select a country</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {countryCodeToFlag(c.code)} {c.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Shown as a flag badge next to your handle</p>
+            </div>
+          </div>
 
           {/* Qualifications */}
           <div>
@@ -462,8 +527,8 @@ export default function ProfileSettingsPage() {
             </div>
           )}
 
-          <Button type="submit" isLoading={isLoading}>
-            Save Changes
+          <Button type="submit" isLoading={isLoading} disabled={isUploadingAvatar}>
+            {isUploadingAvatar ? 'Uploading photo…' : 'Save Changes'}
           </Button>
         </form>
       </Card>

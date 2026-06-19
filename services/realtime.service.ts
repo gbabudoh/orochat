@@ -58,6 +58,13 @@ export function getChatChannel(userId1: string, userId2: string): string {
 }
 
 /**
+ * Get channel name for a conversation (1:1 or group)
+ */
+export function getConversationChannel(conversationId: string): string {
+  return `private-conversation-${conversationId}`;
+}
+
+/**
  * Subscribe to a chat channel (client-side)
  */
 export function subscribeToChat(userId1: string, userId2: string, callback: (data: ChatMessage) => void) {

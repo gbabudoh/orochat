@@ -81,8 +81,10 @@ export const authOptions: NextAuthOptions = {
         token.name = u.name;
         token.avatar = u.avatar;
         token.isPartner = u.isPartner || false;
+        token.verifiedOrosCount = u.verifiedOrosCount || 0;
+        token.compassMembershipsCount = u.compassMembershipsCount || 0;
       }
-      
+
       // Refresh essential user data when session is updated
       if (trigger === 'update') {
         // If data was passed to update(), use it
@@ -94,17 +96,19 @@ export const authOptions: NextAuthOptions = {
           // Fallback: Refresh from DB if no data passed to update()
           const freshUser = await db.user.findUnique({
             where: { id: token.id as string },
-            select: { avatar: true, isPartner: true, name: true }
+            select: { avatar: true, isPartner: true, name: true, verifiedOrosCount: true, compassMembershipsCount: true }
           });
-          
+
           if (freshUser) {
             token.avatar = freshUser.avatar;
             token.isPartner = freshUser.isPartner;
             token.name = freshUser.name;
+            token.verifiedOrosCount = freshUser.verifiedOrosCount;
+            token.compassMembershipsCount = freshUser.compassMembershipsCount;
           }
         }
       }
-      
+
       return token;
     },
     async session({ session, token }) {
@@ -113,6 +117,8 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token.name as string;
         session.user.avatar = token.avatar as string | null;
         session.user.isPartner = token.isPartner as boolean;
+        session.user.verifiedOrosCount = token.verifiedOrosCount as number;
+        session.user.compassMembershipsCount = token.compassMembershipsCount as number;
       }
       return session;
     },

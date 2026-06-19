@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Orochat - Professional Networking Without Paywalls",
-  description: "Free professional networking platform. Connect with Oros, collaborate securely, and join high-value communities.",
+  title: "Orochat - Your Network. Your Earnings.",
+  description: "The professional network where verified Oros and Compass communities turn real connections into a revenue share — entirely free, with no paywalls.",
   icons: {
     icon: '/favicon.png',
   },

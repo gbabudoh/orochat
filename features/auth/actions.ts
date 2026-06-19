@@ -166,9 +166,21 @@ export async function updateProfile(userId: string, formData: FormData) {
   const title = formData.get('title') as string;
   const company = formData.get('company') as string;
   const location = formData.get('location') as string;
+  const username = (formData.get('username') as string)?.trim();
+  const countryCode = formData.get('countryCode') as string;
   const qualifications = formData.get('qualifications') as string;
   const workHistory = formData.get('workHistory') as string;
   const avatar = formData.get('avatar') as string;
+
+  if (username) {
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+      return { error: 'Handle must be 3-20 characters: letters, numbers, and underscores only.' };
+    }
+    const existing = await db.user.findUnique({ where: { username } });
+    if (existing && existing.id !== userId) {
+      return { error: 'That handle is already taken.' };
+    }
+  }
 
   try {
     const basicUpdateData: Prisma.UserUpdateInput = {
@@ -177,6 +189,8 @@ export async function updateProfile(userId: string, formData: FormData) {
       title: title || null,
       company: company || null,
       location: location || null,
+      username: username || null,
+      countryCode: countryCode || null,
       avatar: avatar || null,
     };
 
@@ -266,6 +280,8 @@ export async function getProfile(userId: string) {
         title: true,
         company: true,
         location: true,
+        username: true,
+        countryCode: true,
         qualifications: true,
         workHistory: true,
         isPartner: true,
@@ -277,6 +293,22 @@ export async function getProfile(userId: string) {
   } catch (error) {
     console.error('Fetch profile error:', error);
     return { error: 'Failed to fetch profile' };
+  }
+}
+
+// Session JWTs only refresh verifiedOrosCount/compassMembershipsCount on login or
+// an explicit update() call, so the sidebar fetches these live instead of trusting the session.
+export async function getUserStats(userId: string) {
+  try {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { verifiedOrosCount: true, compassMembershipsCount: true, isPartner: true },
+    });
+    if (!user) return { success: false as const, error: 'User not found' };
+    return { success: true as const, ...user };
+  } catch (error) {
+    console.error('Fetch user stats error:', error);
+    return { success: false as const, error: 'Failed to fetch user stats' };
   }
 }
 

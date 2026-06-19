@@ -1,21 +1,46 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, MessageSquare, Compass, Users, TrendingUp, Search, X } from 'lucide-react';
+import { Home, MessageSquare, Compass, Users, TrendingUp, Search, Globe, X } from 'lucide-react';
+import { getPendingRequests } from '@/features/connections/actions';
+import { getUserStats } from '@/features/auth/actions';
 
 export default function MainSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [stats, setStats] = useState({ verifiedOrosCount: 0, compassMembershipsCount: 0, isPartner: false });
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    let active = true;
+    getPendingRequests(session.user.id).then((result) => {
+      if (active && result.success) setPendingCount(result.requests?.length || 0);
+    });
+    getUserStats(session.user.id).then((result) => {
+      if (active && result.success) {
+        setStats({
+          verifiedOrosCount: result.verifiedOrosCount ?? 0,
+          compassMembershipsCount: result.compassMembershipsCount ?? 0,
+          isPartner: result.isPartner ?? false,
+        });
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [session?.user?.id, pathname]);
 
   const menuItems = [
     { href: '/feed', label: 'Feed', icon: Home },
+    { href: '/global', label: 'Global', icon: Globe },
     { href: '/collab', label: 'Collab', icon: MessageSquare },
     { href: '/compass', label: 'Compass', icon: Compass },
-    { href: '/oro', label: 'My Oros', icon: Users },
+    { href: '/oro', label: 'My Oros', icon: Users, badge: pendingCount },
     { href: '/explore', label: 'Explore', icon: Search },
   ];
 
@@ -51,7 +76,7 @@ export default function MainSidebar() {
           {session?.user && (
             <div className="mb-6 p-4 bg-white/10 rounded-lg backdrop-blur-sm">
               <div className="text-sm opacity-90 mb-2">Verified Oros</div>
-              <div className="text-2xl font-bold">{session.user.verifiedOrosCount || 0}</div>
+              <div className="text-2xl font-bold">{stats.verifiedOrosCount}</div>
               <div className="text-sm opacity-75 mt-1">
                 Goal: 1,000 for Partner status
               </div>
@@ -78,14 +103,23 @@ export default function MainSidebar() {
                   `}
                 >
                   <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
+                  <span className="font-medium flex-1">{item.label}</span>
+                  {!!item.badge && (
+                    <span
+                      className={`min-w-5 h-5 px-1.5 rounded-full text-xs font-semibold flex items-center justify-center ${
+                        isActive ? 'bg-[#458B9E] text-white' : 'bg-[#FFC93C] text-[#333333]'
+                      }`}
+                    >
+                      {item.badge > 9 ? '9+' : item.badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}
           </nav>
 
           {/* Partner Status */}
-          {session?.user?.isPartner && (
+          {stats.isPartner && (
             <div className="mt-6 p-4 bg-[#FFC93C] text-[#333333] rounded-lg">
               <div className="flex items-center space-x-2 mb-2">
                 <TrendingUp className="w-5 h-5" />
@@ -98,31 +132,31 @@ export default function MainSidebar() {
           )}
 
           {/* Qualification Progress */}
-          {session?.user && !session.user.isPartner && (
+          {session?.user && !stats.isPartner && (
             <div className="mt-6 p-4 bg-white/10 rounded-lg backdrop-blur-sm">
               <div className="text-sm mb-2">Qualification Progress</div>
               <div className="space-y-2">
                 <div>
                   <div className="flex justify-between text-xs mb-1">
                     <span>Oros</span>
-                    <span>{session.user.verifiedOrosCount} / 1,000</span>
+                    <span>{stats.verifiedOrosCount} / 1,000</span>
                   </div>
                   <div className="w-full bg-white/20 rounded-full h-2">
                     <div
                       className="bg-[#FFC93C] h-2 rounded-full transition-all"
-                      style={{ width: `${Math.min((session.user.verifiedOrosCount / 1000) * 100, 100)}%` }}
+                      style={{ width: `${Math.min((stats.verifiedOrosCount / 1000) * 100, 100)}%` }}
                     />
                   </div>
                 </div>
                 <div>
                   <div className="flex justify-between text-xs mb-1">
                     <span>Compass</span>
-                    <span>{session.user.compassMembershipsCount} / 10</span>
+                    <span>{stats.compassMembershipsCount} / 10</span>
                   </div>
                   <div className="w-full bg-white/20 rounded-full h-2">
                     <div
                       className="bg-[#FFC93C] h-2 rounded-full transition-all"
-                      style={{ width: `${Math.min((session.user.compassMembershipsCount / 10) * 100, 100)}%` }}
+                      style={{ width: `${Math.min((stats.compassMembershipsCount / 10) * 100, 100)}%` }}
                     />
                   </div>
                 </div>

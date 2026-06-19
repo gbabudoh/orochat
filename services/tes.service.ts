@@ -29,13 +29,10 @@ export class TESService {
       return 0;
     }
 
-    // Calculate Collab usage score (messages sent/received by Oros)
+    // Calculate Collab usage score (messages in conversations involving an Oro, sent or received)
     const collabScore = await db.message.count({
       where: {
-        OR: [
-          { senderId: { in: oroIds } },
-          { receiverId: { in: oroIds } },
-        ],
+        conversation: { participants: { some: { userId: { in: oroIds } } } },
         createdAt: {
           gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
         },
