@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
 import { Prisma } from '@prisma/client';
+import { regenerateUserEmbedding } from '@/lib/ai/userEmbedding';
 
 const signupSchema = z.object({
   email: z.string().min(1),
@@ -19,6 +20,21 @@ const loginSchema = z.object({
   email: z.string().min(1),
   password: z.string().min(1, 'Password is required'),
 });
+
+async function generateUniqueUsername(name: string, email: string) {
+  const base = (name || email.split('@')[0])
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .slice(0, 16) || 'user';
+
+  let candidate = base;
+  let suffix = 0;
+  while (await db.user.findUnique({ where: { username: candidate } })) {
+    suffix += 1;
+    candidate = `${base}${suffix}`;
+  }
+  return candidate;
+}
 
 export async function signup(formData: FormData) {
   const rawData = {
@@ -39,12 +55,14 @@ export async function signup(formData: FormData) {
     }
 
     const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+    const username = await generateUniqueUsername(validatedData.name, validatedData.email);
 
     const user = await db.user.create({
       data: {
         email: validatedData.email,
         password: hashedPassword,
         name: validatedData.name,
+        username,
       },
     });
 
@@ -206,6 +224,10 @@ export async function updateProfile(userId: string, formData: FormData) {
         data: fullUpdateData,
       });
 
+      regenerateUserEmbedding(userId).catch((err) =>
+        console.error('Embedding regeneration failed:', err)
+      );
+
       return { success: true };
     } catch (fieldError) {
       const error = fieldError as Error;
@@ -214,6 +236,10 @@ export async function updateProfile(userId: string, formData: FormData) {
           where: { id: userId },
           data: basicUpdateData,
         });
+
+        regenerateUserEmbedding(userId).catch((err) =>
+          console.error('Embedding regeneration failed:', err)
+        );
 
         return {
           success: true,

@@ -226,5 +226,91 @@ export class ConnectionService {
       },
     });
   }
+
+  /**
+   * "People You May Know" — ranks candidates by mutual connections
+   * (friends-of-friends) and shared Compass memberships, the way LinkedIn's
+   * PYMK works, instead of raw verifiedOrosCount popularity. Falls back to
+   * popularity to fill remaining slots for users with a sparse graph.
+   */
+  static async getSuggestedOros(userId: string, limit = 3) {
+    const myConnections = await db.connection.findMany({
+      where: { OR: [{ senderId: userId }, { receiverId: userId }] },
+      select: { senderId: true, receiverId: true, status: true },
+    });
+
+    const otherSide = (c: { senderId: string; receiverId: string }) =>
+      c.senderId === userId ? c.receiverId : c.senderId;
+
+    const excludeIds = new Set([userId, ...myConnections.map(otherSide)]);
+    const acceptedOroIds = myConnections.filter((c) => c.status === 'ACCEPTED').map(otherSide);
+
+    // Friends-of-friends: who my accepted Oros are connected to
+    const fofConnections = acceptedOroIds.length
+      ? await db.connection.findMany({
+          where: {
+            status: 'ACCEPTED',
+            OR: [{ senderId: { in: acceptedOroIds } }, { receiverId: { in: acceptedOroIds } }],
+          },
+          select: { senderId: true, receiverId: true },
+        })
+      : [];
+
+    const mutualCounts = new Map<string, number>();
+    for (const conn of fofConnections) {
+      for (const id of [conn.senderId, conn.receiverId]) {
+        if (excludeIds.has(id)) continue;
+        mutualCounts.set(id, (mutualCounts.get(id) ?? 0) + 1);
+      }
+    }
+
+    // Shared Compass community memberships
+    const myCompassIds = (
+      await db.compassMembership.findMany({ where: { userId }, select: { compassId: true } })
+    ).map((m) => m.compassId);
+
+    const sharedCompassMembers = myCompassIds.length
+      ? await db.compassMembership.findMany({
+          where: { compassId: { in: myCompassIds }, userId: { notIn: Array.from(excludeIds) } },
+          select: { userId: true },
+        })
+      : [];
+
+    const compassCounts = new Map<string, number>();
+    for (const m of sharedCompassMembers) {
+      compassCounts.set(m.userId, (compassCounts.get(m.userId) ?? 0) + 1);
+    }
+
+    const candidateIds = new Set([...mutualCounts.keys(), ...compassCounts.keys()]);
+    const ranked = Array.from(candidateIds)
+      .map((id) => ({
+        id,
+        score: (mutualCounts.get(id) ?? 0) * 3 + (compassCounts.get(id) ?? 0) * 2,
+      }))
+      .sort((a, b) => b.score - a.score);
+
+    let topIds = ranked.slice(0, limit).map((r) => r.id);
+
+    // Cold start (no mutual connections/communities yet): pad with popular profiles
+    if (topIds.length < limit) {
+      const fallback = await db.user.findMany({
+        where: { id: { notIn: [...excludeIds, ...topIds] } },
+        orderBy: { verifiedOrosCount: 'desc' },
+        take: limit - topIds.length,
+        select: { id: true },
+      });
+      topIds = [...topIds, ...fallback.map((u) => u.id)];
+    }
+
+    if (topIds.length === 0) return [];
+
+    const users = await db.user.findMany({
+      where: { id: { in: topIds } },
+      select: { id: true, name: true, avatar: true, title: true, company: true },
+    });
+
+    const orderIndex = new Map(topIds.map((id, idx) => [id, idx]));
+    return users.sort((a, b) => (orderIndex.get(a.id) ?? 0) - (orderIndex.get(b.id) ?? 0));
+  }
 }
 

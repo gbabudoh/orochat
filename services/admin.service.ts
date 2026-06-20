@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { TESService } from './tes.service';
+import { FraudService } from './fraud.service';
 
 /**
  * Admin Service
@@ -35,9 +36,15 @@ export class AdminService {
       throw new Error('Revenue already distributed');
     }
 
-    // Get TES distribution
-    const tesDistribution = await TESService.getTESDistribution();
-    const totalTES = await TESService.getTotalPartnerTES();
+    // Flag sybil-like connection rings / connection-farming bursts before
+    // money moves, and exclude flagged partners from this round's payout —
+    // their share is redistributed across the remaining legitimate partners.
+    const flaggedUserIds = new Set(await FraudService.scanPartnersForFraud());
+
+    const tesDistribution = (await TESService.getTESDistribution()).filter(
+      (dist) => !flaggedUserIds.has(dist.userId)
+    );
+    const totalTES = tesDistribution.reduce((sum, dist) => sum + dist.tes, 0);
 
     if (totalTES === 0) {
       throw new Error('No TES to distribute');
@@ -47,8 +54,8 @@ export class AdminService {
     const distributions = tesDistribution.map((dist) => ({
       poolId,
       userId: dist.userId,
-      tesShare: dist.share,
-      amount: pool.totalAmount * dist.share,
+      tesShare: dist.tes / totalTES,
+      amount: pool.totalAmount * (dist.tes / totalTES),
     }));
 
     await db.revenueDistribution.createMany({

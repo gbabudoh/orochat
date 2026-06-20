@@ -1,10 +1,19 @@
 import { db } from '@/lib/db';
+import { decayedDailyActivityScore } from '@/lib/scoring/decay';
+
+const LOOKBACK_DAYS = 30;
+const HALF_LIFE_DAYS = 7; // an event a week old counts for half as much as one from today
 
 /**
  * TES (Total Engagement Score) Service
  * Calculates and manages user engagement scores based on:
  * - Usage of Collab by their Oros
  * - Activity of their Oros on Feed
+ *
+ * Scoring is recency-decayed (HN-style half-life) and anti-spam-normalized
+ * (at most one counted unit per Oro per calendar day) rather than a flat
+ * count, so genuinely sustained engagement outranks someone flooding
+ * messages/posts in a single sitting.
  */
 export class TESService {
   /**
@@ -29,25 +38,34 @@ export class TESService {
       return 0;
     }
 
-    // Calculate Collab usage score (messages in conversations involving an Oro, sent or received)
-    const collabScore = await db.message.count({
-      where: {
-        conversation: { participants: { some: { userId: { in: oroIds } } } },
-        createdAt: {
-          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
-        },
-      },
-    });
+    const since = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
 
-    // Calculate Feed activity score (posts by Oros)
-    const feedScore = await db.feedPost.count({
+    // Collab usage: messages sent by an Oro in conversations they're part of
+    const messages = await db.message.findMany({
+      where: {
+        senderId: { in: oroIds },
+        conversation: { participants: { some: { userId: { in: oroIds } } } },
+        createdAt: { gte: since },
+      },
+      select: { senderId: true, createdAt: true },
+    });
+    const collabScore = decayedDailyActivityScore(
+      messages.map((m) => ({ actorId: m.senderId, createdAt: m.createdAt })),
+      HALF_LIFE_DAYS
+    );
+
+    // Feed activity: posts by Oros
+    const posts = await db.feedPost.findMany({
       where: {
         authorId: { in: oroIds },
-        createdAt: {
-          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
-        },
+        createdAt: { gte: since },
       },
+      select: { authorId: true, createdAt: true },
     });
+    const feedScore = decayedDailyActivityScore(
+      posts.map((p) => ({ actorId: p.authorId, createdAt: p.createdAt })),
+      HALF_LIFE_DAYS
+    );
 
     // TES = Collab usage + Feed activity
     const tes = collabScore + feedScore;

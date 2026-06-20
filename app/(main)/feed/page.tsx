@@ -4,11 +4,12 @@ import { db } from '@/lib/db';
 import Card from '@/components/ui/Card';
 import CreatePostCard from '@/components/feature/Feed/CreatePostCard';
 import PostCard from '@/components/feature/Feed/PostCard';
-import { Globe, MessageCircle, Compass as CompassIcon, Users } from 'lucide-react';
+import { Globe, MessageCircle, Compass as CompassIcon, Users, Archive } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { CompassMembership, Connection } from '.prisma/client';
 import { getPostMeta } from '@/lib/feed/postMeta';
+import { ConnectionService } from '@/services/connection.service';
 
 export default async function FeedPage() {
   const session = await getServerSession(authOptions);
@@ -41,6 +42,7 @@ export default async function FeedPage() {
   const [posts, suggestedCompasses, suggestedOros] = await Promise.all([
     db.feedPost.findMany({
       where: {
+        archived: false,
         OR: [
           { authorId: session.user.id },
           { authorId: { in: oroIds } },
@@ -72,14 +74,7 @@ export default async function FeedPage() {
       take: 3,
       select: { id: true, slug: true, name: true, image: true, _count: { select: { memberships: true } } },
     }),
-    db.user.findMany({
-      where: {
-        id: { notIn: [session.user.id, ...oroIds] },
-      },
-      orderBy: { verifiedOrosCount: 'desc' },
-      take: 3,
-      select: { id: true, name: true, avatar: true, title: true, company: true },
-    }),
+    ConnectionService.getSuggestedOros(session.user.id, 3),
   ]);
 
   const postIds = posts.map(p => p.id);
@@ -93,13 +88,22 @@ export default async function FeedPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-1 md:mb-2">Feed</h1>
           <p className="text-sm sm:text-base text-gray-600">Stay updated with your professional network</p>
         </div>
-        <Link
-          href="/global"
-          className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium text-[#458B9E] bg-[#458B9E]/10 hover:bg-[#458B9E]/20 transition-colors shrink-0"
-        >
-          <Globe className="w-4 h-4" />
-          Global Feed
-        </Link>
+        <div className="hidden sm:flex items-center gap-2 shrink-0">
+          <Link
+            href="/feed/archived"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium text-[#458B9E] bg-[#458B9E]/10 hover:bg-[#458B9E]/20 transition-colors"
+          >
+            <Archive className="w-4 h-4" />
+            Archived
+          </Link>
+          <Link
+            href="/global"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium text-[#458B9E] bg-[#458B9E]/10 hover:bg-[#458B9E]/20 transition-colors"
+          >
+            <Globe className="w-4 h-4" />
+            Global Feed
+          </Link>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-[1fr_300px] gap-6">
@@ -131,6 +135,7 @@ export default async function FeedPage() {
                   index={index}
                   isLiked={likedPostIds.has(post.id)}
                   comments={commentsByPostId[post.id] || []}
+                  currentUserId={session.user.id}
                 />
               ))}
             </div>

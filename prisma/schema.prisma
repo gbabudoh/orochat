@@ -37,6 +37,10 @@ model User {
   // TES (Total Engagement Score)
   currentTES    Float     @default(0)
   lastTESUpdate DateTime? @default(now())
+
+  // Semantic search: USE (Universal Sentence Encoder) embedding of
+  // title + company + bio + location, recomputed on every profile edit.
+  embedding     Float[]   @default([])
   
   // Timestamps
   createdAt     DateTime  @default(now())
@@ -55,7 +59,8 @@ model User {
   revenueDistributions RevenueDistribution[]
   postLikes           PostLike[]
   postComments        PostComment[]
-  
+  fraudFlags          FraudFlag[]
+
   @@index([email])
   @@index([isPartner])
 }
@@ -195,6 +200,7 @@ model FeedPost {
   content     String
   imageUrl    String?
   visibility  PostVisibility @default(PRIVATE) // PUBLIC posts appear on the Global feed
+  archived    Boolean  @default(false) // Hidden from feeds but kept for the author
 
   likesCount  Int      @default(0)
   commentsCount Int    @default(0)
@@ -311,5 +317,23 @@ model RevenueDistribution {
   @@index([poolId])
   @@index([userId])
   @@index([paid])
+}
+
+// Fraud Flag Model - Records suspicious connection-graph patterns
+// (sybil-like cliques, connection-farming bursts) found before a revenue
+// payout, so flagged partners are excluded from that round's distribution.
+model FraudFlag {
+  id        String   @id @default(cuid())
+  userId    String
+  riskScore Float
+  reason    String
+  resolved  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([resolved])
 }
 
