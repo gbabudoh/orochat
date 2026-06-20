@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Heart, MessageCircle, Share2, Send } from 'lucide-react';
-import { toggleLike, addComment } from '@/features/feed/actions';
+import { Heart, MessageCircle, Share2, Send, Trash2, Archive, ArchiveRestore } from 'lucide-react';
+import { toggleLike, addComment, deletePost, archivePost, unarchivePost } from '@/features/feed/actions';
 
 import Image from 'next/image';
 import { formatRelativeTime } from '@/lib/utils/formatters';
@@ -23,13 +23,19 @@ interface PostActionsProps {
   initialLikes: number;
   isLikedInitially: boolean;
   comments: Comment[];
+  isAuthor?: boolean;
+  isArchived?: boolean;
+  onRemoved?: () => void;
 }
 
-export default function PostActions({ 
-  postId, 
-  initialLikes, 
+export default function PostActions({
+  postId,
+  initialLikes,
   isLikedInitially,
-  comments: initialCommentsList
+  comments: initialCommentsList,
+  isAuthor = false,
+  isArchived = false,
+  onRemoved,
 }: PostActionsProps) {
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(isLikedInitially);
@@ -38,6 +44,8 @@ export default function PostActions({
   const [commentsList, setCommentsList] = useState<Comment[]>(initialCommentsList);
   const [isLiking, setIsLiking] = useState(false);
   const [isCommenting, setIsCommenting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
 
   const handleLike = async () => {
     if (isLiking) return;
@@ -88,41 +96,98 @@ export default function PostActions({
     alert('Link copied to clipboard!');
   };
 
+  const handleDelete = async () => {
+    if (isDeleting || !confirm('Delete this post? This cannot be undone.')) return;
+    setIsDeleting(true);
+    try {
+      const result = await deletePost(postId);
+      if (result.success) {
+        onRemoved?.();
+      } else {
+        alert(result.error || 'Failed to delete post');
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleArchive = async () => {
+    if (isArchiving) return;
+    setIsArchiving(true);
+    try {
+      const result = isArchived ? await unarchivePost(postId) : await archivePost(postId);
+      if (result.success) {
+        onRemoved?.();
+      } else {
+        alert(result.error || `Failed to ${isArchived ? 'unarchive' : 'archive'} post`);
+      }
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center space-x-4 md:space-x-8 pt-3 border-t border-gray-100">
-        <button 
-          onClick={handleLike}
-          disabled={isLiking}
-          className={`flex items-center space-x-1 md:space-x-2 transition-colors group ${
-            isLiked ? 'text-[#D32F2F]' : 'text-gray-600 hover:text-[#458B9E]'
-          }`}
-        >
-          <Heart 
-            className={`w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform ${
-              isLiked ? 'fill-current' : ''
-            }`} 
-          />
-          <span className="font-medium text-sm md:text-base">{likesCount}</span>
-        </button>
+      <div className="flex items-center justify-between gap-2 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-3 sm:gap-6 min-w-0">
+          <button
+            onClick={handleLike}
+            disabled={isLiking}
+            className={`flex items-center gap-1 sm:gap-2 transition-colors group shrink-0 ${
+              isLiked ? 'text-[#D32F2F]' : 'text-gray-600 hover:text-[#458B9E]'
+            }`}
+          >
+            <Heart
+              className={`w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform ${
+                isLiked ? 'fill-current' : ''
+              }`}
+            />
+            <span className="font-medium text-sm sm:text-base">{likesCount}</span>
+          </button>
 
-        <button 
-          onClick={() => setShowComments(!showComments)}
-          className={`flex items-center space-x-1 md:space-x-2 transition-colors group ${
-            showComments ? 'text-[#458B9E]' : 'text-gray-600 hover:text-[#458B9E]'
-          }`}
-        >
-          <MessageCircle className={`w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform ${showComments ? 'fill-[#458B9E]/10' : ''}`} />
-          <span className="font-medium text-sm md:text-base">{commentsList.length}</span>
-        </button>
+          <button
+            onClick={() => setShowComments(!showComments)}
+            className={`flex items-center gap-1 sm:gap-2 transition-colors group shrink-0 ${
+              showComments ? 'text-[#458B9E]' : 'text-gray-600 hover:text-[#458B9E]'
+            }`}
+          >
+            <MessageCircle className={`w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform ${showComments ? 'fill-[#458B9E]/10' : ''}`} />
+            <span className="font-medium text-sm sm:text-base">{commentsList.length}</span>
+          </button>
 
-        <button 
-          onClick={handleShare}
-          className="flex items-center space-x-1 md:space-x-2 text-gray-600 hover:text-[#458B9E] transition-colors group"
-        >
-          <Share2 className="w-4 h-4 md:w-5 md:h-5 group-hover:scale-110 transition-transform" />
-          <span className="font-medium text-sm md:text-base hidden sm:inline">Share</span>
-        </button>
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1 sm:gap-2 text-gray-600 hover:text-[#458B9E] transition-colors group shrink-0"
+          >
+            <Share2 className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
+            <span className="font-medium text-sm sm:text-base hidden sm:inline">Share</span>
+          </button>
+        </div>
+
+        {isAuthor && (
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+            <button
+              onClick={handleArchive}
+              disabled={isArchiving}
+              title={isArchived ? 'Unarchive' : 'Archive'}
+              className="flex items-center text-gray-600 hover:text-[#458B9E] transition-colors group disabled:opacity-50"
+            >
+              {isArchived ? (
+                <ArchiveRestore className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
+              ) : (
+                <Archive className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
+              )}
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              title="Delete"
+              className="flex items-center text-gray-600 hover:text-[#D32F2F] transition-colors group disabled:opacity-50"
+            >
+              <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
+            </button>
+          </div>
+        )}
       </div>
 
       {showComments && (

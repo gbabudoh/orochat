@@ -71,10 +71,20 @@ export function getCountryName(code?: string | null): string | null {
 
 // Converts an ISO 3166-1 alpha-2 code (e.g. "US") to its flag emoji by
 // offsetting each letter into the Unicode regional-indicator range.
+// Kept for places that can't render an <img> (e.g. <option> text).
 export function countryCodeToFlag(code?: string | null): string | null {
   if (!code || code.length !== 2) return null;
   const upper = code.toUpperCase();
   const codePoints = upper.split('').map((c) => 0x1f1e6 + (c.charCodeAt(0) - 65));
   if (codePoints.some((cp) => cp < 0x1f1e6 || cp > 0x1f1ff)) return null;
   return String.fromCodePoint(...codePoints);
+}
+
+// Flag emoji rely on the OS having flag glyphs in its emoji font — Windows
+// doesn't ship any, so Edge/Firefox/Chrome/Safari on Windows show a blank
+// box or "US" text instead of a flag. An image avoids that inconsistency
+// and renders identically on every browser/OS.
+export function getFlagImageUrl(code?: string | null): string | null {
+  if (!code || code.length !== 2) return null;
+  return `https://flagcdn.com/24x18/${code.toLowerCase()}.png`;
 }

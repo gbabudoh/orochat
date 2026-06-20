@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import Card from '@/components/ui/Card';
 import Image from 'next/image';
 import Button from '@/components/ui/Button';
-import { User, Building, MapPin, Users, TrendingUp, Award, Briefcase, Mail, Calendar, Edit } from 'lucide-react';
+import { User, Building, MapPin, Users, TrendingUp, Award, Briefcase, AtSign, Calendar, Edit } from 'lucide-react';
 import Link from 'next/link';
 import ProfileActions from '@/components/feature/Profile/ProfileActions';
 
@@ -196,12 +196,12 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
                   </div>
                 </div>
               )}
-              {user.email && (
+              {user.username && (
                 <div className="flex items-center p-3 bg-white rounded-lg border border-gray-200">
-                  <Mail className="w-4 h-4 text-[#458B9E] mr-2 flex-shrink-0" />
+                  <AtSign className="w-4 h-4 text-[#458B9E] mr-2 flex-shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-500">Email</p>
-                    <p className="font-semibold text-sm text-gray-900 truncate">{user.email}</p>
+                    <p className="text-xs text-gray-500">Handle</p>
+                    <p className="font-semibold text-sm text-gray-900 truncate">@{user.username}</p>
                   </div>
                 </div>
               )}
@@ -250,7 +250,7 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
               </div>
 
               {/* Profile Info */}
-              <div className="flex-1">
+              <div className="flex-1 mt-20">
                 <div className="mb-6">
                   <h1 className="text-4xl font-bold text-gray-900 mb-2">{user.name}</h1>
                   {user.title && <p className="text-xl text-gray-700 mb-1 font-medium">{user.title}</p>}
@@ -303,14 +303,14 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
                       </div>
                     </div>
                   )}
-                  {user.email && (
+                  {user.username && (
                     <div className="flex items-start p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
                       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center mr-4 flex-shrink-0">
-                        <Mail className="w-5 h-5 text-[#458B9E]" />
+                        <AtSign className="w-5 h-5 text-[#458B9E]" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Email</p>
-                        <p className="font-bold text-gray-900 text-base break-all">{user.email}</p>
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Handle</p>
+                        <p className="font-bold text-gray-900 text-base break-all">@{user.username}</p>
                       </div>
                     </div>
                   )}

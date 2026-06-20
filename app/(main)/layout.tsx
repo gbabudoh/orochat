@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import MainHeader from '@/components/layout/MainHeader';
 import MainSidebar from '@/components/layout/MainSidebar';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 
 export default async function MainLayout({
   children,
@@ -22,10 +23,11 @@ export default async function MainLayout({
       <MainHeader />
       <div className="flex">
         <MainSidebar />
-        <main className="flex-1 lg:ml-64 mt-16 p-4 sm:p-6">
+        <main className="flex-1 w-full min-w-0 lg:ml-64 mt-16 p-3 sm:p-6 pb-24 lg:pb-6 overflow-x-hidden">
           {children}
         </main>
       </div>
+      <MobileBottomNav />
     </div>
   );
 }

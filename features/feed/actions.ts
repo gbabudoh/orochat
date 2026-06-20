@@ -108,6 +108,52 @@ export async function toggleLike(postId: string) {
   }
 }
 
+export async function deletePost(postId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { error: 'Not authenticated' };
+
+  const post = await db.feedPost.findUnique({ where: { id: postId } });
+  if (!post) return { error: 'Post not found' };
+  if (post.authorId !== session.user.id) return { error: 'You can only delete your own posts' };
+
+  await db.feedPost.delete({ where: { id: postId } });
+
+  revalidatePath('/feed');
+  revalidatePath('/global');
+  return { success: true };
+}
+
+export async function archivePost(postId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { error: 'Not authenticated' };
+
+  const post = await db.feedPost.findUnique({ where: { id: postId } });
+  if (!post) return { error: 'Post not found' };
+  if (post.authorId !== session.user.id) return { error: 'You can only archive your own posts' };
+
+  await db.feedPost.update({ where: { id: postId }, data: { archived: true } });
+
+  revalidatePath('/feed');
+  revalidatePath('/global');
+  return { success: true };
+}
+
+export async function unarchivePost(postId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { error: 'Not authenticated' };
+
+  const post = await db.feedPost.findUnique({ where: { id: postId } });
+  if (!post) return { error: 'Post not found' };
+  if (post.authorId !== session.user.id) return { error: 'You can only unarchive your own posts' };
+
+  await db.feedPost.update({ where: { id: postId }, data: { archived: false } });
+
+  revalidatePath('/feed');
+  revalidatePath('/feed/archived');
+  revalidatePath('/global');
+  return { success: true };
+}
+
 export async function addComment(postId: string, content: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { error: 'Not authenticated' };

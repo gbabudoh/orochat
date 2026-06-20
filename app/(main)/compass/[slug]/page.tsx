@@ -54,7 +54,7 @@ export default async function CompassCommunityPage({ params }: { params: { slug:
 
   // Get posts
   const posts = await db.feedPost.findMany({
-    where: { compassId: community.id },
+    where: { compassId: community.id, archived: false },
     include: {
       author: {
         select: {

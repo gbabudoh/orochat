@@ -1,6 +1,6 @@
 'use client';
 
-import { formatRelativeTime } from '@/lib/utils/formatters';
+import { formatRelativeTime, formatDateTime } from '@/lib/utils/formatters';
 
 interface MessageBubbleProps {
   message: {
@@ -37,8 +37,11 @@ export default function MessageBubble({ message, currentUserId }: MessageBubbleP
             <div className="text-xs font-semibold mb-1 opacity-75">{message.sender.name}</div>
           )}
           <div className="text-sm">{message.content}</div>
-          <div className={`text-xs mt-1 ${isOwn ? 'text-white/70' : 'text-gray-500'}`}>
-            {formatRelativeTime(message.createdAt)}
+          <div
+            className={`text-xs mt-1 ${isOwn ? 'text-white/70' : 'text-gray-500'}`}
+            title={formatDateTime(message.createdAt)}
+          >
+            {formatRelativeTime(message.createdAt)} &middot; {formatDateTime(message.createdAt)}
           </div>
         </div>
       </div>

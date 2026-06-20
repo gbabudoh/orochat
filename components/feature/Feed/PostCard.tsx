@@ -1,12 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import PostActions from '@/components/feature/Feed/PostActions';
 import HandleBadge from '@/components/feature/Feed/HandleBadge';
-import { formatRelativeTime } from '@/lib/utils/formatters';
+import { formatRelativeTime, formatDateTime } from '@/lib/utils/formatters';
 
 interface Comment {
   id: string;
@@ -37,19 +38,26 @@ interface PostCardProps {
   isLiked: boolean;
   comments: Comment[];
   index?: number;
+  currentUserId?: string;
+  isArchived?: boolean;
 }
 
-export default function PostCard({ post, isLiked, comments, index = 0 }: PostCardProps) {
+export default function PostCard({ post, isLiked, comments, index = 0, currentUserId, isArchived = false }: PostCardProps) {
+  const [isRemoved, setIsRemoved] = useState(false);
+  const isAuthor = currentUserId === post.author.id;
+
+  if (isRemoved) return null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: Math.min(index, 6) * 0.05 }}
     >
-      <Card className="hover:shadow-lg transition-shadow">
-        <div className="flex items-start space-x-3 md:space-x-4">
+      <Card padding="none" className="hover:shadow-lg transition-shadow p-3.5 sm:p-6 overflow-hidden">
+        <div className="flex items-start gap-2.5 sm:gap-4">
           <Link href={`/oro/${post.author.id}`} className="shrink-0">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-linear-to-br from-[#458B9E] to-[#5BA3B8] flex items-center justify-center overflow-hidden">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-linear-to-br from-[#458B9E] to-[#5BA3B8] flex items-center justify-center overflow-hidden">
               {post.author.avatar ? (
                 <Image
                   src={`/api/user/${post.author.id}/avatar`}
@@ -59,25 +67,25 @@ export default function PostCard({ post, isLiked, comments, index = 0 }: PostCar
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-white font-semibold text-base md:text-lg">
+                <span className="text-white font-semibold text-sm sm:text-lg">
                   {post.author.name.charAt(0).toUpperCase()}
                 </span>
               )}
             </div>
           </Link>
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between mb-2">
+            <div className="flex items-start justify-between gap-2 mb-1.5">
               <div className="flex-1 min-w-0">
-                <Link href={`/oro/${post.author.id}`} className="font-semibold text-[#333333] text-base md:text-lg hover:text-[#458B9E] transition-colors">
+                <Link href={`/oro/${post.author.id}`} className="font-semibold text-[#333333] text-sm sm:text-lg hover:text-[#458B9E] transition-colors wrap-break-word">
                   {post.author.name}
                 </Link>
-                <div className="flex items-center space-x-2 text-xs md:text-sm text-gray-500">
-                  {post.author.title && <span className="truncate">{post.author.title}</span>}
+                <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs sm:text-sm text-gray-500">
+                  {post.author.title && <span className="wrap-break-word">{post.author.title}</span>}
                   {post.author.title && post.compass && <span>•</span>}
                   {post.compass && (
                     <Link
                       href={`/compass/${post.compass.slug}`}
-                      className="text-[#458B9E] hover:underline truncate"
+                      className="text-[#458B9E] hover:underline wrap-break-word"
                     >
                       {post.compass.name}
                     </Link>
@@ -90,13 +98,18 @@ export default function PostCard({ post, isLiked, comments, index = 0 }: PostCar
                   )}
                 </div>
               </div>
-              <div className="flex items-center space-x-2 ml-2 md:ml-4 shrink-0">
-                <Image src="/icon.png" alt="Orochat" width={24} height={24} className="w-6 h-6" />
-                <span className="text-xs md:text-sm text-gray-400">{formatRelativeTime(post.createdAt)}</span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Image src="/icon.png" alt="Orochat" width={24} height={24} className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span
+                  className="text-[11px] sm:text-sm text-gray-400 whitespace-nowrap"
+                  title={formatDateTime(post.createdAt)}
+                >
+                  {formatRelativeTime(post.createdAt)}
+                </span>
               </div>
             </div>
 
-            <p className="text-sm md:text-base text-[#333333] mb-3 md:mb-4 whitespace-pre-wrap leading-relaxed">
+            <p className="text-sm sm:text-base text-[#333333] mb-3 sm:mb-4 whitespace-pre-wrap wrap-break-word leading-relaxed">
               {post.content}
             </p>
 
@@ -106,7 +119,7 @@ export default function PostCard({ post, isLiked, comments, index = 0 }: PostCar
                 alt="Post image"
                 width={800}
                 height={450}
-                className="w-full rounded-xl mb-3 md:mb-4 max-h-96 object-cover"
+                className="w-full rounded-xl mb-3 sm:mb-4 max-h-96 object-cover"
               />
             )}
 
@@ -114,6 +127,9 @@ export default function PostCard({ post, isLiked, comments, index = 0 }: PostCar
               postId={post.id}
               initialLikes={post.likesCount}
               isLikedInitially={isLiked}
+              isAuthor={isAuthor}
+              isArchived={isArchived}
+              onRemoved={() => setIsRemoved(true)}
               comments={comments}
             />
           </div>

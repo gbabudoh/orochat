@@ -5,39 +5,55 @@ import { useSession, signOut } from 'next-auth/react';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import { Search, User, Building, MapPin, Users, Briefcase, LogOut, Home } from 'lucide-react';
+import { Search, User, Building, MapPin, Users, Briefcase, LogOut, Home, AtSign, Globe } from 'lucide-react';
 import Link from 'next/link';
+import { COUNTRIES, countryCodeToFlag, getCountryName, getFlagImageUrl } from '@/lib/constants/countries';
+import { PROFESSIONAL_CATEGORIES } from '@/lib/constants/categories';
 
-const professionalCategories = [
-  'Software Engineering',
-  'Product Management',
-  'Marketing',
-  'Sales',
-  'Design',
-  'Finance',
-  'Consulting',
-  'Healthcare',
-  'Education',
-  'Legal',
-  'Real Estate',
-  'Entrepreneurship',
-];
+const professionalCategories = PROFESSIONAL_CATEGORIES.map((c) => c.label);
+
+interface ExploreUser {
+  id: string;
+  name: string;
+  username: string | null;
+  avatar: string | null;
+  title: string | null;
+  company: string | null;
+  location: string | null;
+  countryCode: string | null;
+  isPartner: boolean;
+  verifiedOrosCount: number;
+}
 
 export default function ExplorePage() {
   const { data: session } = useSession();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [users, setUsers] = useState<any[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
+  const [users, setUsers] = useState<ExploreUser[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
+  const runSearch = async (overrides?: { category?: string | null; country?: string }) => {
+    const category = overrides?.category !== undefined ? overrides.category : selectedCategory;
+    const country = overrides?.country !== undefined ? overrides.country : selectedCountry;
+
+    setHasSearched(true);
+
+    if (!searchQuery.trim() && !category && !country) {
+      setUsers([]);
+      return;
+    }
 
     setIsSearching(true);
     try {
-      const response = await fetch(`/api/explore/search?q=${encodeURIComponent(searchQuery)}${selectedCategory ? `&category=${encodeURIComponent(selectedCategory)}` : ''}`);
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) params.set('q', searchQuery.trim());
+      if (category) params.set('category', category);
+      if (country) params.set('country', country);
+
+      const response = await fetch(`/api/explore/search?${params.toString()}`);
       const data = await response.json();
       if (data.success) {
         setUsers(data.users || []);
@@ -49,40 +65,38 @@ export default function ExplorePage() {
     }
   };
 
-  const handleCategoryClick = async (category: string) => {
-    setSelectedCategory(category === selectedCategory ? null : category);
-    setSearchQuery('');
-    setIsSearching(true);
-    try {
-      const response = await fetch(`/api/explore/search?category=${encodeURIComponent(category)}`);
-      const data = await response.json();
-      if (data.success) {
-        setUsers(data.users || []);
-      }
-    } catch (error) {
-      console.error('Search failed:', error);
-    } finally {
-      setIsSearching(false);
-    }
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    runSearch();
+  };
+
+  const handleCategoryClick = (category: string) => {
+    const next = category === selectedCategory ? null : category;
+    setSelectedCategory(next);
+    runSearch({ category: next });
+  };
+
+  const handleCountryChange = (country: string) => {
+    setSelectedCountry(country);
+    runSearch({ country });
   };
 
   return (
     <div className="min-h-screen bg-[#F0F3F7]">
-      {/* Simple Header */}
+      {/* Header */}
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center">
-              <img src="/logo.png" alt="Orochat Logo" className="h-20 w-auto" />
+            <Link href="/" className="flex items-center min-w-0">
+              <img src="/logo.png" alt="Orochat Logo" className="h-9 sm:h-14 w-auto" />
             </Link>
-            
-            {/* User Menu for Logged In Users */}
+
             {session ? (
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center gap-1 sm:gap-4 shrink-0">
                 <Link href="/feed">
                   <Button variant="ghost" size="sm">
-                    <Home className="w-4 h-4 mr-2" />
-                    Dashboard
+                    <Home className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Dashboard</span>
                   </Button>
                 </Link>
                 <div className="relative">
@@ -102,7 +116,7 @@ export default function ExplorePage() {
                       </div>
                     )}
                     {session.user?.isPartner && (
-                      <span className="px-2 py-0.5 bg-[#FFC93C] text-[#333333] text-xs font-semibold rounded-full">
+                      <span className="hidden sm:inline px-2 py-0.5 bg-[#FFC93C] text-[#333333] text-xs font-semibold rounded-full">
                         Partner
                       </span>
                     )}
@@ -111,8 +125,7 @@ export default function ExplorePage() {
                   {showUserMenu && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                       <div className="px-4 py-2 border-b border-gray-200">
-                        <p className="text-sm font-semibold text-[#333333]">{session.user?.name}</p>
-                        <p className="text-xs text-gray-500">{session.user?.email}</p>
+                        <p className="text-sm font-semibold text-[#333333] truncate">{session.user?.name}</p>
                       </div>
                       <Link
                         href={`/oro/${session.user?.id}`}
@@ -144,8 +157,8 @@ export default function ExplorePage() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center space-x-4">
-                <Link href="/login" className="text-[#333333] hover:text-[#458B9E] transition-colors">
+              <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                <Link href="/login" className="text-sm sm:text-base text-[#333333] hover:text-[#458B9E] transition-colors">
                   Login
                 </Link>
                 <Link href="/signup">
@@ -157,21 +170,21 @@ export default function ExplorePage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-[#333333] mb-4">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-2xl sm:text-4xl font-bold text-[#333333] mb-3 sm:mb-4">
             Explore Professionals
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-lg text-gray-600 max-w-2xl mx-auto">
             Discover and connect with professionals across industries. Search by name, company, or browse by category.
           </p>
         </div>
 
         {/* Search Bar */}
-        <Card className="mb-8 p-6">
-          <form onSubmit={handleSearch} className="flex gap-4 mb-6">
-            <div className="flex-1">
+        <Card className="mb-6 sm:mb-8 p-4 sm:p-6">
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4">
+            <div className="flex-1 min-w-0">
               <Input
                 type="text"
                 placeholder="Search by name, company, title, or location..."
@@ -179,11 +192,33 @@ export default function ExplorePage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button type="submit" isLoading={isSearching}>
+            <Button type="submit" isLoading={isSearching} className="sm:w-auto">
               <Search className="w-4 h-4 mr-2" />
               Search
             </Button>
           </form>
+
+          {/* Country Filter */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <Globe className="w-4 h-4 mr-2" />
+              Filter by Country
+            </h3>
+            <div className="relative max-w-xs">
+              <select
+                value={selectedCountry}
+                onChange={(e) => handleCountryChange(e.target.value)}
+                className="w-full appearance-none px-3 py-2 pr-8 rounded-lg border border-gray-200 bg-[#F0F3F7] text-sm text-[#333333] focus:outline-none focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 transition-all"
+              >
+                <option value="">All countries</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {countryCodeToFlag(c.code)} {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
           {/* Professional Categories */}
           <div>
@@ -197,7 +232,7 @@ export default function ExplorePage() {
                   key={category}
                   onClick={() => handleCategoryClick(category)}
                   className={`
-                    px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                    px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors
                     ${selectedCategory === category
                       ? 'bg-[#458B9E] text-white'
                       : 'bg-[#F0F3F7] text-[#333333] hover:bg-[#e0e5eb]'
@@ -211,64 +246,102 @@ export default function ExplorePage() {
           </div>
         </Card>
 
+        {/* Loading skeleton */}
+        {isSearching && (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i} className="p-6 animate-pulse">
+                <div className="flex items-start space-x-4">
+                  <div className="w-16 h-16 rounded-full bg-gray-200 shrink-0" />
+                  <div className="flex-1 space-y-2 pt-1">
+                    <div className="h-4 w-2/3 bg-gray-200 rounded" />
+                    <div className="h-3 w-1/2 bg-gray-100 rounded" />
+                    <div className="h-3 w-1/3 bg-gray-100 rounded" />
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+
         {/* Results */}
-        {users.length > 0 && (
+        {!isSearching && users.length > 0 && (
           <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-[#333333]">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-semibold text-[#333333]">
                 {selectedCategory ? `${selectedCategory} Professionals` : 'Search Results'}
               </h2>
               <span className="text-sm text-gray-600">{users.length} {users.length === 1 ? 'result' : 'results'}</span>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {users.map((user) => (
-                <Card key={user.id} hover className="p-6">
-                  <div className="flex items-start space-x-4">
-                    <Link href={`/oro/${user.id}`} className="flex-shrink-0">
-                      <div className="w-16 h-16 rounded-full bg-[#458B9E] flex items-center justify-center hover:opacity-80 transition-opacity">
+                <Card key={user.id} hover className="p-5 sm:p-6">
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <Link href={`/oro/${user.id}`} className="shrink-0">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#458B9E] flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity">
                         {user.avatar ? (
                           <img
-                            src={user.avatar}
+                            src={`/api/user/${user.id}/avatar`}
                             alt={user.name}
-                            className="w-full h-full rounded-full"
+                            className="w-full h-full object-cover rounded-full"
                           />
                         ) : (
-                          <User className="w-8 h-8 text-white" />
+                          <User className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
                         )}
                       </div>
                     </Link>
                     <div className="flex-1 min-w-0">
-                      <Link href={`/oro/${user.id}`}>
-                        <h3 className="font-semibold text-[#333333] hover:text-[#458B9E] transition-colors truncate">
-                          {user.name}
-                        </h3>
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link href={`/oro/${user.id}`} className="min-w-0">
+                          <h3 className="font-semibold text-[#333333] hover:text-[#458B9E] transition-colors truncate">
+                            {user.name}
+                          </h3>
+                        </Link>
+                        {user.isPartner && (
+                          <span className="shrink-0 px-2 py-0.5 bg-[#FFC93C] text-[#333333] text-[10px] font-semibold rounded-full">
+                            Partner
+                          </span>
+                        )}
+                      </div>
+                      {user.username && (
+                        <div className="flex items-center text-xs text-gray-400 mt-0.5">
+                          <AtSign className="w-3 h-3 mr-1 shrink-0" />
+                          <span className="truncate">{user.username}</span>
+                        </div>
+                      )}
                       {user.title && (
                         <p className="text-sm text-gray-600 truncate mt-1">{user.title}</p>
                       )}
                       {user.company && (
                         <div className="flex items-center text-xs text-gray-500 mt-1">
-                          <Building className="w-3 h-3 mr-1" />
+                          <Building className="w-3 h-3 mr-1 shrink-0" />
                           <span className="truncate">{user.company}</span>
                         </div>
                       )}
                       {user.location && (
                         <div className="flex items-center text-xs text-gray-500 mt-1">
-                          <MapPin className="w-3 h-3 mr-1" />
+                          <MapPin className="w-3 h-3 mr-1 shrink-0" />
                           <span className="truncate">{user.location}</span>
                         </div>
                       )}
-                      <div className="flex items-center mt-3 space-x-4 text-xs text-gray-500">
-                        <div className="flex items-center">
-                          <Users className="w-3 h-3 mr-1" />
-                          <span>{user.verifiedOrosCount || 0} Oros</span>
+                      {user.countryCode && (
+                        <div className="flex items-center text-xs text-gray-500 mt-1">
+                          {getFlagImageUrl(user.countryCode) && (
+                            <img
+                              src={getFlagImageUrl(user.countryCode)!}
+                              alt={getCountryName(user.countryCode) ?? ''}
+                              width={16}
+                              height={12}
+                              className="mr-1 shrink-0 rounded-xs"
+                            />
+                          )}
+                          <span className="truncate">{getCountryName(user.countryCode)}</span>
                         </div>
-                        {user.isPartner && (
-                          <span className="px-2 py-0.5 bg-[#FFC93C] text-[#333333] font-semibold rounded-full">
-                            Partner
-                          </span>
-                        )}
+                      )}
+                      <div className="flex items-center mt-3 text-xs text-gray-500">
+                        <Users className="w-3 h-3 mr-1" />
+                        <span>{user.verifiedOrosCount || 0} Oros</span>
                       </div>
                       <div className="mt-4">
                         <Link href={`/oro/${user.id}`}>
@@ -286,10 +359,12 @@ export default function ExplorePage() {
         )}
 
         {/* Empty State */}
-        {!isSearching && users.length === 0 && !selectedCategory && (
+        {!isSearching && !hasSearched && (
           <Card>
             <div className="text-center py-12">
-              <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <div className="w-16 h-16 rounded-full bg-[#458B9E]/10 flex items-center justify-center mx-auto mb-4">
+                <Search className="w-8 h-8 text-[#458B9E]" />
+              </div>
               <p className="text-gray-500 mb-2">Start exploring</p>
               <p className="text-sm text-gray-400">
                 Search for professionals or browse by category to discover people on Orochat
@@ -299,9 +374,12 @@ export default function ExplorePage() {
         )}
 
         {/* No Results */}
-        {!isSearching && users.length === 0 && (searchQuery || selectedCategory) && (
+        {!isSearching && hasSearched && users.length === 0 && (
           <Card>
             <div className="text-center py-12">
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <Search className="w-8 h-8 text-gray-400" />
+              </div>
               <p className="text-gray-500 mb-2">No results found</p>
               <p className="text-sm text-gray-400">Try a different search term or category</p>
             </div>
@@ -311,4 +389,3 @@ export default function ExplorePage() {
     </div>
   );
 }
-

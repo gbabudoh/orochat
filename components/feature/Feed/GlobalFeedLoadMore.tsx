@@ -19,9 +19,10 @@ interface FeedItem {
 
 interface Props {
   initialCursor: string | null;
+  currentUserId: string;
 }
 
-export default function GlobalFeedLoadMore({ initialCursor }: Props) {
+export default function GlobalFeedLoadMore({ initialCursor, currentUserId }: Props) {
   const [items, setItems] = useState<FeedItem[]>([]);
   const [cursor, setCursor] = useState(initialCursor);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,6 +54,7 @@ export default function GlobalFeedLoadMore({ initialCursor }: Props) {
             index={index}
             isLiked={isLiked}
             comments={comments.map((c) => ({ ...c, createdAt: new Date(c.createdAt) }))}
+            currentUserId={currentUserId}
           />
         ))}
       </div>

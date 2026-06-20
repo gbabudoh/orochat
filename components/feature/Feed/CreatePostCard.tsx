@@ -82,12 +82,12 @@ export default function CreatePostCard({ userName, userAvatar }: Props) {
         {!expanded ? (
           <button
             onClick={handleOpen}
-            className="flex-1 text-left px-3 md:px-4 py-2 md:py-3 bg-gray-50 hover:bg-gray-100 rounded-full text-gray-500 transition-colors text-sm md:text-base"
+            className="flex-1 min-w-0 text-left px-3 md:px-4 py-2 md:py-3 bg-gray-50 hover:bg-gray-100 rounded-full text-gray-500 transition-colors text-sm md:text-base truncate"
           >
             Share an update...
           </button>
         ) : (
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <form onSubmit={handleSubmit}>
               <textarea
                 ref={textareaRef}

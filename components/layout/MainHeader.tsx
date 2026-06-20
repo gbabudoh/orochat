@@ -47,7 +47,7 @@ export default function MainHeader() {
               alt="Orochat Logo"
               width={180}
               height={60}
-              className="h-14 w-auto"
+              className="h-9 sm:h-14 w-auto"
               priority
             />
           </Link>
@@ -72,7 +72,7 @@ export default function MainHeader() {
           </nav>
 
           {/* Right side */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-4">
             {/* Search */}
             <Link href="/explore" className="p-2 rounded-lg hover:bg-[#F0F3F7] transition-colors">
               <Search className="w-5 h-5 text-[#333333]" />
