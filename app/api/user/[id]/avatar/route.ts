@@ -1,6 +1,8 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -16,33 +18,39 @@ export async function GET(
     return new NextResponse(null, { status: 404 });
   }
 
-  // Stored as a base64 data URL — decode and return as binary
+  // Stored as a data URL — decode and return as binary or raw string
   if (user.avatar.startsWith('data:')) {
     const commaIndex = user.avatar.indexOf(',');
     const header = user.avatar.slice(0, commaIndex);
-    const base64Data = user.avatar.slice(commaIndex + 1);
+    const rawData = user.avatar.slice(commaIndex + 1);
     const mimeType = header.match(/data:([^;]+)/)?.[1] ?? 'image/jpeg';
-    const binary = Buffer.from(base64Data, 'base64');
+    
+    let body: Uint8Array | string;
+    if (header.includes(';base64')) {
+      body = new Uint8Array(Buffer.from(rawData, 'base64'));
+    } else {
+      body = decodeURIComponent(rawData);
+    }
 
-    return new Response(binary, {
+    return new Response(body as BodyInit, {
       headers: {
         'Content-Type': mimeType,
-        'Cache-Control': 'no-store',
-        'Content-Length': String(binary.length),
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Content-Length': String(Buffer.byteLength(body)),
       },
     });
   }
 
   // Plain URL — fetch and stream to bypass browser security blocks (like Firefox HTTPS-Only)
   try {
-    const response = await fetch(user.avatar);
+    const response = await fetch(user.avatar, { cache: 'no-store' });
     if (!response.ok) throw new Error('Failed to fetch from storage');
     
     const blob = await response.blob();
     return new Response(blob, {
       headers: {
         'Content-Type': response.headers.get('Content-Type') || 'image/jpeg',
-        'Cache-Control': 'private, max-age=3600',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
       },
     });
   } catch (error) {

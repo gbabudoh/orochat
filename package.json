@@ -4,26 +4,37 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:staging": "dotenv -e .env.staging -- next dev",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "backfill:embeddings": "tsx scripts/backfill-embeddings.ts"
+    "backfill:embeddings": "tsx scripts/backfill-embeddings.ts",
+    "db:backup": "tsx scripts/backup-db.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
+    "@livekit/components-react": "^2.9.21",
+    "@livekit/components-styles": "^1.2.0",
     "@novu/api": "^3.15.0",
     "@novu/nextjs": "^3.15.0",
     "@novu/react": "^3.15.0",
     "@prisma/client": "^6.19.0",
+    "@sentry/nextjs": "^10.59.0",
     "@tanstack/react-query": "^5.90.11",
     "@tensorflow-models/universal-sentence-encoder": "^1.3.3",
     "@tensorflow/tfjs": "^4.22.0",
+    "@tiptap/pm": "^3.27.1",
+    "@tiptap/react": "^3.27.1",
+    "@tiptap/starter-kit": "^3.27.1",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "framer-motion": "^12.23.24",
+    "leaflet": "^1.9.4",
+    "livekit-client": "^2.19.2",
+    "livekit-server-sdk": "^2.15.5",
     "lucide-react": "^0.469.0",
     "minio": "^8.0.7",
-    "next": "16.0.5",
+    "next": "^16.2.9",
     "next-auth": "^4.24.13",
     "prisma": "^6.19.0",
     "pusher": "^5.2.0",
@@ -34,13 +45,19 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^20.19.25",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.5",
+    "playwright": "^1.61.0",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
     "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

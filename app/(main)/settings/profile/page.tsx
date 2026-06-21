@@ -1,14 +1,16 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import { updateProfile, getProfile } from '@/features/auth/actions';
-import { User, Upload, X, Plus, Loader2 } from 'lucide-react';
+import { updateProfile, getProfile, pauseAccount, reactivateAccount, deleteAccount } from '@/features/auth/actions';
+import { User, Upload, X, Plus, Loader2, ShieldAlert, PauseCircle, PlayCircle, Trash2 } from 'lucide-react';
 import { COUNTRIES, countryCodeToFlag } from '@/lib/constants/countries';
+import Modal from '@/components/ui/Modal';
 
 interface WorkHistoryEntry {
   company: string;
@@ -19,18 +21,33 @@ interface WorkHistoryEntry {
   description: string;
 }
 
+interface EducationEntry {
+  institution: string;
+  city: string;
+  country: string;
+  yearCompleted: string;
+}
+
 export default function ProfileSettingsPage() {
   const { data: session, update } = useSession();
+  const router = useRouter();
+  const [isPaused, setIsPaused] = useState(false);
+  const [accountActionLoading, setAccountActionLoading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<'pause' | 'delete' | null>(null);
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
   const [location, setLocation] = useState('');
   const [username, setUsername] = useState('');
+  const [hasExistingUsername, setHasExistingUsername] = useState(false);
   const [countryCode, setCountryCode] = useState('');
   const [qualifications, setQualifications] = useState<string[]>(['']);
   const [workHistory, setWorkHistory] = useState<WorkHistoryEntry[]>([
     { company: '', position: '', startDate: '', endDate: '', current: false, description: '' }
+  ]);
+  const [education, setEducation] = useState<EducationEntry[]>([
+    { institution: '', city: '', country: '', yearCompleted: '' }
   ]);
   const [avatar, setAvatar] = useState('');
   const [avatarPreview, setAvatarPreview] = useState('');
@@ -55,9 +72,11 @@ export default function ProfileSettingsPage() {
           setCompany(u.company || '');
           setLocation(u.location || '');
           setUsername(u.username || '');
+          setHasExistingUsername(!!u.username);
           setCountryCode(u.countryCode || '');
           setAvatar(u.avatar || '');
           setAvatarPreview(u.avatar || '');
+          setIsPaused(!!u.isPaused);
 
           // Parse qualifications
           if (u.qualifications) {
@@ -82,6 +101,20 @@ export default function ProfileSettingsPage() {
               ]);
             } catch {
               setWorkHistory([{ company: '', position: '', startDate: '', endDate: '', current: false, description: '' }]);
+            }
+          }
+
+          // Parse education
+          if (u.education) {
+            try {
+              const edu = typeof u.education === 'string'
+                ? JSON.parse(u.education)
+                : u.education;
+              setEducation(Array.isArray(edu) && edu.length > 0 ? edu : [
+                { institution: '', city: '', country: '', yearCompleted: '' }
+              ]);
+            } catch {
+              setEducation([{ institution: '', city: '', country: '', yearCompleted: '' }]);
             }
           }
         }
@@ -179,6 +212,22 @@ export default function ProfileSettingsPage() {
     });
   };
 
+  const addEducation = () => {
+    setEducation((prev) => [...prev, { institution: '', city: '', country: '', yearCompleted: '' }]);
+  };
+
+  const removeEducation = (index: number) => {
+    setEducation((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateEducation = (index: number, field: keyof EducationEntry, value: string) => {
+    setEducation((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session?.user?.id) return;
@@ -212,10 +261,17 @@ export default function ProfileSettingsPage() {
       );
       formData.append('workHistory', JSON.stringify(validWorkHistory));
 
+      // Filter out empty education entries
+      const validEducation = education.filter(ed => ed.institution.trim() !== '');
+      formData.append('education', JSON.stringify(validEducation));
+
       const result = await updateProfile(session.user.id, formData);
       if (result.success) {
         setMessage({ type: 'success', text: 'Profile updated successfully' });
         update({ name, avatar });
+        if (username) {
+          setHasExistingUsername(true);
+        }
       } else {
         setMessage({ type: 'error', text: result.error || 'Failed to update profile' });
       }
@@ -223,6 +279,57 @@ export default function ProfileSettingsPage() {
       setMessage({ type: 'error', text: 'An error occurred' });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePauseAccount = async () => {
+    if (!session?.user?.id) return;
+    setAccountActionLoading(true);
+    try {
+      const result = await pauseAccount(session.user.id);
+      if (result.success) {
+        setConfirmModal(null);
+        await signOut({ callbackUrl: '/login' });
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Failed to pause account' });
+        setConfirmModal(null);
+      }
+    } finally {
+      setAccountActionLoading(false);
+    }
+  };
+
+  const handleReactivateAccount = async () => {
+    if (!session?.user?.id) return;
+    setAccountActionLoading(true);
+    try {
+      const result = await reactivateAccount(session.user.id);
+      if (result.success) {
+        setIsPaused(false);
+        setMessage({ type: 'success', text: 'Your account has been reactivated' });
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Failed to reactivate account' });
+      }
+    } finally {
+      setAccountActionLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!session?.user?.id) return;
+    setAccountActionLoading(true);
+    try {
+      const result = await deleteAccount(session.user.id);
+      if (result.success) {
+        setConfirmModal(null);
+        await signOut({ callbackUrl: '/login' });
+        router.push('/login');
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Failed to delete account' });
+        setConfirmModal(null);
+      }
+    } finally {
+      setAccountActionLoading(false);
     }
   };
 
@@ -343,10 +450,19 @@ export default function ProfileSettingsPage() {
                   onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
                   placeholder="yourhandle"
                   maxLength={20}
-                  className="w-full pl-8 pr-4 py-2.5 rounded-lg border-2 transition-all duration-200 bg-white text-[#333333] placeholder:text-gray-400 border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20"
+                  disabled={hasExistingUsername}
+                  className={`w-full pl-8 pr-4 py-2.5 rounded-lg border-2 transition-all duration-200 ${
+                    hasExistingUsername
+                      ? 'bg-gray-50 text-gray-600 border-gray-200 cursor-not-allowed'
+                      : 'bg-white text-[#333333] placeholder:text-gray-400 border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20'
+                  }`}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Shown on your public posts in the Global feed</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {hasExistingUsername
+                  ? 'Handles cannot be changed once created. Please contact an admin to request a change.'
+                  : 'Shown on your public posts in the Global feed'}
+              </p>
             </div>
 
             <div>
@@ -502,6 +618,84 @@ export default function ProfileSettingsPage() {
             </div>
           </div>
 
+          {/* Education */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-[#333333]">
+                Education
+              </label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={addEducation}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Education
+              </Button>
+            </div>
+            <div className="space-y-4">
+              {education.map((entry, index) => (
+                <Card key={index} className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-[#333333]">Education {index + 1}</h4>
+                      {education.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeEducation(index)}
+                          className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    <Input
+                      label="Institution"
+                      value={entry.institution}
+                      onChange={(e) => updateEducation(index, 'institution', e.target.value)}
+                      placeholder="e.g., Stanford University"
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input
+                        label="City"
+                        value={entry.city}
+                        onChange={(e) => updateEducation(index, 'city', e.target.value)}
+                        placeholder="e.g., London"
+                      />
+                      <div>
+                        <label className="block text-sm font-medium text-[#333333] mb-1.5">
+                          Country
+                        </label>
+                        <select
+                          value={entry.country}
+                          onChange={(e) => updateEducation(index, 'country', e.target.value)}
+                          className="w-full px-4 py-2.5 rounded-lg border-2 transition-all duration-200 bg-white text-[#333333] border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20"
+                        >
+                          <option value="">Select a country</option>
+                          {COUNTRIES.map((c) => (
+                            <option key={c.code} value={c.name}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input
+                        label="Year Completed"
+                        type="number"
+                        min="1950"
+                        max="2100"
+                        value={entry.yearCompleted}
+                        onChange={(e) => updateEducation(index, 'yearCompleted', e.target.value)}
+                        placeholder="e.g., 2022"
+                      />
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+
           {/* Bio */}
           <div>
             <label className="block text-sm font-medium text-[#333333] mb-1.5">
@@ -532,6 +726,100 @@ export default function ProfileSettingsPage() {
           </Button>
         </form>
       </Card>
+
+      <Card padding="lg" className="mt-6 border-2 border-red-100">
+        <h2 className="text-lg font-semibold text-[#333333] mb-4 flex items-center gap-2">
+          <ShieldAlert className="w-5 h-5 text-red-500" />
+          Danger Zone
+        </h2>
+        <div className="space-y-4">
+          {isPaused ? (
+            <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-amber-50 border border-amber-200">
+              <div>
+                <p className="font-medium text-[#333333]">Account Paused</p>
+                <p className="text-sm text-gray-600">Your account is deactivated and hidden from other Oros.</p>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleReactivateAccount}
+                isLoading={accountActionLoading}
+              >
+                <PlayCircle className="w-4 h-4 mr-2" />
+                Reactivate Account
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-gray-50 border border-gray-200">
+              <div>
+                <p className="font-medium text-[#333333]">Pause Account</p>
+                <p className="text-sm text-gray-600">Temporarily deactivate your account. You can reactivate anytime by logging back in.</p>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setConfirmModal('pause')}
+              >
+                <PauseCircle className="w-4 h-4 mr-2" />
+                Pause Account
+              </Button>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-red-50 border border-red-200">
+            <div>
+              <p className="font-medium text-[#333333]">Delete Account</p>
+              <p className="text-sm text-gray-600">Permanently delete your account and all associated data. This cannot be undone.</p>
+            </div>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => setConfirmModal('delete')}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Account
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      <Modal
+        isOpen={confirmModal === 'pause'}
+        onClose={() => setConfirmModal(null)}
+        title="Pause your account?"
+        size="sm"
+      >
+        <p className="text-gray-600 mb-6">
+          Your profile and activity will be hidden from other Oros until you log back in to reactivate it. You&apos;ll be signed out now.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="ghost" onClick={() => setConfirmModal(null)}>
+            Cancel
+          </Button>
+          <Button type="button" variant="secondary" onClick={handlePauseAccount} isLoading={accountActionLoading}>
+            Pause Account
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={confirmModal === 'delete'}
+        onClose={() => setConfirmModal(null)}
+        title="Delete your account permanently?"
+        size="sm"
+      >
+        <p className="text-gray-600 mb-6">
+          This will permanently delete your account and all associated data, including posts, connections, and messages. This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="ghost" onClick={() => setConfirmModal(null)}>
+            Cancel
+          </Button>
+          <Button type="button" variant="danger" onClick={handleDeleteAccount} isLoading={accountActionLoading}>
+            Delete Permanently
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

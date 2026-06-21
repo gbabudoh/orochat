@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { formatRelativeTime } from '@/lib/utils/formatters';
+import { formatPostDateTime, formatMessagePreview } from '@/lib/utils/formatters';
 import { MessageSquare, Users } from 'lucide-react';
 import UserAvatar from '@/components/ui/UserAvatar';
 
@@ -16,6 +16,7 @@ interface Conversation {
   conversationId: string;
   isGroup: boolean;
   name: string | null;
+  createdAt: Date | string;
   otherParticipants: Member[];
   latestMessage?: {
     content: string;
@@ -71,11 +72,9 @@ export default function CollabThreadList({ conversations }: CollabThreadListProp
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="font-semibold text-[#333333] truncate">{title}</h3>
-                {conversation.latestMessage && (
-                  <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
-                    {formatRelativeTime(conversation.latestMessage.createdAt)}
-                  </span>
-                )}
+                <span className="text-xs text-gray-500 flex-shrink-0 ml-2 whitespace-nowrap">
+                  {formatPostDateTime(conversation.latestMessage?.createdAt ?? conversation.createdAt)}
+                </span>
               </div>
               {subtitle && (
                 <p className="text-sm text-gray-500 truncate mb-1">{subtitle}</p>
@@ -83,7 +82,7 @@ export default function CollabThreadList({ conversations }: CollabThreadListProp
               {conversation.latestMessage && (
                 <p className="text-sm text-gray-600 truncate">
                   {conversation.isGroup && `${conversation.latestMessage.sender.name}: `}
-                  {conversation.latestMessage.content}
+                  {formatMessagePreview(conversation.latestMessage.content)}
                 </p>
               )}
             </div>

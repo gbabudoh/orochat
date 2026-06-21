@@ -22,6 +22,24 @@ export function formatDateTime(date: Date | string): string {
   }).format(d);
 }
 
+export function formatPostDateTime(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const dateStr = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(d);
+  const dayStr = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+  }).format(d);
+  const timeStr = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(d);
+  return `${dateStr} - ${dayStr} - ${timeStr}`;
+}
+
 export function formatRelativeTime(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   const now = new Date();
@@ -40,6 +58,18 @@ export function formatCurrency(amount: number): string {
     style: 'currency',
     currency: 'USD',
   }).format(amount);
+}
+
+/**
+ * Collab messages encode special UI affordances (calls, agreements) as a
+ * prefix + JSON payload. Previews (thread lists, notifications) should never
+ * show that raw payload to the user — show a short human label instead.
+ */
+export function formatMessagePreview(content: string): string {
+  if (content.startsWith('📞 LIVEKIT_CALL:')) return '📞 Video call';
+  if (content.startsWith('📝 CONTRACT_REQUEST:')) return '📝 Agreement request';
+  if (content.startsWith('📝 CONTRACT_SIGNED:')) return '📝 Agreement signed';
+  return content;
 }
 
 export function formatNumber(num: number): string {

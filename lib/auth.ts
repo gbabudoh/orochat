@@ -51,6 +51,14 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        // Reactivate paused account on login
+        if (user.isPaused) {
+          await db.user.update({
+            where: { id: user.id },
+            data: { isPaused: false },
+          });
+        }
+
         return {
           id: user.id,
           email: user.email,

@@ -25,9 +25,11 @@ model User {
   countryCode   String?   // ISO 3166-1 alpha-2, used for the Global feed flag badge
   qualifications String?  // JSON array of qualifications
   workHistory    String?  // JSON array of work history entries
+  education      String?  // JSON array of education entries (institution, city, country, yearCompleted)
   
   // Qualification & Status
   isPartner     Boolean   @default(false) // Orochat Partner status
+  isPaused      Boolean   @default(false) // Orochat account paused status
   qualifiedAt   DateTime? // When they achieved qualification
   
   // Qualification Metrics
@@ -60,6 +62,11 @@ model User {
   postLikes           PostLike[]
   postComments        PostComment[]
   fraudFlags          FraudFlag[]
+  initiatedCalls      CallSession[] @relation("CallInitiator")
+  ownedNests          Nest[] @relation("NestOwner")
+  nestMemberships     NestMember[] @relation("NestMembership")
+  assignedNestTasks   NestTask[] @relation("NestTaskAssignee")
+  createdNestTasks    NestTask[] @relation("NestTaskCreator")
 
   @@index([email])
   @@index([isPartner])
@@ -158,6 +165,8 @@ model Conversation {
   compass      Compass?                  @relation(fields: [compassId], references: [id], onDelete: Cascade)
   participants ConversationParticipant[]
   messages     Message[]
+  callSessions CallSession[]
+  nest         Nest?
 
   @@index([updatedAt])
 }
@@ -190,6 +199,92 @@ model Message {
 
   @@index([conversationId, createdAt])
   @@index([senderId])
+}
+
+// Call Session Model - tracks Collab video calls for history + duration enforcement
+model CallSession {
+  id              String    @id @default(cuid())
+  conversationId  String
+  roomName        String    @unique
+  initiatorId     String
+  messageId       String?   @unique // the "Join Meeting" chat message announcing this call
+  durationSeconds Int?      // null = no limit
+  startedAt       DateTime  @default(now())
+  endedAt         DateTime?
+  archived        Boolean   @default(false)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  initiator    User         @relation("CallInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, startedAt])
+}
+
+// OroNest - project workspaces (task board + notes + a reused group chat for messaging/calls)
+model Nest {
+  id             String   @id @default(cuid())
+  name           String
+  ownerId        String
+  conversationId String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  owner        User         @relation("NestOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  members      NestMember[]
+  tasks        NestTask[]
+  note         NestNote?
+
+  @@index([ownerId])
+}
+
+model NestMember {
+  id       String   @id @default(cuid())
+  nestId   String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  nest Nest @relation(fields: [nestId], references: [id], onDelete: Cascade)
+  user User @relation("NestMembership", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([nestId, userId])
+  @@index([userId])
+}
+
+enum NestTaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model NestTask {
+  id          String         @id @default(cuid())
+  nestId      String
+  title       String
+  description String?
+  status      NestTaskStatus @default(TODO)
+  assigneeId  String?
+  dueDate     DateTime?
+  createdById String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  nest     Nest  @relation(fields: [nestId], references: [id], onDelete: Cascade)
+  assignee User? @relation("NestTaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  creator  User  @relation("NestTaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([nestId, status])
+}
+
+model NestNote {
+  id          String   @id @default(cuid())
+  nestId      String   @unique
+  content     String   // Tiptap HTML
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  nest Nest @relation(fields: [nestId], references: [id], onDelete: Cascade)
+
+  @@index([nestId])
 }
 
 // Feed Post Model - Activity feed posts

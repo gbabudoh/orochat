@@ -10,11 +10,23 @@ import { Search, User, Building, MapPin, UserPlus, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+interface SearchResultUser {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string | null;
+  title: string | null;
+  company: string | null;
+  location: string | null;
+  isPartner: boolean;
+  verifiedOrosCount: number;
+}
+
 export default function DiscoverPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [query, setQuery] = useState('');
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<SearchResultUser[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [connecting, setConnecting] = useState<string | null>(null);
   const [connected, setConnected] = useState<Set<string>>(new Set());

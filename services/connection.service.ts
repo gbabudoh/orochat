@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { TESService } from './tes.service';
+import { cosineSimilarity } from '@/lib/ai/embeddings';
 
 /**
  * Connection Service
@@ -229,9 +230,11 @@ export class ConnectionService {
 
   /**
    * "People You May Know" — ranks candidates by mutual connections
-   * (friends-of-friends) and shared Compass memberships, the way LinkedIn's
-   * PYMK works, instead of raw verifiedOrosCount popularity. Falls back to
-   * popularity to fill remaining slots for users with a sparse graph.
+   * (friends-of-friends), shared Compass memberships, and professional
+   * profile similarity (cosine similarity over the same embedding used for
+   * semantic search), the way LinkedIn's PYMK works, instead of raw
+   * verifiedOrosCount popularity. Falls back to popularity to fill
+   * remaining slots for users with a sparse graph.
    */
   static async getSuggestedOros(userId: string, limit = 3) {
     const myConnections = await db.connection.findMany({
@@ -281,11 +284,27 @@ export class ConnectionService {
       compassCounts.set(m.userId, (compassCounts.get(m.userId) ?? 0) + 1);
     }
 
-    const candidateIds = new Set([...mutualCounts.keys(), ...compassCounts.keys()]);
+    // Professional profile similarity: same embedding used for semantic search,
+    // lets a same-field/industry match surface even with zero network overlap.
+    const semanticScores = new Map<string, number>();
+    const me = await db.user.findUnique({ where: { id: userId }, select: { embedding: true } });
+    if (me?.embedding && me.embedding.length > 0) {
+      const candidatePool = await db.user.findMany({
+        where: { id: { notIn: Array.from(excludeIds) }, isPaused: false, embedding: { isEmpty: false } },
+        orderBy: { updatedAt: 'desc' },
+        take: 300,
+        select: { id: true, embedding: true },
+      });
+      for (const candidate of candidatePool) {
+        semanticScores.set(candidate.id, cosineSimilarity(me.embedding, candidate.embedding));
+      }
+    }
+
+    const candidateIds = new Set([...mutualCounts.keys(), ...compassCounts.keys(), ...semanticScores.keys()]);
     const ranked = Array.from(candidateIds)
       .map((id) => ({
         id,
-        score: (mutualCounts.get(id) ?? 0) * 3 + (compassCounts.get(id) ?? 0) * 2,
+        score: (mutualCounts.get(id) ?? 0) * 3 + (compassCounts.get(id) ?? 0) * 2 + (semanticScores.get(id) ?? 0) * 2,
       }))
       .sort((a, b) => b.score - a.score);
 
@@ -294,7 +313,7 @@ export class ConnectionService {
     // Cold start (no mutual connections/communities yet): pad with popular profiles
     if (topIds.length < limit) {
       const fallback = await db.user.findMany({
-        where: { id: { notIn: [...excludeIds, ...topIds] } },
+        where: { id: { notIn: [...excludeIds, ...topIds] }, isPaused: false },
         orderBy: { verifiedOrosCount: 'desc' },
         take: limit - topIds.length,
         select: { id: true },
@@ -305,8 +324,8 @@ export class ConnectionService {
     if (topIds.length === 0) return [];
 
     const users = await db.user.findMany({
-      where: { id: { in: topIds } },
-      select: { id: true, name: true, avatar: true, title: true, company: true },
+      where: { id: { in: topIds }, isPaused: false },
+      select: { id: true, name: true, avatar: true, title: true, company: true, countryCode: true },
     });
 
     const orderIndex = new Map(topIds.map((id, idx) => [id, idx]));

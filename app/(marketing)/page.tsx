@@ -72,7 +72,7 @@ export default function HomePage() {
           <h2 className="text-3xl font-bold mb-4">Get Rewarded for Building Value</h2>
           <p className="text-lg opacity-90 mb-8">
             Become an Orochat Partner by reaching 1,000 verified Oros or joining 10 Compass communities.
-            Qualified partners share in ad revenue based on their network's engagement.
+            Qualified partners share in ad revenue based on their network&apos;s engagement.
           </p>
           <div className="grid md:grid-cols-2 gap-6 text-left">
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">

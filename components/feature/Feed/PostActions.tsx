@@ -199,11 +199,10 @@ export default function PostActions({
                 <div className="shrink-0">
                   <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden relative">
                     {comment.user.avatar ? (
-                      <Image
+                      <img
                         src={`/api/user/${comment.user.id}/avatar`}
                         alt={comment.user.name}
-                        fill
-                        className="object-cover"
+                        className="w-full h-full object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-[#458B9E] text-white text-xs font-bold">

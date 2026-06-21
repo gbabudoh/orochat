@@ -16,7 +16,7 @@ export default function AboutPage() {
           <p className="text-gray-600 mb-6">
             We believe that professionals who generate value for the network should be financially rewarded.
             Unlike traditional platforms that charge users for basic features, Orochat operates on a
-            revenue-sharing model where qualified partners share in the platform's success.
+            revenue-sharing model where qualified partners share in the platform&apos;s success.
           </p>
 
           <h2 className="text-2xl font-semibold text-[#333333] mt-8 mb-4">How It Works</h2>
@@ -37,7 +37,7 @@ export default function AboutPage() {
               <h3 className="font-semibold text-[#333333] mb-2">3. Earn Revenue Share</h3>
               <p className="text-gray-600">
                 Partners receive monthly payouts based on their Total Engagement Score (TES),
-                calculated from their network's activity.
+                calculated from their network&apos;s activity.
               </p>
             </div>
           </div>

@@ -1,14 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import { Search, User, Building, MapPin, Users, Briefcase, LogOut, Home, AtSign, Globe } from 'lucide-react';
+import { Search, User, Building, MapPin, Users, Briefcase, LogOut, Home, AtSign, Globe, Map } from 'lucide-react';
 import Link from 'next/link';
 import { COUNTRIES, countryCodeToFlag, getCountryName, getFlagImageUrl } from '@/lib/constants/countries';
 import { PROFESSIONAL_CATEGORIES } from '@/lib/constants/categories';
+import UserAvatar from '@/components/ui/UserAvatar';
+import dynamic from 'next/dynamic';
+
+const MapExplore = dynamic(
+  () => import('@/components/feature/Profile/MapExplore'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[500px] flex items-center justify-center bg-white border border-gray-200 rounded-xl shadow-xs">
+        <p className="text-gray-500 animate-pulse">Loading map interface...</p>
+      </div>
+    ),
+  }
+);
 
 const professionalCategories = PROFESSIONAL_CATEGORIES.map((c) => c.label);
 
@@ -34,18 +48,13 @@ export default function ExplorePage() {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   const runSearch = async (overrides?: { category?: string | null; country?: string }) => {
     const category = overrides?.category !== undefined ? overrides.category : selectedCategory;
     const country = overrides?.country !== undefined ? overrides.country : selectedCountry;
 
     setHasSearched(true);
-
-    if (!searchQuery.trim() && !category && !country) {
-      setUsers([]);
-      return;
-    }
-
     setIsSearching(true);
     try {
       const params = new URLSearchParams();
@@ -64,6 +73,10 @@ export default function ExplorePage() {
       setIsSearching(false);
     }
   };
+
+  useEffect(() => {
+    runSearch();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,17 +117,12 @@ export default function ExplorePage() {
                     onClick={() => setShowUserMenu(!showUserMenu)}
                     className="flex items-center space-x-2 p-2 rounded-lg hover:bg-[#F0F3F7] transition-colors"
                   >
-                    {session.user?.image ? (
-                      <img
-                        src={session.user.image}
-                        alt={session.user.name || 'User'}
-                        className="w-8 h-8 rounded-full"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 bg-[#458B9E] rounded-full flex items-center justify-center">
-                        <User className="w-4 h-4 text-white" />
-                      </div>
-                    )}
+                    <UserAvatar
+                      userId={session.user.id}
+                      name={session.user.name || 'User'}
+                      avatarUrl={session.user.image}
+                      size="sm"
+                    />
                     {session.user?.isPartner && (
                       <span className="hidden sm:inline px-2 py-0.5 bg-[#FFC93C] text-[#333333] text-xs font-semibold rounded-full">
                         Partner
@@ -267,94 +275,130 @@ export default function ExplorePage() {
         {/* Results */}
         {!isSearching && users.length > 0 && (
           <div>
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h2 className="text-lg sm:text-xl font-semibold text-[#333333]">
-                {selectedCategory ? `${selectedCategory} Professionals` : 'Search Results'}
-              </h2>
-              <span className="text-sm text-gray-600">{users.length} {users.length === 1 ? 'result' : 'results'}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+              <div>
+                <h2 className="text-lg sm:text-xl font-semibold text-[#333333]">
+                  {selectedCategory ? `${selectedCategory} Professionals` : 'Search Results'}
+                </h2>
+                <span className="text-sm text-gray-500">{users.length} {users.length === 1 ? 'result' : 'results'}</span>
+              </div>
+
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-1 bg-white border border-gray-200 p-1 rounded-lg shadow-xs self-start sm:self-auto">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`
+                    flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-150 cursor-pointer
+                    ${viewMode === 'list'
+                      ? 'bg-[#458B9E] text-white shadow-xs'
+                      : 'text-gray-600 hover:bg-[#F0F3F7] hover:text-[#333333]'
+                    }
+                  `}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>List View</span>
+                </button>
+                <button
+                  onClick={() => setViewMode('map')}
+                  className={`
+                    flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-150 cursor-pointer
+                    ${viewMode === 'map'
+                      ? 'bg-[#458B9E] text-white shadow-xs'
+                      : 'text-gray-600 hover:bg-[#F0F3F7] hover:text-[#333333]'
+                    }
+                  `}
+                >
+                  <Map className="w-3.5 h-3.5" />
+                  <span>Map View</span>
+                </button>
+              </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {users.map((user) => (
-                <Card key={user.id} hover className="p-5 sm:p-6">
-                  <div className="flex items-start gap-3 sm:gap-4">
-                    <Link href={`/oro/${user.id}`} className="shrink-0">
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#458B9E] flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity">
-                        {user.avatar ? (
-                          <img
-                            src={`/api/user/${user.id}/avatar`}
-                            alt={user.name}
-                            className="w-full h-full object-cover rounded-full"
-                          />
-                        ) : (
-                          <User className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-                        )}
-                      </div>
-                    </Link>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Link href={`/oro/${user.id}`} className="min-w-0">
-                          <h3 className="font-semibold text-[#333333] hover:text-[#458B9E] transition-colors truncate">
-                            {user.name}
-                          </h3>
-                        </Link>
-                        {user.isPartner && (
-                          <span className="shrink-0 px-2 py-0.5 bg-[#FFC93C] text-[#333333] text-[10px] font-semibold rounded-full">
-                            Partner
-                          </span>
-                        )}
-                      </div>
-                      {user.username && (
-                        <div className="flex items-center text-xs text-gray-400 mt-0.5">
-                          <AtSign className="w-3 h-3 mr-1 shrink-0" />
-                          <span className="truncate">{user.username}</span>
-                        </div>
-                      )}
-                      {user.title && (
-                        <p className="text-sm text-gray-600 truncate mt-1">{user.title}</p>
-                      )}
-                      {user.company && (
-                        <div className="flex items-center text-xs text-gray-500 mt-1">
-                          <Building className="w-3 h-3 mr-1 shrink-0" />
-                          <span className="truncate">{user.company}</span>
-                        </div>
-                      )}
-                      {user.location && (
-                        <div className="flex items-center text-xs text-gray-500 mt-1">
-                          <MapPin className="w-3 h-3 mr-1 shrink-0" />
-                          <span className="truncate">{user.location}</span>
-                        </div>
-                      )}
-                      {user.countryCode && (
-                        <div className="flex items-center text-xs text-gray-500 mt-1">
-                          {getFlagImageUrl(user.countryCode) && (
+            {viewMode === 'list' ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {users.map((user) => (
+                  <Card key={user.id} hover className="p-5 sm:p-6">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <Link href={`/oro/${user.id}`} className="shrink-0">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#458B9E] flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity">
+                          {user.avatar ? (
                             <img
-                              src={getFlagImageUrl(user.countryCode)!}
-                              alt={getCountryName(user.countryCode) ?? ''}
-                              width={16}
-                              height={12}
-                              className="mr-1 shrink-0 rounded-xs"
+                              src={`/api/user/${user.id}/avatar`}
+                              alt={user.name}
+                              className="w-full h-full object-cover rounded-full"
                             />
+                          ) : (
+                            <User className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
                           )}
-                          <span className="truncate">{getCountryName(user.countryCode)}</span>
                         </div>
-                      )}
-                      <div className="flex items-center mt-3 text-xs text-gray-500">
-                        <Users className="w-3 h-3 mr-1" />
-                        <span>{user.verifiedOrosCount || 0} Oros</span>
-                      </div>
-                      <div className="mt-4">
-                        <Link href={`/oro/${user.id}`}>
-                          <Button size="sm" variant="ghost" className="w-full">
-                            View Profile
-                          </Button>
-                        </Link>
+                      </Link>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Link href={`/oro/${user.id}`} className="min-w-0">
+                            <h3 className="font-semibold text-[#333333] hover:text-[#458B9E] transition-colors truncate">
+                              {user.name}
+                            </h3>
+                          </Link>
+                          {user.isPartner && (
+                            <span className="shrink-0 px-2 py-0.5 bg-[#FFC93C] text-[#333333] text-[10px] font-semibold rounded-full">
+                              Partner
+                            </span>
+                          )}
+                        </div>
+                        {user.username && (
+                          <div className="flex items-center text-xs text-gray-400 mt-0.5">
+                            <AtSign className="w-3 h-3 mr-1 shrink-0" />
+                            <span className="truncate">{user.username}</span>
+                          </div>
+                        )}
+                        {user.title && (
+                          <p className="text-sm text-gray-600 truncate mt-1">{user.title}</p>
+                        )}
+                        {user.company && (
+                          <div className="flex items-center text-xs text-gray-500 mt-1">
+                            <Building className="w-3 h-3 mr-1 shrink-0" />
+                            <span className="truncate">{user.company}</span>
+                          </div>
+                        )}
+                        {user.location && (
+                          <div className="flex items-center text-xs text-gray-500 mt-1">
+                            <MapPin className="w-3 h-3 mr-1 shrink-0" />
+                            <span className="truncate">{user.location}</span>
+                          </div>
+                        )}
+                        {user.countryCode && (
+                          <div className="flex items-center text-xs text-gray-500 mt-1">
+                            {getFlagImageUrl(user.countryCode) && (
+                              <img
+                                src={getFlagImageUrl(user.countryCode)!}
+                                alt={getCountryName(user.countryCode) ?? ''}
+                                width={16}
+                                height={12}
+                                className="mr-1 shrink-0 rounded-xs"
+                              />
+                            )}
+                            <span className="truncate">{getCountryName(user.countryCode)}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center mt-3 text-xs text-gray-500">
+                          <Users className="w-3 h-3 mr-1" />
+                          <span>{user.verifiedOrosCount || 0} Oros</span>
+                        </div>
+                        <div className="mt-4">
+                          <Link href={`/oro/${user.id}`}>
+                            <Button size="sm" variant="ghost" className="w-full">
+                              View Profile
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <MapExplore users={users} />
+            )}
           </div>
         )}
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { embedText, cosineSimilarity } from '@/lib/ai/embeddings';
 
@@ -38,6 +39,8 @@ const SELECT_FIELDS = {
   embedding: true,
 } as const;
 
+type SearchCandidate = Prisma.UserGetPayload<{ select: typeof SELECT_FIELDS }>;
+
 function stripEmbedding<T extends { embedding: number[] }>(user: T) {
   const { embedding, ...rest } = user;
   return rest;
@@ -50,7 +53,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') || '';
     const country = searchParams.get('country') || '';
 
-    const where: { countryCode?: string } = {};
+    const where: { countryCode?: string; isPaused: boolean } = { isPaused: false };
     if (country) where.countryCode = country.toUpperCase();
 
     if (!query && !category) {
@@ -67,26 +70,73 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, users: users.map(stripEmbedding) });
     }
 
-    const [candidates, queryVector, categoryVector] = await Promise.all([
-      db.user.findMany({ where, select: SELECT_FIELDS, take: CANDIDATE_LIMIT }),
+    let keywordCandidates: SearchCandidate[] = [];
+    let generalCandidates: SearchCandidate[] = [];
+
+    if (query) {
+      const searchWhere = {
+        ...where,
+        OR: [
+          { name: { contains: query, mode: 'insensitive' as const } },
+          { username: { contains: query, mode: 'insensitive' as const } },
+          { title: { contains: query, mode: 'insensitive' as const } },
+          { company: { contains: query, mode: 'insensitive' as const } },
+          { bio: { contains: query, mode: 'insensitive' as const } },
+          { location: { contains: query, mode: 'insensitive' as const } },
+        ]
+      };
+
+      [keywordCandidates, generalCandidates] = await Promise.all([
+        db.user.findMany({ where: searchWhere, select: SELECT_FIELDS, take: 250 }),
+        db.user.findMany({
+          where,
+          select: SELECT_FIELDS,
+          take: 250,
+          orderBy: [
+            { isPartner: 'desc' },
+            { currentTES: 'desc' },
+            { verifiedOrosCount: 'desc' },
+          ],
+        }),
+      ]);
+    } else {
+      generalCandidates = await db.user.findMany({
+        where,
+        select: SELECT_FIELDS,
+        take: CANDIDATE_LIMIT,
+        orderBy: [
+          { isPartner: 'desc' },
+          { currentTES: 'desc' },
+          { verifiedOrosCount: 'desc' },
+        ],
+      });
+    }
+
+    // Merge General and Keyword candidates uniquely
+    const candidatesMap = new Map<string, SearchCandidate>();
+    generalCandidates.forEach((u) => candidatesMap.set(u.id, u));
+    keywordCandidates.forEach((u) => candidatesMap.set(u.id, u));
+    const combinedCandidates = Array.from(candidatesMap.values());
+
+    const [queryVector, categoryVector] = await Promise.all([
       query ? embedText(query) : null,
       category ? getCategoryEmbedding(category) : null,
     ]);
 
     const lowerQuery = query.toLowerCase();
 
-    const scored = candidates
+    const scored = combinedCandidates
       .map((user) => {
         const scores: number[] = [];
 
         if (queryVector) {
-          const exactMatch = [user.name, user.username, user.title, user.company].some((field) =>
+          const exactMatch = [user.name, user.username, user.title, user.company, user.bio, user.location].some((field) =>
             field?.toLowerCase().includes(lowerQuery)
           );
           const semanticScore = user.embedding.length
             ? cosineSimilarity(queryVector, user.embedding)
             : 0;
-          scores.push(exactMatch ? 1 : semanticScore);
+          scores.push(exactMatch ? 1.0 : semanticScore);
         }
 
         if (categoryVector) {

@@ -44,10 +44,10 @@ export default function ForgotPasswordPage() {
         </div>
         <h1 className="text-2xl font-bold text-[#333333] mb-3">Check your email</h1>
         <p className="text-gray-600 mb-2">
-          If an account exists for <span className="font-medium text-[#333333]">{email}</span>, we've sent reset instructions.
+          If an account exists for <span className="font-medium text-[#333333]">{email}</span>, we&apos;ve sent reset instructions.
         </p>
         <p className="text-sm text-gray-500 mb-8">
-          Didn't receive it? Check your spam folder or try again in a few minutes.
+          Didn&apos;t receive it? Check your spam folder or try again in a few minutes.
         </p>
         <Link href="/login" className="text-[#458B9E] hover:underline text-sm font-medium">
           ← Back to sign in
@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
     <div>
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-[#333333] mb-2">Forgot password?</h1>
-        <p className="text-gray-600">Enter your email and we'll send you a reset link.</p>
+        <p className="text-gray-600">Enter your email and we&apos;ll send you a reset link.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">

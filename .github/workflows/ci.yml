@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Placeholder values so the build doesn't crash on missing env vars.
+      # No real secrets are needed here: this job only typechecks, lints,
+      # and runs a Next.js production build — it never connects to a
+      # database or any external service.
+      DATABASE_URL: postgresql://user:password@localhost:5432/placeholder
+      NEXTAUTH_SECRET: ci-placeholder-secret
+      NEXTAUTH_URL: http://localhost:3000
+      LIVEKIT_API_KEY: ci-placeholder
+      LIVEKIT_API_SECRET: ci-placeholder
+      NEXT_PUBLIC_LIVEKIT_URL: wss://placeholder.example.com
+      NOVU_API_KEY: ci-placeholder
+      NEXT_PUBLIC_NOVU_APP_IDENTIFIER: ci-placeholder
+      NEXT_PUBLIC_NOVU_BACKEND_URL: https://placeholder.example.com
+      NEXT_PUBLIC_NOVU_SOCKET_URL: https://placeholder.example.com
+      MINIO_ENDPOINT: placeholder.example.com
+      MINIO_PORT: "9000"
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: ci-placeholder
+      MINIO_SECRET_KEY: ci-placeholder
+      MINIO_BUCKET: placeholder
+      NEXT_PUBLIC_MINIO_URL: https://placeholder.example.com
+      PUSHER_APP_ID: ci-placeholder
+      PUSHER_SECRET: ci-placeholder
+      NEXT_PUBLIC_PUSHER_KEY: ci-placeholder
+      NEXT_PUBLIC_PUSHER_CLUSTER: us2
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build

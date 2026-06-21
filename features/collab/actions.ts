@@ -4,7 +4,10 @@ import { db } from '@/lib/db';
 import { getPusherServer, getConversationChannel } from '@/services/realtime.service';
 import { TESService } from '@/services/tes.service';
 import { triggerNotification } from '@/lib/novu';
+import { deleteRoom } from '@/lib/livekit/roomAdmin';
 import { z } from 'zod';
+
+const ALLOWED_CALL_DURATIONS_SECONDS = [900, 1800, 2700, 3600]; // 15/30/45/60 min
 
 const messageSchema = z.object({
   content: z.string().min(1, 'Message cannot be empty'),
@@ -143,6 +146,23 @@ export async function addParticipants(conversationId: string, actingUserId: stri
   }
 }
 
+/**
+ * Deletes a plain chat message (e.g. a legacy pre-CallSession "Join Meeting"
+ * message with no CallSession record to delete it through). Sender-only.
+ */
+export async function deleteMessage(messageId: string, userId: string) {
+  try {
+    const message = await db.message.findUnique({ where: { id: messageId } });
+    if (!message) return { error: 'Message not found' };
+    if (message.senderId !== userId) return { error: 'You can only delete your own messages' };
+    await db.message.delete({ where: { id: messageId } });
+    return { success: true };
+  } catch (error) {
+    const err = error as Error;
+    return { error: err.message || 'Failed to delete message' };
+  }
+}
+
 export async function sendMessage(senderId: string, formData: FormData) {
   const conversationId = formData.get('conversationId') as string;
   const rawContent = formData.get('content') as string;
@@ -231,7 +251,14 @@ export async function getMessages(conversationId: string, userId: string) {
     data: { lastReadAt: new Date() },
   });
 
-  return messages;
+  // Archived calls disappear from the chat for everyone, not just from Call History.
+  const archivedCallSessions = await db.callSession.findMany({
+    where: { conversationId, archived: true, messageId: { not: null } },
+    select: { messageId: true },
+  });
+  const archivedMessageIds = new Set(archivedCallSessions.map((c) => c.messageId));
+
+  return messages.filter((m) => !archivedMessageIds.has(m.id));
 }
 
 export async function getConversations(userId: string) {
@@ -268,10 +295,175 @@ export async function getConversations(userId: string) {
         conversationId: conversation.id,
         isGroup: conversation.isGroup,
         name: conversation.name,
+        createdAt: conversation.createdAt,
         otherParticipants,
         latestMessage,
         unreadCount,
       };
     })
   );
+}
+
+/**
+ * Starts a video call: creates the CallSession record (optionally with a
+ * duration limit) and posts the "Join Meeting" chat message other
+ * participants click to join the same LiveKit room.
+ */
+export async function startCall(conversationId: string, userId: string, durationSeconds?: number) {
+  try {
+    await assertParticipant(conversationId, userId);
+
+    if (durationSeconds !== undefined && !ALLOWED_CALL_DURATIONS_SECONDS.includes(durationSeconds)) {
+      return { error: 'Invalid call duration' };
+    }
+
+    const roomName = `orochat-collab-${conversationId}-${Math.random().toString(36).substring(2, 10)}`;
+    const endsAt = durationSeconds ? new Date(Date.now() + durationSeconds * 1000) : null;
+
+    const callSession = await db.callSession.create({
+      data: { conversationId, roomName, initiatorId: userId, durationSeconds: durationSeconds ?? null },
+    });
+
+    const metadata = {
+      roomName,
+      callSessionId: callSession.id,
+      initiatorId: userId,
+      durationSeconds: durationSeconds ?? null,
+      endsAt: endsAt ? endsAt.toISOString() : null,
+    };
+
+    const formData = new FormData();
+    formData.append('content', `📞 LIVEKIT_CALL:${JSON.stringify(metadata)}`);
+    formData.append('conversationId', conversationId);
+    const sent = await sendMessage(userId, formData);
+
+    if (sent.success && sent.message) {
+      await db.callSession.update({ where: { id: callSession.id }, data: { messageId: sent.message.id } });
+    }
+
+    return { success: true, messageId: sent.success ? sent.message?.id : undefined, ...metadata };
+  } catch (error) {
+    const err = error as Error;
+    return { error: err.message || 'Failed to start call' };
+  }
+}
+
+/**
+ * Moderator-only: force-ends the call for every connected participant
+ * (used both for the explicit "End Call for Everyone" action and for the
+ * automatic duration cutoff).
+ */
+export async function endCallForEveryone(callSessionId: string, userId: string) {
+  try {
+    const callSession = await db.callSession.findUnique({ where: { id: callSessionId } });
+    if (!callSession) return { error: 'Call not found' };
+    if (callSession.initiatorId !== userId) {
+      return { error: 'Only the call moderator can end this call for everyone' };
+    }
+    if (callSession.endedAt) return { success: true };
+
+    await deleteRoom(callSession.roomName);
+    await db.callSession.update({ where: { id: callSessionId }, data: { endedAt: new Date() } });
+
+    return { success: true };
+  } catch (error) {
+    const err = error as Error;
+    return { error: err.message || 'Failed to end call' };
+  }
+}
+
+/**
+ * Enforces a call's duration limit. Any participant's client can call this
+ * (whichever browser's countdown reaches zero first) — it only actually ends
+ * the call once the server-recorded deadline has genuinely passed, so it
+ * can't be used to end a call early.
+ */
+export async function enforceCallDurationCutoff(callSessionId: string, userId: string) {
+  try {
+    await assertParticipant(
+      (await db.callSession.findUniqueOrThrow({ where: { id: callSessionId } })).conversationId,
+      userId
+    );
+
+    const callSession = await db.callSession.findUnique({ where: { id: callSessionId } });
+    if (!callSession) return { error: 'Call not found' };
+    if (callSession.endedAt) return { success: true };
+    if (!callSession.durationSeconds) return { error: 'This call has no duration limit' };
+
+    const deadline = callSession.startedAt.getTime() + callSession.durationSeconds * 1000;
+    if (Date.now() < deadline) return { error: 'Call duration has not elapsed yet' };
+
+    await deleteRoom(callSession.roomName);
+    await db.callSession.update({ where: { id: callSessionId }, data: { endedAt: new Date() } });
+
+    return { success: true };
+  } catch (error) {
+    const err = error as Error;
+    return { error: err.message || 'Failed to end call' };
+  }
+}
+
+/**
+ * "Call History" list for a conversation — split into active/archived by the caller.
+ */
+export async function getCallHistory(conversationId: string, userId: string) {
+  try {
+    await assertParticipant(conversationId, userId);
+
+    const calls = await db.callSession.findMany({
+      where: { conversationId },
+      include: { initiator: { select: MEMBER_SELECT } },
+      orderBy: { startedAt: 'desc' },
+    });
+
+    return { success: true, calls };
+  } catch (error) {
+    const err = error as Error;
+    return { error: err.message || 'Failed to load call history' };
+  }
+}
+
+async function assertCallInitiator(callSessionId: string, userId: string) {
+  const callSession = await db.callSession.findUnique({ where: { id: callSessionId } });
+  if (!callSession) throw new Error('Call not found');
+  if (callSession.initiatorId !== userId) throw new Error('Only the call moderator can manage this call history');
+  return callSession;
+}
+
+export async function archiveCallSession(callSessionId: string, userId: string) {
+  try {
+    await assertCallInitiator(callSessionId, userId);
+    await db.callSession.update({ where: { id: callSessionId }, data: { archived: true } });
+    return { success: true };
+  } catch (error) {
+    const err = error as Error;
+    return { error: err.message || 'Failed to archive call' };
+  }
+}
+
+export async function unarchiveCallSession(callSessionId: string, userId: string) {
+  try {
+    await assertCallInitiator(callSessionId, userId);
+    await db.callSession.update({ where: { id: callSessionId }, data: { archived: false } });
+    return { success: true };
+  } catch (error) {
+    const err = error as Error;
+    return { error: err.message || 'Failed to unarchive call' };
+  }
+}
+
+export async function deleteCallSession(callSessionId: string, userId: string) {
+  try {
+    const callSession = await assertCallInitiator(callSessionId, userId);
+    await db.$transaction(async (tx) => {
+      if (callSession.messageId) {
+        await tx.message.delete({ where: { id: callSession.messageId } }).catch(() => {});
+      }
+      await tx.callSession.delete({ where: { id: callSessionId } });
+    });
+    return { success: true, messageId: callSession.messageId };
+  } catch (error) {
+    const err = error as Error;
+    return { error: err.message || 'Failed to delete call' };
+  }
 }

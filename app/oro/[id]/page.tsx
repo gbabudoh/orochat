@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import Card from '@/components/ui/Card';
 import Image from 'next/image';
 import Button from '@/components/ui/Button';
-import { User, Building, MapPin, Users, TrendingUp, Award, Briefcase, AtSign, Calendar, Edit } from 'lucide-react';
+import { User, Building, MapPin, Users, TrendingUp, Award, Briefcase, AtSign, Calendar, Edit, FileText } from 'lucide-react';
 import Link from 'next/link';
 import ProfileActions from '@/components/feature/Profile/ProfileActions';
 
@@ -16,6 +16,10 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
   const user = await db.user.findUnique({
     where: { id },
   });
+
+  const postsCount = await db.user.findUnique({ where: { id } })
+    ? await db.feedPost.count({ where: { authorId: id } })
+    : 0;
 
   if (!user) {
     return (
@@ -131,11 +135,9 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
                 <div className="w-24 h-24 rounded-2xl bg-white p-1.5 shadow-2xl">
                   <div className="w-full h-full rounded-xl bg-gradient-to-br from-[#458B9E] to-[#3a7585] flex items-center justify-center overflow-hidden">
                     {user.avatar ? (
-                      <Image 
-                        src={user.avatar} 
+                      <img 
+                        src={`/api/user/${user.id}/avatar`} 
                         alt={user.name} 
-                        width={96} 
-                        height={96} 
                         className="w-full h-full object-cover rounded-xl" 
                       />
                     ) : (
@@ -166,10 +168,14 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="grid grid-cols-2 gap-2 mb-4">
               <div className="text-center p-3 bg-gradient-to-br from-[#458B9E]/10 to-transparent rounded-lg">
                 <div className="text-xl font-bold text-[#458B9E]">{user.verifiedOrosCount}</div>
                 <div className="text-xs text-gray-600">Connections</div>
+              </div>
+              <div className="text-center p-3 bg-gradient-to-br from-[#458B9E]/10 to-transparent rounded-lg">
+                <div className="text-xl font-bold text-[#458B9E]">{postsCount}</div>
+                <div className="text-xs text-gray-600">Oro Posts</div>
               </div>
               {user.isPartner && (
                 <div className="text-center p-3 bg-gradient-to-br from-[#FFC93C]/10 to-transparent rounded-lg">
@@ -226,11 +232,9 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
                   <div className="w-40 h-40 rounded-3xl bg-white p-2 shadow-2xl">
                     <div className="w-full h-full rounded-2xl bg-gradient-to-br from-[#458B9E] to-[#3a7585] flex items-center justify-center overflow-hidden">
                       {user.avatar ? (
-                        <Image 
-                          src={user.avatar} 
+                        <img 
+                          src={`/api/user/${user.id}/avatar`} 
                           alt={user.name} 
-                          width={160} 
-                          height={160} 
                           className="w-full h-full object-cover rounded-2xl" 
                         />
                       ) : (
@@ -338,6 +342,15 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
                       <div className="text-xs text-gray-600 font-medium">Connections</div>
                     </div>
                   </div>
+                  <div className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-br from-[#458B9E]/10 to-transparent rounded-xl">
+                    <div className="w-12 h-12 rounded-xl bg-[#458B9E] flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-[#458B9E]">{postsCount}</div>
+                      <div className="text-xs text-gray-600 font-medium">Oro Posts</div>
+                    </div>
+                  </div>
                   {user.isPartner && (
                     <div className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-br from-[#FFC93C]/10 to-transparent rounded-xl">
                       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FFC93C] to-[#FFD700] flex items-center justify-center flex-shrink-0">
@@ -379,7 +392,7 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
                 <p className="text-sm text-gray-600">Professional network metrics</p>
               </div>
             </div>
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className={`grid gap-6 ${user.isPartner ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'}`}>
               <div className="p-6 bg-gradient-to-br from-[#458B9E]/10 via-[#458B9E]/5 to-transparent rounded-xl border border-[#458B9E]/20">
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-sm font-semibold text-gray-700">Verified Connections</span>
@@ -392,6 +405,22 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
                   <div 
                     className="h-full bg-gradient-to-r from-[#458B9E] to-[#5BA3B8]" 
                     style={{ width: `${Math.min((user.verifiedOrosCount / 100) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="p-6 bg-gradient-to-br from-[#458B9E]/10 via-[#458B9E]/5 to-transparent rounded-xl border border-[#458B9E]/20">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm font-semibold text-gray-700">Oro Posts</span>
+                  <div className="w-10 h-10 rounded-lg bg-[#458B9E] flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-white" />
+                  </div>
+                </div>
+                <div className="text-4xl font-bold text-[#458B9E] mb-3">{postsCount}</div>
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-[#458B9E] to-[#5BA3B8]" 
+                    style={{ width: `${Math.min((postsCount / 50) * 100, 100)}%` }}
                   />
                 </div>
               </div>

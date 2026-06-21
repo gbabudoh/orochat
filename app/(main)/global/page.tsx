@@ -14,7 +14,7 @@ export default async function GlobalFeedPage() {
   if (!session) return null;
 
   const posts = await db.feedPost.findMany({
-    where: { visibility: 'PUBLIC', archived: false },
+    where: { visibility: 'PUBLIC', archived: false, author: { isPaused: false } },
     include: {
       author: {
         select: { id: true, name: true, avatar: true, title: true, username: true, countryCode: true },

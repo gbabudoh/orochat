@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import PostActions from '@/components/feature/Feed/PostActions';
 import HandleBadge from '@/components/feature/Feed/HandleBadge';
-import { formatRelativeTime, formatDateTime } from '@/lib/utils/formatters';
+import { formatRelativeTime, formatDateTime, formatPostDateTime } from '@/lib/utils/formatters';
 
 interface Comment {
   id: string;
@@ -59,11 +59,9 @@ export default function PostCard({ post, isLiked, comments, index = 0, currentUs
           <Link href={`/oro/${post.author.id}`} className="shrink-0">
             <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-linear-to-br from-[#458B9E] to-[#5BA3B8] flex items-center justify-center overflow-hidden">
               {post.author.avatar ? (
-                <Image
+                <img
                   src={`/api/user/${post.author.id}/avatar`}
                   alt={post.author.name}
-                  width={48}
-                  height={48}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -98,13 +96,25 @@ export default function PostCard({ post, isLiked, comments, index = 0, currentUs
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <Image src="/icon.png" alt="Orochat" width={24} height={24} className="w-5 h-5 sm:w-6 sm:h-6" />
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="px-1.5 py-0.5 bg-[#458B9E]/10 text-[#458B9E] text-[9px] sm:text-[10px] font-bold rounded-md uppercase tracking-wider">
+                    Oro Post
+                  </span>
+                  <Image src="/icon.png" alt="Orochat" width={24} height={24} className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
                 <span
-                  className="text-[11px] sm:text-sm text-gray-400 whitespace-nowrap"
+                  className="text-[10px] sm:text-xs text-gray-400 whitespace-nowrap"
                   title={formatDateTime(post.createdAt)}
+                  suppressHydrationWarning
                 >
-                  {formatRelativeTime(post.createdAt)}
+                  {(() => {
+                    const relative = formatRelativeTime(post.createdAt);
+                    const isRelative = !relative.includes(',');
+                    return isRelative 
+                      ? `${formatPostDateTime(post.createdAt)} (${relative})`
+                      : formatPostDateTime(post.createdAt);
+                  })()}
                 </span>
               </div>
             </div>

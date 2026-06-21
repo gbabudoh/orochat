@@ -10,8 +10,45 @@ import { authOptions } from '@/lib/auth';
 import { Prisma } from '@prisma/client';
 import { regenerateUserEmbedding } from '@/lib/ai/userEmbedding';
 
+import dns from 'dns';
+
+// static blacklist of common disposable/temporary email providers
+const DISPOSABLE_DOMAINS = new Set([
+  'mailinator.com',
+  'tempmail.com',
+  'yopmail.com',
+  'guerrillamail.com',
+  'sharklasers.com',
+  'dispostable.com',
+  'getairmail.com',
+  'maildrop.cc',
+  'throwawaymail.com',
+  'temp-mail.org',
+  '10minutemail.com',
+  'trashmail.com',
+]);
+
+async function checkMXRecords(domain: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    dns.resolveMx(domain, (err, addresses) => {
+      if (err || !addresses || addresses.length === 0) {
+        // Fallback: check if there's an A record as a backup (sometimes mail server is direct host)
+        dns.resolve(domain, 'A', (aErr, aAddresses) => {
+          if (aErr || !aAddresses || aAddresses.length === 0) {
+            resolve(false);
+          } else {
+            resolve(true);
+          }
+        });
+      } else {
+        resolve(true);
+      }
+    });
+  });
+}
+
 const signupSchema = z.object({
-  email: z.string().min(1),
+  email: z.string().min(1).email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
 });
@@ -23,15 +60,15 @@ const loginSchema = z.object({
 
 async function generateUniqueUsername(name: string, email: string) {
   const base = (name || email.split('@')[0])
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '')
-    .slice(0, 16) || 'user';
+    .replace(/[^a-zA-Z0-9_]/g, '')
+    .slice(0, 16) || 'User';
 
-  let candidate = base;
-  let suffix = 0;
+  const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  let candidate = `${base}${randomSuffix}`;
+
   while (await db.user.findUnique({ where: { username: candidate } })) {
-    suffix += 1;
-    candidate = `${base}${suffix}`;
+    const nextSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    candidate = `${base}${nextSuffix}`;
   }
   return candidate;
 }
@@ -45,6 +82,27 @@ export async function signup(formData: FormData) {
 
   try {
     const validatedData = signupSchema.parse(rawData);
+
+    const emailParts = validatedData.email.split('@');
+    if (emailParts.length !== 2) {
+      return { error: 'Invalid email address format' };
+    }
+    const domain = emailParts[1].toLowerCase();
+
+    if (DISPOSABLE_DOMAINS.has(domain)) {
+      return { error: 'Disposable email domains are not allowed.' };
+    }
+
+    // Bypass check during local development/tests with fake domains
+    const isDevBypass = process.env.NODE_ENV === 'development' && 
+      (domain === 'localhost' || domain.endsWith('.test') || domain === 'example.com');
+
+    if (!isDevBypass) {
+      const hasMailServer = await checkMXRecords(domain);
+      if (!hasMailServer) {
+        return { error: 'Email domain does not appear to have valid mail servers.' };
+      }
+    }
 
     const existingUser = await db.user.findUnique({
       where: { email: validatedData.email },
@@ -188,11 +246,20 @@ export async function updateProfile(userId: string, formData: FormData) {
   const countryCode = formData.get('countryCode') as string;
   const qualifications = formData.get('qualifications') as string;
   const workHistory = formData.get('workHistory') as string;
+  const education = formData.get('education') as string;
   const avatar = formData.get('avatar') as string;
+
+  const currentUser = await db.user.findUnique({
+    where: { id: userId },
+    select: { username: true },
+  });
 
   if (username) {
     if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
       return { error: 'Handle must be 3-20 characters: letters, numbers, and underscores only.' };
+    }
+    if (currentUser?.username && currentUser.username !== username) {
+      return { error: 'Handles cannot be changed once created. Please contact an admin to request a change.' };
     }
     const existing = await db.user.findUnique({ where: { username } });
     if (existing && existing.id !== userId) {
@@ -217,6 +284,7 @@ export async function updateProfile(userId: string, formData: FormData) {
         ...basicUpdateData,
         qualifications: qualifications || null,
         workHistory: workHistory || null,
+        education: education || null,
       };
 
       await db.user.update({
@@ -243,7 +311,7 @@ export async function updateProfile(userId: string, formData: FormData) {
 
         return {
           success: true,
-          warning: 'Profile updated, but qualifications and work history could not be saved. Please restart the server after running: npx prisma generate'
+          warning: 'Profile updated, but qualifications, work history, and education could not be saved. Please restart the server after running: npx prisma generate'
         };
       }
       throw fieldError;
@@ -310,7 +378,9 @@ export async function getProfile(userId: string) {
         countryCode: true,
         qualifications: true,
         workHistory: true,
+        education: true,
         isPartner: true,
+        isPaused: true,
       }
     });
 
@@ -322,8 +392,6 @@ export async function getProfile(userId: string) {
   }
 }
 
-// Session JWTs only refresh verifiedOrosCount/compassMembershipsCount on login or
-// an explicit update() call, so the sidebar fetches these live instead of trusting the session.
 export async function getUserStats(userId: string) {
   try {
     const user = await db.user.findUnique({
@@ -331,10 +399,59 @@ export async function getUserStats(userId: string) {
       select: { verifiedOrosCount: true, compassMembershipsCount: true, isPartner: true },
     });
     if (!user) return { success: false as const, error: 'User not found' };
-    return { success: true as const, ...user };
+
+    const postsCount = await db.feedPost.count({
+      where: { authorId: userId },
+    });
+
+    return {
+      success: true as const,
+      verifiedOrosCount: user.verifiedOrosCount,
+      compassMembershipsCount: user.compassMembershipsCount,
+      isPartner: user.isPartner,
+      postsCount,
+    };
   } catch (error) {
     console.error('Fetch user stats error:', error);
     return { success: false as const, error: 'Failed to fetch user stats' };
+  }
+}
+
+export async function pauseAccount(userId: string) {
+  try {
+    await db.user.update({
+      where: { id: userId },
+      data: { isPaused: true },
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Pause account error:', error);
+    return { error: 'Failed to pause account' };
+  }
+}
+
+export async function reactivateAccount(userId: string) {
+  try {
+    await db.user.update({
+      where: { id: userId },
+      data: { isPaused: false },
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Reactivate account error:', error);
+    return { error: 'Failed to reactivate account' };
+  }
+}
+
+export async function deleteAccount(userId: string) {
+  try {
+    await db.user.delete({
+      where: { id: userId },
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Delete account error:', error);
+    return { error: 'Failed to delete account' };
   }
 }
 

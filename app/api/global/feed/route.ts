@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const cursor = request.nextUrl.searchParams.get('cursor') || undefined;
 
   const posts = await db.feedPost.findMany({
-    where: { visibility: 'PUBLIC', archived: false },
+    where: { visibility: 'PUBLIC', archived: false, author: { isPaused: false } },
     include: {
       author: {
         select: { id: true, name: true, avatar: true, title: true, username: true, countryCode: true },

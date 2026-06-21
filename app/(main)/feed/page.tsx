@@ -10,6 +10,7 @@ import Image from 'next/image';
 import type { CompassMembership, Connection } from '.prisma/client';
 import { getPostMeta } from '@/lib/feed/postMeta';
 import { ConnectionService } from '@/services/connection.service';
+import { getCountryName, getFlagImageUrl } from '@/lib/constants/countries';
 
 export default async function FeedPage() {
   const session = await getServerSession(authOptions);
@@ -43,6 +44,7 @@ export default async function FeedPage() {
     db.feedPost.findMany({
       where: {
         archived: false,
+        author: { isPaused: false },
         OR: [
           { authorId: session.user.id },
           { authorId: { in: oroIds } },
@@ -181,21 +183,37 @@ export default async function FeedPage() {
               <p className="text-xs text-gray-400">No suggestions right now</p>
             ) : (
               <div className="space-y-3">
-                {suggestedOros.map((o) => (
-                  <Link key={o.id} href={`/oro/${o.id}`} className="flex items-center gap-3 group">
-                    <div className="w-9 h-9 rounded-full bg-linear-to-br from-[#458B9E] to-[#5BA3B8] flex items-center justify-center overflow-hidden shrink-0">
-                      {o.avatar ? (
-                        <Image src={`/api/user/${o.id}/avatar`} alt={o.name} width={36} height={36} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-white text-xs font-semibold">{o.name.charAt(0).toUpperCase()}</span>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#333333] group-hover:text-[#458B9E] truncate">{o.name}</p>
-                      {o.title && <p className="text-xs text-gray-400 truncate">{o.title}</p>}
-                    </div>
-                  </Link>
-                ))}
+                {suggestedOros.map((o) => {
+                  const flagUrl = getFlagImageUrl(o.countryCode);
+                  const countryName = getCountryName(o.countryCode);
+                  return (
+                    <Link key={o.id} href={`/oro/${o.id}`} className="flex items-center gap-3 group">
+                      <div className="w-9 h-9 rounded-full bg-linear-to-br from-[#458B9E] to-[#5BA3B8] flex items-center justify-center overflow-hidden shrink-0">
+                        {o.avatar ? (
+                          <img src={`/api/user/${o.id}/avatar`} alt={o.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-white text-xs font-semibold">{o.name.charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-[#333333] group-hover:text-[#458B9E] truncate">{o.name}</p>
+                        {o.title && <p className="text-xs text-gray-400 truncate">{o.title}</p>}
+                        {flagUrl && countryName && (
+                          <span className="inline-flex items-center gap-1 mt-0.5">
+                            <img
+                              src={flagUrl}
+                              alt={countryName}
+                              width={14}
+                              height={10}
+                              className="inline-block shrink-0 rounded-xs align-middle"
+                            />
+                            <span className="text-xs text-gray-400 truncate">{countryName}</span>
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </Card>
