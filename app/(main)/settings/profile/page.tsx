@@ -61,11 +61,11 @@ export default function ProfileSettingsPage() {
   useEffect(() => {
     const loadProfile = async () => {
       if (!session?.user?.id) return;
-      
+
       try {
         const result = await getProfile(session.user.id);
         if (result.success && result.user) {
-          const u = result.user;
+          const u = result.user as any;
           setName(u.name || '');
           setBio(u.bio || '');
           setTitle(u.title || '');
@@ -81,8 +81,8 @@ export default function ProfileSettingsPage() {
           // Parse qualifications
           if (u.qualifications) {
             try {
-              const quals = typeof u.qualifications === 'string' 
-                ? JSON.parse(u.qualifications) 
+              const quals = typeof u.qualifications === 'string'
+                ? JSON.parse(u.qualifications)
                 : u.qualifications;
               setQualifications(Array.isArray(quals) && quals.length > 0 ? quals : ['']);
             } catch {
@@ -93,8 +93,8 @@ export default function ProfileSettingsPage() {
           // Parse work history
           if (u.workHistory) {
             try {
-              const history = typeof u.workHistory === 'string' 
-                ? JSON.parse(u.workHistory) 
+              const history = typeof u.workHistory === 'string'
+                ? JSON.parse(u.workHistory)
                 : u.workHistory;
               setWorkHistory(Array.isArray(history) && history.length > 0 ? history : [
                 { company: '', position: '', startDate: '', endDate: '', current: false, description: '' }
@@ -250,11 +250,11 @@ export default function ProfileSettingsPage() {
       formData.append('username', username);
       formData.append('countryCode', countryCode);
       formData.append('avatar', avatar);
-      
+
       // Filter out empty qualifications
       const validQualifications = qualifications.filter(q => q.trim() !== '');
       formData.append('qualifications', JSON.stringify(validQualifications));
-      
+
       // Filter out empty work history entries
       const validWorkHistory = workHistory.filter(
         wh => wh.company.trim() !== '' && wh.position.trim() !== ''
@@ -345,7 +345,7 @@ export default function ProfileSettingsPage() {
     <div className="max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold text-[#333333] mb-6">Profile Settings</h1>
 
-      
+
       <Card padding="lg">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Photo/Avatar */}
@@ -375,9 +375,9 @@ export default function ProfileSettingsPage() {
                   className="hidden"
                   id="avatar-upload"
                 />
-                <Button 
-                  type="button" 
-                  variant="ghost" 
+                <Button
+                  type="button"
+                  variant="ghost"
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
                 >
@@ -451,11 +451,10 @@ export default function ProfileSettingsPage() {
                   placeholder="yourhandle"
                   maxLength={20}
                   disabled={hasExistingUsername}
-                  className={`w-full pl-8 pr-4 py-2.5 rounded-lg border-2 transition-all duration-200 ${
-                    hasExistingUsername
+                  className={`w-full pl-8 pr-4 py-2.5 rounded-lg border-2 transition-all duration-200 ${hasExistingUsername
                       ? 'bg-gray-50 text-gray-600 border-gray-200 cursor-not-allowed'
                       : 'bg-white text-[#333333] placeholder:text-gray-400 border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20'
-                  }`}
+                    }`}
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">
@@ -711,11 +710,10 @@ export default function ProfileSettingsPage() {
 
           {message && (
             <div
-              className={`p-3 rounded-lg ${
-                message.type === 'success'
+              className={`p-3 rounded-lg ${message.type === 'success'
                   ? 'bg-green-50 border border-green-200 text-green-600'
                   : 'bg-red-50 border border-red-200 text-red-600'
-              }`}
+                }`}
             >
               {message.text}
             </div>
