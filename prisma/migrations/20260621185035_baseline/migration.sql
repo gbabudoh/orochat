@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
 CREATE TYPE "ConnectionStatus" AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED', 'BLOCKED');
 
@@ -25,6 +28,7 @@ CREATE TABLE "User" (
     "countryCode" TEXT,
     "qualifications" TEXT,
     "workHistory" TEXT,
+    "education" TEXT,
     "isPartner" BOOLEAN NOT NULL DEFAULT false,
     "isPaused" BOOLEAN NOT NULL DEFAULT false,
     "qualifiedAt" TIMESTAMP(3),
@@ -137,6 +141,8 @@ CREATE TABLE "Nest" (
     "name" TEXT NOT NULL,
     "ownerId" TEXT NOT NULL,
     "conversationId" TEXT NOT NULL,
+    "archived" BOOLEAN NOT NULL DEFAULT false,
+    "expiresAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -174,6 +180,7 @@ CREATE TABLE "NestNote" (
     "id" TEXT NOT NULL,
     "nestId" TEXT NOT NULL,
     "content" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "updatedById" TEXT,
 
@@ -365,10 +372,7 @@ CREATE UNIQUE INDEX "NestMember_nestId_userId_key" ON "NestMember"("nestId", "us
 CREATE INDEX "NestTask_nestId_status_idx" ON "NestTask"("nestId", "status");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "NestNote_nestId_key" ON "NestNote"("nestId");
-
--- CreateIndex
-CREATE INDEX "NestNote_nestId_idx" ON "NestNote"("nestId");
+CREATE INDEX "NestNote_nestId_createdAt_idx" ON "NestNote"("nestId", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "FeedPost_authorId_idx" ON "FeedPost"("authorId");

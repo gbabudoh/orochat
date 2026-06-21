@@ -5,7 +5,7 @@ import { Heart, MessageCircle, Share2, Send, Trash2, Archive, ArchiveRestore } f
 import { toggleLike, addComment, deletePost, archivePost, unarchivePost } from '@/features/feed/actions';
 
 import Image from 'next/image';
-import { formatRelativeTime } from '@/lib/utils/formatters';
+import { formatPostDateTime } from '@/lib/utils/formatters';
 
 interface Comment {
   id: string;
@@ -212,9 +212,9 @@ export default function PostActions({
                   </div>
                 </div>
                 <div className="flex-1 bg-gray-50 rounded-2xl px-3 py-2 text-sm">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-[#333333]">{comment.user.name}</span>
-                    <span className="text-[10px] text-gray-400">{formatRelativeTime(new Date(comment.createdAt))}</span>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="font-semibold text-[#333333] truncate">{comment.user.name}</span>
+                    <span className="text-[10px] text-gray-400 whitespace-nowrap shrink-0">{formatPostDateTime(new Date(comment.createdAt))}</span>
                   </div>
                   <p className="text-gray-700 leading-snug">{comment.content}</p>
                 </div>

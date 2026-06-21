@@ -1,12 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import { Bold, Italic, Heading1, Heading2, List, ListOrdered } from 'lucide-react';
-import { getNote, updateNote } from '@/features/nest/actions';
-
-const AUTOSAVE_DELAY_MS = 1000;
+import { useEffect, useState } from 'react';
+import { Plus } from 'lucide-react';
+import Button from '@/components/ui/Button';
+import NoteEntry, { type NoteEntryData } from '@/components/feature/Nest/NoteEntry';
+import { getNotes, createNoteEntry, updateNoteEntry, deleteNoteEntry } from '@/features/nest/actions';
 
 interface NotesEditorProps {
   nestId: string;
@@ -15,78 +13,93 @@ interface NotesEditorProps {
 
 export default function NotesEditor({ nestId, currentUserId }: NotesEditorProps) {
   const [isLoading, setIsLoading] = useState(true);
-  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const editor = useEditor({
-    extensions: [StarterKit],
-    immediatelyRender: false,
-    content: '',
-    onUpdate: ({ editor }) => {
-      setSaveState('saving');
-      if (saveTimeout.current) clearTimeout(saveTimeout.current);
-      saveTimeout.current = setTimeout(async () => {
-        await updateNote(nestId, currentUserId, editor.getHTML());
-        setSaveState('saved');
-      }, AUTOSAVE_DELAY_MS);
-    },
-  });
+  const [notes, setNotes] = useState<NoteEntryData[]>([]);
+  const [hasDraft, setHasDraft] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
-    if (!editor) return;
-    getNote(nestId, currentUserId).then((result) => {
-      if (result.success) {
-        editor.commands.setContent(result.content || '');
-      }
+    getNotes(nestId, currentUserId).then((result) => {
+      if (result.success && result.notes) setNotes(result.notes);
       setIsLoading(false);
     });
-  }, [editor, nestId, currentUserId]);
+  }, [nestId, currentUserId]);
 
-  useEffect(() => {
-    return () => {
-      if (saveTimeout.current) clearTimeout(saveTimeout.current);
-    };
-  }, []);
+  const handleSaveDraft = async (content: string): Promise<boolean> => {
+    const result = await createNoteEntry(nestId, currentUserId, content);
+    if (result.success) {
+      setNotes((prev) => [
+        { id: result.id ?? null, content, updatedAt: result.updatedAt ?? null, updatedByName: result.updatedByName ?? null },
+        ...prev,
+      ]);
+      setHasDraft(false);
+      return true;
+    }
+    return false;
+  };
 
-  if (!editor || isLoading) {
+  const handleSaveExisting = async (noteId: string, content: string): Promise<boolean> => {
+    const result = await updateNoteEntry(noteId, currentUserId, content);
+    if (result.success) {
+      setNotes((prev) =>
+        prev.map((n) =>
+          n.id === noteId
+            ? { ...n, content, updatedAt: result.updatedAt ?? null, updatedByName: result.updatedByName ?? null }
+            : n
+        )
+      );
+      return true;
+    }
+    return false;
+  };
+
+  const handleDelete = async (noteId: string) => {
+    setDeleteError('');
+    const result = await deleteNoteEntry(noteId, currentUserId);
+    if (result.success) {
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+    } else {
+      setDeleteError(result.error || 'Failed to delete note — please try again.');
+    }
+  };
+
+  if (isLoading) {
     return <p className="text-center text-gray-500 py-12">Loading notes…</p>;
   }
 
-  const toolbarButton = (
-    label: string,
-    icon: React.ReactNode,
-    isActive: boolean,
-    onClick: () => void
-  ) => (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className={`p-2 rounded-lg transition-colors ${isActive ? 'bg-[#458B9E] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
-    >
-      {icon}
-    </button>
-  );
-
   return (
-    <div className="bg-white rounded-xl border border-gray-200">
-      <div className="flex items-center justify-between gap-2 p-2 border-b border-gray-200">
-        <div className="flex items-center gap-1">
-          {toolbarButton('Bold', <Bold className="w-4 h-4" />, editor.isActive('bold'), () => editor.chain().focus().toggleBold().run())}
-          {toolbarButton('Italic', <Italic className="w-4 h-4" />, editor.isActive('italic'), () => editor.chain().focus().toggleItalic().run())}
-          {toolbarButton('Heading 1', <Heading1 className="w-4 h-4" />, editor.isActive('heading', { level: 1 }), () => editor.chain().focus().toggleHeading({ level: 1 }).run())}
-          {toolbarButton('Heading 2', <Heading2 className="w-4 h-4" />, editor.isActive('heading', { level: 2 }), () => editor.chain().focus().toggleHeading({ level: 2 }).run())}
-          {toolbarButton('Bullet list', <List className="w-4 h-4" />, editor.isActive('bulletList'), () => editor.chain().focus().toggleBulletList().run())}
-          {toolbarButton('Numbered list', <ListOrdered className="w-4 h-4" />, editor.isActive('orderedList'), () => editor.chain().focus().toggleOrderedList().run())}
-        </div>
-        <span className="text-xs text-gray-400 pr-2">
-          {saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : ''}
-        </span>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
+        <Button size="sm" onClick={() => setHasDraft(true)} disabled={hasDraft} className="ml-auto">
+          <Plus className="w-4 h-4 mr-1.5" />
+          Add Note
+        </Button>
       </div>
-      <EditorContent
-        editor={editor}
-        className="nest-notes-content px-4 py-3 min-h-[300px] text-sm text-[#333333] [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[280px]"
-      />
+
+      {hasDraft && (
+        <NoteEntry
+          note={{ id: null, content: '', updatedAt: null, updatedByName: null }}
+          startInEditMode
+          onSave={handleSaveDraft}
+          onCancelDraft={() => setHasDraft(false)}
+        />
+      )}
+
+      {notes.length === 0 && !hasDraft ? (
+        <p className="text-center text-gray-500 py-12">No notes yet — click &quot;Add Note&quot; to start one.</p>
+      ) : (
+        notes.map((note, index) => (
+          <div key={note.id}>
+            <NoteEntry
+              note={note}
+              startInEditMode={false}
+              onSave={(content) => handleSaveExisting(note.id as string, content)}
+              onDelete={() => handleDelete(note.id as string)}
+            />
+            {index < notes.length - 1 && <hr className="my-4 border-gray-200" />}
+          </div>
+        ))
+      )}
     </div>
   );
 }

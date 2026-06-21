@@ -31,6 +31,8 @@ export default async function NestDetailPage({ params }: { params: Promise<{ id:
       conversationId={result.nest.conversationId}
       members={result.nest.members.map((m) => m.user)}
       currentUserId={session.user.id}
+      archived={result.nest.archived}
+      expiresAt={result.nest.expiresAt}
     />
   );
 }

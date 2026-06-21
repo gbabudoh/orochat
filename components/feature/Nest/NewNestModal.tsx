@@ -22,11 +22,20 @@ interface NewNestModalProps {
   currentUserId: string;
 }
 
+const NEST_DURATION_OPTIONS: { label: string; days: number | undefined }[] = [
+  { label: 'No limit', days: undefined },
+  { label: '7 days', days: 7 },
+  { label: '14 days', days: 14 },
+  { label: '30 days', days: 30 },
+  { label: '90 days', days: 90 },
+];
+
 export default function NewNestModal({ isOpen, onClose, currentUserId }: NewNestModalProps) {
   const router = useRouter();
   const [name, setName] = useState('');
   const [oros, setOros] = useState<Oro[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
+  const [durationDays, setDurationDays] = useState<number | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -35,6 +44,7 @@ export default function NewNestModal({ isOpen, onClose, currentUserId }: NewNest
     if (!isOpen) return;
     setName('');
     setSelected([]);
+    setDurationDays(undefined);
     setError('');
     setIsLoading(true);
     getUserConnections(currentUserId).then((result) => {
@@ -58,7 +68,7 @@ export default function NewNestModal({ isOpen, onClose, currentUserId }: NewNest
 
     setIsSubmitting(true);
     try {
-      const result = await createNest(currentUserId, name, selected);
+      const result = await createNest(currentUserId, name, selected, durationDays);
       if (result.success && result.nestId) {
         onClose();
         router.push(`/nest/${result.nestId}`);
@@ -78,6 +88,24 @@ export default function NewNestModal({ isOpen, onClose, currentUserId }: NewNest
         onChange={(e) => setName(e.target.value)}
         placeholder="e.g., Project Alpha"
       />
+
+      <div className="mt-4">
+        <label className="block text-sm font-medium text-[#333333] mb-1.5">
+          Time limit
+        </label>
+        <select
+          value={durationDays ?? ''}
+          onChange={(e) => setDurationDays(e.target.value ? Number(e.target.value) : undefined)}
+          className="w-full px-4 py-2.5 rounded-lg border-2 transition-all duration-200 bg-white text-[#333333] border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20"
+        >
+          {NEST_DURATION_OPTIONS.map((opt) => (
+            <option key={opt.label} value={opt.days ?? ''}>{opt.label}</option>
+          ))}
+        </select>
+        <p className="text-xs text-gray-500 mt-1">
+          When time&apos;s up, the Nest is automatically archived — nothing is deleted, and you can unarchive it anytime.
+        </p>
+      </div>
 
       <p className="text-sm font-medium text-[#333333] mt-4 mb-2">Invite Oros (optional)</p>
       {isLoading ? (

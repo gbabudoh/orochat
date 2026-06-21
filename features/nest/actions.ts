@@ -3,6 +3,8 @@
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
+const ALLOWED_NEST_DURATION_DAYS = [7, 14, 30, 90];
+
 const MEMBER_SELECT = {
   id: true,
   name: true,
@@ -31,8 +33,13 @@ async function assertNestOwner(nestId: string, userId: string) {
  * connections (same gate as starting a group chat), but unlike a group chat
  * a Nest can start solo with zero invitees.
  */
-export async function createNest(ownerId: string, name: string, participantIds: string[] = []) {
+export async function createNest(ownerId: string, name: string, participantIds: string[] = [], durationDays?: number) {
   if (!name.trim()) return { error: 'Nest name is required' };
+
+  if (durationDays !== undefined && !ALLOWED_NEST_DURATION_DAYS.includes(durationDays)) {
+    return { error: 'Invalid Nest duration' };
+  }
+  const expiresAt = durationDays ? new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000) : null;
 
   const uniqueInviteeIds = Array.from(new Set(participantIds.filter((id) => id !== ownerId)));
 
@@ -70,6 +77,7 @@ export async function createNest(ownerId: string, name: string, participantIds: 
           name: name.trim(),
           ownerId,
           conversationId: conversation.id,
+          expiresAt,
           members: { create: allMemberIds.map((userId) => ({ userId })) },
         },
       });
@@ -145,9 +153,42 @@ export async function deleteNest(nestId: string, userId: string) {
   }
 }
 
-export async function getNests(userId: string) {
+/**
+ * Owner-only: archives a Nest (hides it from the active list, reversible).
+ */
+export async function archiveNest(nestId: string, userId: string) {
+  try {
+    await assertNestOwner(nestId, userId);
+    await db.nest.update({ where: { id: nestId }, data: { archived: true } });
+    return { success: true };
+  } catch (error) {
+    const err = error as Error;
+    return { error: err.message || 'Failed to archive Nest' };
+  }
+}
+
+export async function unarchiveNest(nestId: string, userId: string) {
+  try {
+    await assertNestOwner(nestId, userId);
+    await db.nest.update({ where: { id: nestId }, data: { archived: false, expiresAt: null } });
+    return { success: true };
+  } catch (error) {
+    const err = error as Error;
+    return { error: err.message || 'Failed to unarchive Nest' };
+  }
+}
+
+export async function getNests(userId: string, includeArchived = false) {
+  // Lazy expiry: any Nest past its time limit gets auto-archived right
+  // before listing, rather than relying on a scheduled job (none exists
+  // in this app — TES decay/qualification checks use the same pattern).
+  await db.nest.updateMany({
+    where: { members: { some: { userId } }, archived: false, expiresAt: { lt: new Date() } },
+    data: { archived: true },
+  });
+
   const memberships = await db.nestMember.findMany({
-    where: { userId },
+    where: { userId, nest: { archived: includeArchived } },
     include: {
       nest: {
         include: {
@@ -277,28 +318,84 @@ export async function getTasks(nestId: string, userId: string) {
   });
 }
 
-export async function getNote(nestId: string, userId: string) {
+const NOTE_AUTHOR_SELECT = { id: true, name: true } as const;
+
+/**
+ * The Notes tab is a log of separate entries (not one continuously-edited
+ * doc) — each save creates or updates its own entry, displayed with its
+ * own "last updated by / when" footer, divided from the others.
+ */
+export async function getNotes(nestId: string, userId: string) {
   try {
     await assertNestMember(nestId, userId);
-    const note = await db.nestNote.findUnique({ where: { nestId } });
-    return { success: true, content: note?.content ?? '' };
+    const notes = await db.nestNote.findMany({
+      where: { nestId },
+      orderBy: { createdAt: 'desc' },
+    });
+    const authorIds = Array.from(new Set(notes.map((n) => n.updatedById).filter((id): id is string => !!id)));
+    const authors = authorIds.length
+      ? await db.user.findMany({ where: { id: { in: authorIds } }, select: NOTE_AUTHOR_SELECT })
+      : [];
+    const authorNameById = new Map(authors.map((a) => [a.id, a.name]));
+
+    return {
+      success: true,
+      notes: notes.map((n) => ({
+        id: n.id,
+        content: n.content,
+        updatedAt: n.updatedAt,
+        updatedByName: n.updatedById ? authorNameById.get(n.updatedById) ?? null : null,
+      })),
+    };
   } catch (error) {
     const err = error as Error;
     return { error: err.message || 'Failed to load notes' };
   }
 }
 
-export async function updateNote(nestId: string, userId: string, content: string) {
+export async function createNoteEntry(nestId: string, userId: string, content: string) {
   try {
     await assertNestMember(nestId, userId);
-    await db.nestNote.upsert({
-      where: { nestId },
-      update: { content, updatedById: userId },
-      create: { nestId, content, updatedById: userId },
+    const note = await db.nestNote.create({
+      data: { nestId, content, updatedById: userId },
     });
+    const author = await db.user.findUnique({ where: { id: userId }, select: NOTE_AUTHOR_SELECT });
+    return { success: true, id: note.id, updatedAt: note.updatedAt, updatedByName: author?.name ?? null };
+  } catch (error) {
+    const err = error as Error;
+    return { error: err.message || 'Failed to save note' };
+  }
+}
+
+async function assertNoteMember(noteId: string, userId: string) {
+  const note = await db.nestNote.findUnique({ where: { id: noteId } });
+  if (!note) throw new Error('Note not found');
+  await assertNestMember(note.nestId, userId);
+  return note;
+}
+
+export async function updateNoteEntry(noteId: string, userId: string, content: string) {
+  try {
+    await assertNoteMember(noteId, userId);
+    const note = await db.nestNote.update({
+      where: { id: noteId },
+      data: { content, updatedById: userId },
+    });
+    const author = await db.user.findUnique({ where: { id: userId }, select: NOTE_AUTHOR_SELECT });
+    return { success: true, updatedAt: note.updatedAt, updatedByName: author?.name ?? null };
+  } catch (error) {
+    const err = error as Error;
+    return { error: err.message || 'Failed to save note' };
+  }
+}
+
+export async function deleteNoteEntry(noteId: string, userId: string) {
+  try {
+    await assertNoteMember(noteId, userId);
+    await db.nestNote.delete({ where: { id: noteId } });
     return { success: true };
   } catch (error) {
     const err = error as Error;
-    return { error: err.message || 'Failed to save notes' };
+    return { error: err.message || 'Failed to delete note' };
   }
 }
