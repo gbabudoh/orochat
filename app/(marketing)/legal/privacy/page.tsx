@@ -1,4 +1,10 @@
 import Card from '@/components/ui/Card';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy',
+  alternates: { canonical: '/legal/privacy' },
+};
 
 export default function PrivacyPage() {
   return (

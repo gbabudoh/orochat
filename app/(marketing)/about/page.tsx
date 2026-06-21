@@ -1,4 +1,11 @@
 import Card from '@/components/ui/Card';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'About',
+  description: 'How Orochat\'s revenue-share model works: build verified professional connections (Oros), join Compass communities, and earn a share of ad revenue as a qualified Partner — entirely free.',
+  alternates: { canonical: '/about' },
+};
 
 export default function AboutPage() {
   return (

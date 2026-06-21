@@ -1,4 +1,5 @@
 import { getServerSession } from 'next-auth';
+import type { Metadata } from 'next';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import Card from '@/components/ui/Card';
@@ -7,6 +8,39 @@ import Button from '@/components/ui/Button';
 import { User, Building, MapPin, Users, TrendingUp, Award, Briefcase, AtSign, Calendar, Edit, FileText } from 'lucide-react';
 import Link from 'next/link';
 import ProfileActions from '@/components/feature/Profile/ProfileActions';
+import { getCountryName } from '@/lib/constants/countries';
+import { COUNTRY_COORDINATES } from '@/lib/constants/countryCoords';
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const user = await db.user.findUnique({
+    where: { id },
+    select: { name: true, title: true, company: true, bio: true, location: true, avatar: true, isPaused: true },
+  });
+
+  if (!user || user.isPaused) {
+    return { title: 'Profile not found' };
+  }
+
+  const title = [user.name, user.title].filter(Boolean).join(' — ');
+  const description = user.bio || [user.title, user.company, user.location].filter(Boolean).join(' at ') || `${user.name}'s profile on Orochat`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'profile',
+      images: user.avatar ? [{ url: `/api/user/${id}/avatar` }] : undefined,
+    },
+    twitter: {
+      card: 'summary',
+      title,
+      description,
+    },
+  };
+}
 
 export default async function OroProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -80,8 +114,33 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
     hasPendingRequest = connection?.status === 'PENDING';
   }
 
+  // Geo-aware structured data: country-level coordinates so search/AI
+  // engines can surface this profile in location-relevant queries
+  // (e.g. "software engineers in Nigeria") without exposing a precise
+  // address — Orochat only stores country-level location data.
+  const countryName = getCountryName(user.countryCode);
+  const coords = user.countryCode ? COUNTRY_COORDINATES[user.countryCode.toUpperCase()] : undefined;
+  const personJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: user.name,
+    ...(user.title ? { jobTitle: user.title } : {}),
+    ...(user.company ? { worksFor: { '@type': 'Organization', name: user.company } } : {}),
+    ...(user.bio ? { description: user.bio } : {}),
+    ...(countryName
+      ? {
+          address: { '@type': 'PostalAddress', addressCountry: countryName },
+          ...(coords ? { homeLocation: { '@type': 'Place', geo: { '@type': 'GeoCoordinates', latitude: coords[0], longitude: coords[1] } } } : {}),
+        }
+      : {}),
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-gray-50">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+      />
       <div className="w-full md:max-w-7xl md:mx-auto px-0 md:px-6 lg:px-8 py-0 md:py-6">
         {/* Top Bar with Actions */}
         <div className="flex justify-between items-center mb-4 md:mb-6 px-4 md:px-0 py-3 md:py-0">

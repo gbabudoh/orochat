@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import { ArrowRight, Users, MessageSquare, Compass, TrendingUp, Shield } from 'lucide-react';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+};
 
 export default function HomePage() {
   return (

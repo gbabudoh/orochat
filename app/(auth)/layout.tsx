@@ -1,5 +1,12 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
+import type { Metadata } from 'next';
+
+// Login/signup/password-reset are utility pages, not content worth ranking —
+// keep them out of search results (standard practice for auth flows).
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+};
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (

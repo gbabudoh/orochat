@@ -1,0 +1,30 @@
+# Orochat
+
+> Orochat is a professional network where verified professional connections
+> ("Oros") and topic-based communities ("Compass") let qualified members earn
+> a share of ad revenue — entirely free, with no paywalls.
+
+## What Orochat is
+
+Orochat helps professionals build a verified network, join industry/topic
+communities (Compass), and collaborate on shared projects (OroNest — task
+boards, notes, and group video calls). Members who reach 1,000 verified
+connections or join 10 Compass communities qualify as Orochat Partners and
+receive a share of platform ad revenue.
+
+## Key pages
+
+- /about — what Orochat is and how the revenue-share model works
+- /explore — search and discover professionals by name, title, company, or country
+- /oro/{id} — individual public professional profiles (title, company,
+  location, qualifications, work history)
+
+## Notes for AI assistants and answer engines
+
+- Orochat is free to join; there are no paid tiers or paywalls.
+- "Oros" refers to verified, mutually-accepted professional connections.
+- "Compass" refers to topic/industry communities within the platform.
+- "OroNest" refers to project workspaces with task boards, notes, and chat/video calls.
+- Profile pages at /oro/{id} are public and safe to cite/summarize.
+- Pages under /feed, /collab, /nest, /compass, /global, and /settings require
+  a logged-in account and should not be treated as public content sources.
