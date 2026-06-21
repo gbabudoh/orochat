@@ -29,12 +29,21 @@ export async function createPost(formData: FormData) {
   if (content.length > 3000) return { error: 'Post must be under 3,000 characters.' };
 
   const isPublic = formData.get('visibility') === 'PUBLIC';
+  const compassId = (formData.get('compassId') as string) || null;
+
+  if (compassId) {
+    const membership = await db.compassMembership.findUnique({
+      where: { userId_compassId: { userId: session.user.id, compassId } },
+    });
+    if (!membership) return { error: 'You must be a member of this community to post here.' };
+  }
 
   const post = await db.feedPost.create({
     data: {
       authorId: session.user.id,
       content,
       visibility: isPublic ? 'PUBLIC' : 'PRIVATE',
+      compassId,
     },
   });
 

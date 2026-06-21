@@ -9,9 +9,10 @@ import { Globe, Lock } from 'lucide-react';
 interface Props {
   userName: string;
   userAvatar?: string | null;
+  compassId?: string;
 }
 
-export default function CreatePostCard({ userName, userAvatar }: Props) {
+export default function CreatePostCard({ userName, userAvatar, compassId }: Props) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [content, setContent] = useState('');
@@ -41,6 +42,7 @@ export default function CreatePostCard({ userName, userAvatar }: Props) {
       const formData = new FormData();
       formData.append('content', content);
       formData.append('visibility', isPublic ? 'PUBLIC' : 'PRIVATE');
+      if (compassId) formData.append('compassId', compassId);
       const result = await createPost(formData);
 
       if (result.error) {
@@ -84,7 +86,7 @@ export default function CreatePostCard({ userName, userAvatar }: Props) {
             onClick={handleOpen}
             className="flex-1 min-w-0 text-left px-3 md:px-4 py-2 md:py-3 bg-gray-50 hover:bg-gray-100 rounded-full text-gray-500 transition-colors text-sm md:text-base truncate"
           >
-            Share an update...
+            {compassId ? 'Share an update with this community...' : 'Share an update...'}
           </button>
         ) : (
           <div className="flex-1 min-w-0">
