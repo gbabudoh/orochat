@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getPostMeta } from '@/lib/feed/postMeta';
+import { getPresenceMap } from '@/lib/presence.server';
+import { selectAd } from '@/lib/ads/selectAd';
+import { interleaveSponsored, AD_INTERVAL } from '@/lib/feed/interleaveSponsored';
 
 const PAGE_SIZE = 15;
 
@@ -13,6 +16,7 @@ export async function GET(request: NextRequest) {
   }
 
   const cursor = request.nextUrl.searchParams.get('cursor') || undefined;
+  const seenCount = Number(request.nextUrl.searchParams.get('seenCount') || 0);
 
   const posts = await db.feedPost.findMany({
     where: { visibility: 'PUBLIC', archived: false, author: { isPaused: false } },
@@ -29,14 +33,18 @@ export async function GET(request: NextRequest) {
 
   const postIds = posts.map((p) => p.id);
   const { likedPostIds, commentsByPostId } = await getPostMeta(postIds, session.user.id);
+  const presenceByUserId = await getPresenceMap(posts.map((p) => p.author.id));
 
-  const items = posts.map((post) => ({
-    post,
+  const postItems = posts.map((post) => ({
+    post: { ...post, author: { ...post.author, presence: presenceByUserId[post.author.id] } },
     isLiked: likedPostIds.has(post.id),
     comments: commentsByPostId[post.id] || [],
   }));
 
+  const ad = await selectAd({ surface: 'GLOBAL' });
+  const entries = interleaveSponsored(postItems, ad, AD_INTERVAL, seenCount);
+
   const nextCursor = posts.length === PAGE_SIZE ? posts[posts.length - 1].id : null;
 
-  return NextResponse.json({ success: true, items, nextCursor });
+  return NextResponse.json({ success: true, entries, newPostCount: posts.length, nextCursor });
 }

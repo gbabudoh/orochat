@@ -10,6 +10,7 @@ interface Member {
   name: string;
   avatar: string | null;
   title: string | null;
+  presence?: 'online' | 'offline';
 }
 
 interface Conversation {
@@ -67,6 +68,7 @@ export default function CollabThreadList({ conversations }: CollabThreadListProp
                 name={title}
                 avatarUrl={conversation.otherParticipants[0]?.avatar}
                 size="md"
+                presence={conversation.otherParticipants[0]?.presence}
               />
             )}
             <div className="flex-1 min-w-0">

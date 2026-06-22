@@ -11,9 +11,13 @@ import CommunityTabs from '@/components/feature/Compass/CommunityTabs';
 import CommunityDiscussion from '@/components/feature/Compass/CommunityDiscussion';
 import CreatePostCard from '@/components/feature/Feed/CreatePostCard';
 import PostCard from '@/components/feature/Feed/PostCard';
+import SponsoredPostCard from '@/components/feature/Feed/SponsoredPostCard';
 import UserAvatar from '@/components/ui/UserAvatar';
 import { getPostMeta } from '@/lib/feed/postMeta';
+import { getPresenceMap } from '@/lib/presence.server';
 import { formatDate } from '@/lib/utils/formatters';
+import { selectAd } from '@/lib/ads/selectAd';
+import { interleaveSponsored, AD_INTERVAL } from '@/lib/feed/interleaveSponsored';
 
 export default async function CompassCommunityPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -84,6 +88,14 @@ export default async function CompassCommunityPage({ params }: { params: Promise
 
   const postIds = posts.map((p) => p.id);
   const { likedPostIds, commentsByPostId } = await getPostMeta(postIds, session.user.id);
+  const presenceByUserId = await getPresenceMap(posts.map((p) => p.author.id));
+  const postsWithPresence = posts.map((post) => ({
+    ...post,
+    author: { ...post.author, presence: presenceByUserId[post.author.id] },
+  }));
+
+  const ad = await selectAd({ surface: 'COMPASS', compassId: community.id });
+  const entries = interleaveSponsored(postsWithPresence, ad, AD_INTERVAL, 0);
 
   const postsPanel = (
     <div>
@@ -104,16 +116,20 @@ export default async function CompassCommunityPage({ params }: { params: Promise
             </div>
           </Card>
         ) : (
-          posts.map((post, index) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              index={index}
-              isLiked={likedPostIds.has(post.id)}
-              comments={commentsByPostId[post.id] || []}
-              currentUserId={session.user.id}
-            />
-          ))
+          entries.map((entry, index) =>
+            entry.kind === 'post' ? (
+              <PostCard
+                key={entry.post.id}
+                post={entry.post}
+                index={index}
+                isLiked={likedPostIds.has(entry.post.id)}
+                comments={commentsByPostId[entry.post.id] || []}
+                currentUserId={session.user.id}
+              />
+            ) : (
+              <SponsoredPostCard key={`ad-${entry.ad.id}-${index}`} ad={entry.ad} index={index} compassId={community.id} />
+            )
+          )
         )}
       </div>
     </div>

@@ -95,7 +95,11 @@ export default function MainHeader() {
                     name={session.user.name ?? ''}
                     avatarUrl={avatarToDisplay}
                     size="sm"
+                    presence="online"
                   />
+                )}
+                {session?.user?.id && (
+                  <span className="hidden sm:inline text-xs font-medium text-green-600">Online</span>
                 )}
                 {session?.user?.isPartner && (
                   <span className="px-2 py-0.5 bg-[#FFC93C] text-[#333333] text-xs font-semibold rounded-full">
@@ -124,7 +128,12 @@ export default function MainHeader() {
                   </Link>
                   <hr className="my-2 border-gray-200" />
                   <button
-                    onClick={() => {
+                    onClick={async () => {
+                      await fetch('/api/presence/heartbeat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: 'offline' }),
+                      }).catch(() => {});
                       signOut({ callbackUrl: '/' });
                       setShowUserMenu(false);
                     }}

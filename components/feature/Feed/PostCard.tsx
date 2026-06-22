@@ -29,6 +29,7 @@ export interface FeedPostCardData {
     title?: string | null;
     username?: string | null;
     countryCode?: string | null;
+    presence?: 'online' | 'offline';
   };
   compass?: { id: string; name: string; slug: string } | null;
 }
@@ -56,7 +57,7 @@ export default function PostCard({ post, isLiked, comments, index = 0, currentUs
     >
       <Card padding="none" className="hover:shadow-lg transition-shadow p-3.5 sm:p-6 overflow-hidden">
         <div className="flex items-start gap-2.5 sm:gap-4">
-          <Link href={`/oro/${post.author.id}`} className="shrink-0">
+          <Link href={`/oro/${post.author.id}`} className="shrink-0 relative">
             <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-linear-to-br from-[#458B9E] to-[#5BA3B8] flex items-center justify-center overflow-hidden">
               {post.author.avatar ? (
                 <img
@@ -70,6 +71,14 @@ export default function PostCard({ post, isLiked, comments, index = 0, currentUs
                 </span>
               )}
             </div>
+            {post.author.presence && (
+              <span
+                className={`absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border-2 border-white ${
+                  post.author.presence === 'online' ? 'bg-green-500' : 'bg-gray-300'
+                }`}
+                aria-label={post.author.presence}
+              />
+            )}
           </Link>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -78,6 +87,12 @@ export default function PostCard({ post, isLiked, comments, index = 0, currentUs
                   {post.author.name}
                 </Link>
                 <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs sm:text-sm text-gray-500">
+                  {post.author.presence && (
+                    <span className={post.author.presence === 'online' ? 'text-green-600' : 'text-gray-400'}>
+                      {post.author.presence === 'online' ? 'Online' : 'Offline'}
+                    </span>
+                  )}
+                  {post.author.presence && (post.author.title || post.compass) && <span>•</span>}
                   {post.author.title && <span className="wrap-break-word">{post.author.title}</span>}
                   {post.author.title && post.compass && <span>•</span>}
                   {post.compass && (

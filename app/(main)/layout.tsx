@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import MainHeader from '@/components/layout/MainHeader';
 import MainSidebar from '@/components/layout/MainSidebar';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
+import PresenceHeartbeat from '@/components/providers/PresenceHeartbeat';
 
 export default async function MainLayout({
   children,
@@ -20,6 +21,7 @@ export default async function MainLayout({
 
   return (
     <div className="min-h-screen bg-[#F0F3F7]">
+      <PresenceHeartbeat />
       <MainHeader />
       <div className="flex">
         <MainSidebar />

@@ -4,13 +4,17 @@ import { db } from '@/lib/db';
 import Card from '@/components/ui/Card';
 import CreatePostCard from '@/components/feature/Feed/CreatePostCard';
 import PostCard from '@/components/feature/Feed/PostCard';
+import SponsoredPostCard from '@/components/feature/Feed/SponsoredPostCard';
 import { Globe, MessageCircle, Compass as CompassIcon, Users, Archive } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { CompassMembership, Connection } from '.prisma/client';
 import { getPostMeta } from '@/lib/feed/postMeta';
+import { getPresenceMap } from '@/lib/presence.server';
 import { ConnectionService } from '@/services/connection.service';
 import { getCountryName, getFlagImageUrl } from '@/lib/constants/countries';
+import { selectAd } from '@/lib/ads/selectAd';
+import { interleaveSponsored, AD_INTERVAL } from '@/lib/feed/interleaveSponsored';
 
 export default async function FeedPage() {
   const session = await getServerSession(authOptions);
@@ -81,6 +85,14 @@ export default async function FeedPage() {
 
   const postIds = posts.map(p => p.id);
   const { likedPostIds, commentsByPostId } = await getPostMeta(postIds, session.user.id);
+  const presenceByUserId = await getPresenceMap(posts.map((p) => p.author.id));
+  const postsWithPresence = posts.map((post) => ({
+    ...post,
+    author: { ...post.author, presence: presenceByUserId[post.author.id] },
+  }));
+
+  const ad = await selectAd({ surface: 'GLOBAL' });
+  const entries = interleaveSponsored(postsWithPresence, ad, AD_INTERVAL, 0);
 
   return (
     <div className="max-w-6xl mx-auto px-2 sm:px-0">
@@ -130,16 +142,20 @@ export default async function FeedPage() {
             </Card>
           ) : (
             <div className="space-y-4 md:space-y-6">
-              {posts.map((post, index) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  index={index}
-                  isLiked={likedPostIds.has(post.id)}
-                  comments={commentsByPostId[post.id] || []}
-                  currentUserId={session.user.id}
-                />
-              ))}
+              {entries.map((entry, index) =>
+                entry.kind === 'post' ? (
+                  <PostCard
+                    key={entry.post.id}
+                    post={entry.post}
+                    index={index}
+                    isLiked={likedPostIds.has(entry.post.id)}
+                    comments={commentsByPostId[entry.post.id] || []}
+                    currentUserId={session.user.id}
+                  />
+                ) : (
+                  <SponsoredPostCard key={`ad-${entry.ad.id}-${index}`} ad={entry.ad} index={index} />
+                )
+              )}
             </div>
           )}
         </div>

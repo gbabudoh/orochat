@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { formatRelativeTime, formatDateTime } from '@/lib/utils/formatters';
 import { Video, FileText, CheckCircle, ShieldAlert, PenTool, MoreVertical, Archive, Trash2 } from 'lucide-react';
 import { verifyTextSignature, getOrCreateKeypair, signText } from '@/lib/utils/crypto';
+import { AgreementData, AGREEMENT_MESSAGE_PREFIX } from '@/types/chat';
 
 interface ContractData {
   title: string;
@@ -35,6 +36,32 @@ interface MessageBubbleProps {
   onSendMessage?: (content: string) => void;
   onArchiveCall?: (call: { messageId: string; callSessionId: string }) => void;
   onDeleteCall?: (call: { messageId: string; callSessionId?: string }) => void;
+  agreementsById?: Record<string, AgreementData>;
+  onSignAgreement?: (agreementId: string, signature: { signatureBase64: string; publicKeyJwk: JsonWebKey }) => Promise<{ success?: boolean; error?: string }>;
+}
+
+// Verifies one signature against a payload + public key, async, and renders
+// the resulting badge — shared by the agreement initiator and every signer.
+function VerifiedBadge({ payload, signature, publicKeyJwk }: { payload: string; signature: string; publicKeyJwk: JsonWebKey }) {
+  const [isValid, setIsValid] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    verifyTextSignature(payload, signature, publicKeyJwk).then(setIsValid);
+  }, [payload, signature, publicKeyJwk]);
+
+  if (isValid === null) return <span className="text-gray-400">Verifying...</span>;
+  if (isValid) {
+    return (
+      <span className="text-emerald-500 font-medium flex items-center gap-0.5">
+        <CheckCircle className="w-3 h-3" /> Verified
+      </span>
+    );
+  }
+  return (
+    <span className="text-red-500 font-medium flex items-center gap-0.5">
+      <ShieldAlert className="w-3 h-3" /> Invalid Signature
+    </span>
+  );
 }
 
 export default function MessageBubble({
@@ -45,6 +72,8 @@ export default function MessageBubble({
   onSendMessage,
   onArchiveCall,
   onDeleteCall,
+  agreementsById,
+  onSignAgreement,
 }: MessageBubbleProps) {
   const [isCallMenuOpen, setIsCallMenuOpen] = useState(false);
   const isOwn = message.senderId === currentUserId;
@@ -68,8 +97,18 @@ export default function MessageBubble({
   const isExpiredCall = isCall && !!callInfo?.endsAt && new Date(callInfo.endsAt).getTime() < Date.now();
   const isEndedCall = isLegacyCall || isExpiredCall;
 
+  // Legacy single-recipient agreement flow (kept exactly as-is — old
+  // messages already in the database render through this path forever).
   const isContractRequest = message.content.startsWith('📝 CONTRACT_REQUEST:');
   const isContractSigned = message.content.startsWith('📝 CONTRACT_SIGNED:');
+
+  // New multi-party agreement flow — message just references an Agreement
+  // row (relational source of truth) instead of embedding signer state.
+  const isAgreementV2 = message.content.startsWith(AGREEMENT_MESSAGE_PREFIX);
+  const agreementId = isAgreementV2 ? message.content.slice(AGREEMENT_MESSAGE_PREFIX.length) : null;
+  const agreement = agreementId ? agreementsById?.[agreementId] : undefined;
+  const [isSigningV2, setIsSigningV2] = useState(false);
+  const [signErrorV2, setSignErrorV2] = useState('');
 
   const [contractData, setContractData] = useState<ContractData | null>(null);
   const [isInitiatorSigValid, setIsInitiatorSigValid] = useState<boolean | null>(null);
@@ -130,6 +169,26 @@ export default function MessageBubble({
       console.error('Failed to sign agreement cryptographically:', err);
     } finally {
       setIsSigning(false);
+    }
+  };
+
+  const handleSignAgreementV2 = async () => {
+    if (!agreement || isSigningV2 || !onSignAgreement) return;
+
+    setIsSigningV2(true);
+    setSignErrorV2('');
+    try {
+      const { publicKeyJwk } = await getOrCreateKeypair();
+      const payloadToSign = `${agreement.title}\n${agreement.terms}`;
+      const { signatureBase64 } = await signText(payloadToSign);
+
+      const result = await onSignAgreement(agreement.id, { signatureBase64, publicKeyJwk });
+      if (result.error) setSignErrorV2(result.error);
+    } catch (err) {
+      console.error('Failed to sign agreement cryptographically:', err);
+      setSignErrorV2('An unexpected error occurred');
+    } finally {
+      setIsSigningV2(false);
     }
   };
 
@@ -323,6 +382,90 @@ export default function MessageBubble({
                 </div>
               </div>
             </div>
+          ) : isAgreementV2 && agreement ? (
+            <div className="py-1 min-w-[260px] sm:min-w-[320px]">
+              {agreement.status === 'EXECUTED' ? (
+                <div className="flex items-center gap-2 mb-3 border-b pb-2 border-current/10 text-emerald-500">
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  <span className="font-bold text-sm">Agreement Fully Executed</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 mb-3 border-b pb-2 border-current/10">
+                  <FileText className="w-4 h-4 shrink-0 animate-pulse" />
+                  <span className="font-bold text-sm">Agreement Signature Request</span>
+                </div>
+              )}
+
+              <h4 className="font-semibold text-sm mb-2">{agreement.title}</h4>
+              <p className={`text-xs p-3 rounded-lg border mb-3 overflow-y-auto max-h-36 whitespace-pre-wrap leading-relaxed ${
+                isOwn ? 'bg-black/10 border-white/10 text-white/90' : 'bg-white/80 border-gray-200 text-gray-700'
+              }`}>
+                {agreement.terms}
+              </p>
+
+              <div className="space-y-1.5 mb-3 text-[10px]">
+                <div className="flex items-center gap-1.5">
+                  <span>Drafted & Signed by:</span>
+                  <span className="font-semibold">{agreement.initiator.name}</span>
+                  <VerifiedBadge
+                    payload={`${agreement.title}\n${agreement.terms}`}
+                    signature={agreement.initiatorSignature}
+                    publicKeyJwk={agreement.initiatorKey}
+                  />
+                </div>
+                {agreement.signers.map((signer) => (
+                  <div key={signer.id} className="flex items-center gap-1.5">
+                    <span>{signer.user.name}:</span>
+                    {signer.signedAt && signer.signature && signer.publicKeyJwk ? (
+                      <VerifiedBadge
+                        payload={`${agreement.title}\n${agreement.terms}`}
+                        signature={signer.signature}
+                        publicKeyJwk={signer.publicKeyJwk}
+                      />
+                    ) : (
+                      <span className="font-semibold italic text-current/80">Pending local signature</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {(() => {
+                const mySignerRow = agreement.signers.find((s) => s.userId === currentUserId);
+                if (mySignerRow && !mySignerRow.signedAt) {
+                  return (
+                    <div>
+                      <button
+                        type="button"
+                        onClick={handleSignAgreementV2}
+                        disabled={isSigningV2}
+                        className={`w-full py-2 px-4 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center justify-center gap-1.5 ${
+                          isOwn
+                            ? 'bg-white text-[#458B9E] hover:bg-gray-50'
+                            : 'bg-[#458B9E] text-white hover:bg-[#3a7585]'
+                        }`}
+                      >
+                        <PenTool className="w-3.5 h-3.5" />
+                        <span>{isSigningV2 ? 'Signing...' : 'Approve & Sign Agreement'}</span>
+                      </button>
+                      {signErrorV2 && <p className="text-[10px] text-red-500 mt-1 text-center">{signErrorV2}</p>}
+                    </div>
+                  );
+                }
+                if (agreement.status !== 'EXECUTED') {
+                  return (
+                    <div className="text-[10px] text-center opacity-75 italic py-1 border border-dashed border-current/25 rounded-md">
+                      Waiting for {agreement.signers.filter((s) => !s.signedAt).length} more signature
+                      {agreement.signers.filter((s) => !s.signedAt).length === 1 ? '' : 's'}
+                    </div>
+                  );
+                }
+                return (
+                  <div className="pt-1 flex items-center justify-center text-center font-bold text-[9px] uppercase tracking-wider text-emerald-500 gap-1 bg-emerald-500/5 p-1 rounded-md">
+                    🔒 Cryptographically Verified Agreement
+                  </div>
+                );
+              })()}
+            </div>
           ) : (
             <div className="text-sm break-words whitespace-pre-wrap">{message.content}</div>
           )}
@@ -338,4 +481,3 @@ export default function MessageBubble({
     </div>
   );
 }
-

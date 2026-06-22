@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "AdCampaign" ADD COLUMN     "targetEmbedding" DOUBLE PRECISION[] DEFAULT ARRAY[]::DOUBLE PRECISION[],
+ADD COLUMN     "targetKeywords" TEXT;
+
+-- AlterTable
+ALTER TABLE "Compass" ADD COLUMN     "embedding" DOUBLE PRECISION[] DEFAULT ARRAY[]::DOUBLE PRECISION[];

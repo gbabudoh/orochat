@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { TESService } from './tes.service';
 import { FraudService } from './fraud.service';
+import { getPlatformConfig } from '@/lib/platformConfig';
 
 /**
  * Admin Service
@@ -8,14 +9,23 @@ import { FraudService } from './fraud.service';
  */
 export class AdminService {
   /**
-   * Create a new ad revenue pool for a month
+   * Create a new ad revenue pool for a month. `grossAmount` is the total ad
+   * revenue collected that period; it's split by the platform's configured
+   * oroSharePercent into the Oro-payable pool (totalAmount, used unchanged
+   * by distributeRevenue below) and the retained platform cut.
    */
-  static async createRevenuePool(month: number, year: number, amount: number) {
+  static async createRevenuePool(month: number, year: number, grossAmount: number) {
+    const { oroSharePercent } = await getPlatformConfig();
+    const totalAmount = grossAmount * oroSharePercent;
+    const platformCutAmount = grossAmount - totalAmount;
+
     return await db.adRevenuePool.create({
       data: {
         month,
         year,
-        totalAmount: amount,
+        grossAmount,
+        totalAmount,
+        platformCutAmount,
       },
     });
   }
@@ -95,6 +105,30 @@ export class AdminService {
         pool: true,
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * List all revenue pools, most recent first (for the admin dashboard)
+   */
+  static async getAllRevenuePools() {
+    return await db.adRevenuePool.findMany({
+      orderBy: [{ year: 'desc' }, { month: 'desc' }],
+    });
+  }
+
+  /**
+   * Get a single pool with its distributions (for the admin drill-in view)
+   */
+  static async getRevenuePool(poolId: string) {
+    return await db.adRevenuePool.findUnique({
+      where: { id: poolId },
+      include: {
+        distributions: {
+          include: { user: { select: { id: true, name: true, email: true } } },
+          orderBy: { amount: 'desc' },
+        },
+      },
     });
   }
 

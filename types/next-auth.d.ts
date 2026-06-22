@@ -14,6 +14,8 @@ declare module 'next-auth' {
       isPartner: boolean;
       verifiedOrosCount: number;
       compassMembershipsCount: number;
+      // Only set on admin sessions (lib/auth.admin.ts), undefined for consumer sessions
+      role?: 'ADMIN' | 'SUPER_ADMIN';
     } & DefaultSession['user'];
   }
 }

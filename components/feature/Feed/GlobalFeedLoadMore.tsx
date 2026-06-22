@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import PostCard, { FeedPostCardData } from '@/components/feature/Feed/PostCard';
+import SponsoredPostCard from '@/components/feature/Feed/SponsoredPostCard';
+import type { SponsoredAd } from '@/lib/ads/selectAd';
 
 interface Comment {
   id: string;
@@ -17,25 +19,30 @@ interface FeedItem {
   comments: Comment[];
 }
 
+type FeedEntry = { kind: 'post'; post: FeedItem } | { kind: 'ad'; ad: SponsoredAd };
+
 interface Props {
   initialCursor: string | null;
   currentUserId: string;
+  initialSeenCount: number;
 }
 
-export default function GlobalFeedLoadMore({ initialCursor, currentUserId }: Props) {
-  const [items, setItems] = useState<FeedItem[]>([]);
+export default function GlobalFeedLoadMore({ initialCursor, currentUserId, initialSeenCount }: Props) {
+  const [entries, setEntries] = useState<FeedEntry[]>([]);
   const [cursor, setCursor] = useState(initialCursor);
+  const [seenCount, setSeenCount] = useState(initialSeenCount);
   const [isLoading, setIsLoading] = useState(false);
 
   const loadMore = async () => {
     if (!cursor || isLoading) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/global/feed?cursor=${cursor}`);
+      const res = await fetch(`/api/global/feed?cursor=${cursor}&seenCount=${seenCount}`);
       const data = await res.json();
       if (data.success) {
-        setItems((prev) => [...prev, ...data.items]);
+        setEntries((prev) => [...prev, ...data.entries]);
         setCursor(data.nextCursor);
+        setSeenCount((prev) => prev + data.newPostCount);
       }
     } catch (err) {
       console.error('Failed to load more posts:', err);
@@ -47,16 +54,20 @@ export default function GlobalFeedLoadMore({ initialCursor, currentUserId }: Pro
   return (
     <>
       <div className="space-y-4 md:space-y-6 mt-4 md:mt-6">
-        {items.map(({ post, isLiked, comments }, index) => (
-          <PostCard
-            key={post.id}
-            post={{ ...post, createdAt: new Date(post.createdAt) }}
-            index={index}
-            isLiked={isLiked}
-            comments={comments.map((c) => ({ ...c, createdAt: new Date(c.createdAt) }))}
-            currentUserId={currentUserId}
-          />
-        ))}
+        {entries.map((entry, index) =>
+          entry.kind === 'post' ? (
+            <PostCard
+              key={entry.post.post.id}
+              post={{ ...entry.post.post, createdAt: new Date(entry.post.post.createdAt) }}
+              index={index}
+              isLiked={entry.post.isLiked}
+              comments={entry.post.comments.map((c) => ({ ...c, createdAt: new Date(c.createdAt) }))}
+              currentUserId={currentUserId}
+            />
+          ) : (
+            <SponsoredPostCard key={`ad-${entry.ad.id}-${index}`} ad={entry.ad} index={index} />
+          )
+        )}
       </div>
 
       {cursor && (

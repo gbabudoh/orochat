@@ -65,20 +65,26 @@ export default function CreatePostCard({ userName, userAvatar, compassId }: Prop
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-6 mb-4 md:mb-6">
       <div className="flex items-center space-x-3 md:space-x-4">
-        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-linear-to-br from-[#458B9E] to-[#5BA3B8] flex items-center justify-center shrink-0 overflow-hidden relative">
-          {userAvatar && !error && (
-            <img
-              src={userAvatar}
-              alt={userName}
-              className="w-full h-full object-cover relative z-10"
-              onError={() => setError('avatar-fail')}
-            />
-          )}
-          {(!userAvatar || error === 'avatar-fail') && (
-            <span className="flex items-center justify-center text-white font-semibold text-base md:text-lg">
-              {initials}
-            </span>
-          )}
+        <div className="shrink-0 text-center">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-full relative">
+            <div className="absolute inset-0 rounded-full bg-linear-to-br from-[#458B9E] to-[#5BA3B8] flex items-center justify-center overflow-hidden">
+              {userAvatar && !error && (
+                <img
+                  src={userAvatar}
+                  alt={userName}
+                  className="w-full h-full object-cover relative z-10"
+                  onError={() => setError('avatar-fail')}
+                />
+              )}
+              {(!userAvatar || error === 'avatar-fail') && (
+                <span className="flex items-center justify-center text-white font-semibold text-base md:text-lg">
+                  {initials}
+                </span>
+              )}
+            </div>
+            <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white bg-green-500" aria-label="online" />
+          </div>
+          <span className="hidden md:block text-[10px] font-medium text-green-600 mt-1">Online</span>
         </div>
 
         {!expanded ? (

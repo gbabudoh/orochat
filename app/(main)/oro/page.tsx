@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getUserConnections, getPendingRequests } from '@/features/connections/actions';
+import { getPresenceMap } from '@/lib/presence.server';
 import Card from '@/components/ui/Card';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -14,6 +15,7 @@ export default async function MyOrosPage() {
 
   const connectionsResult = await getUserConnections(session.user.id);
   const connections = connectionsResult.success ? connectionsResult.connections || [] : [];
+  const presenceByUserId = await getPresenceMap(connections.map((c) => c.oro.id));
 
   const pendingResult = await getPendingRequests(session.user.id);
   const pendingRequests = pendingResult.success ? pendingResult.requests || [] : [];
@@ -99,8 +101,8 @@ export default async function MyOrosPage() {
             return (
               <Card key={connection.id} hover className="p-6">
                 <div className="flex items-start space-x-4">
-                  <Link href={`/oro/${oro.id}`} className="flex-shrink-0">
-                    <div className="w-16 h-16 rounded-full bg-[#458B9E] flex items-center justify-center hover:opacity-80 transition-opacity">
+                  <Link href={`/oro/${oro.id}`} className="flex-shrink-0 relative">
+                    <div className="w-16 h-16 rounded-full bg-[#458B9E] flex items-center justify-center hover:opacity-80 transition-opacity overflow-hidden">
                       {oro.avatar ? (
                         <Image
                           src={oro.avatar}
@@ -113,13 +115,24 @@ export default async function MyOrosPage() {
                         <User className="w-8 h-8 text-white" />
                       )}
                     </div>
+                    <span
+                      className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                        presenceByUserId[oro.id] === 'online' ? 'bg-green-500' : 'bg-gray-300'
+                      }`}
+                      aria-label={presenceByUserId[oro.id] === 'online' ? 'online' : 'offline'}
+                    />
                   </Link>
                   <div className="flex-1 min-w-0">
-                    <Link href={`/oro/${oro.id}`}>
-                      <h3 className="font-semibold text-[#333333] hover:text-[#458B9E] transition-colors truncate">
-                        {oro.name}
-                      </h3>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/oro/${oro.id}`} className="min-w-0">
+                        <h3 className="font-semibold text-[#333333] hover:text-[#458B9E] transition-colors truncate">
+                          {oro.name}
+                        </h3>
+                      </Link>
+                      <span className={`text-xs shrink-0 ${presenceByUserId[oro.id] === 'online' ? 'text-green-600' : 'text-gray-400'}`}>
+                        {presenceByUserId[oro.id] === 'online' ? 'Online' : 'Offline'}
+                      </span>
+                    </div>
                     {oro.title && (
                       <p className="text-sm text-gray-600 truncate mt-1">{oro.title}</p>
                     )}

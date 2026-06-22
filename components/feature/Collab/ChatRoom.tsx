@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { getMessages, getConversation, sendMessage, addParticipants, startCall, endCallForEveryone, enforceCallDurationCutoff, archiveCallSession, deleteCallSession, deleteMessage } from '@/features/collab/actions';
+import { createAgreement, signAgreement, getAgreementsByIds } from '@/features/collab/agreement-actions';
 import MessageBubble from '@/components/feature/Collab/MessageBubble';
 import AddParticipantsModal from '@/components/feature/Collab/AddParticipantsModal';
 import NewAgreementModal from '@/components/feature/Collab/NewAgreementModal';
@@ -9,9 +10,10 @@ import CallHistoryModal from '@/components/feature/Collab/CallHistoryModal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import UserAvatar from '@/components/ui/UserAvatar';
-import { Send, UserPlus, Users, Video, PhoneOff, FileText, ChevronDown, History } from 'lucide-react';
-import { ChatMessage } from '@/types/chat';
+import { Send, UserPlus, Users, Video, PhoneOff, FileText, ChevronDown, History, ArrowLeft } from 'lucide-react';
+import { ChatMessage, AgreementData, AGREEMENT_MESSAGE_PREFIX } from '@/types/chat';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import { LiveKitRoom, VideoConference } from '@livekit/components-react';
 import '@livekit/components-styles';
 
@@ -36,7 +38,13 @@ interface Member {
   name: string;
   avatar: string | null;
   title: string | null;
+  presence?: 'online' | 'offline';
 }
+
+const PRESENCE_LABEL: Record<'online' | 'offline', string> = {
+  online: 'Online',
+  offline: 'Offline',
+};
 
 interface ChatRoomProps {
   conversationId: string;
@@ -46,6 +54,7 @@ interface ChatRoomProps {
 export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProps) {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [agreementsById, setAgreementsById] = useState<Record<string, AgreementData>>({});
   const [members, setMembers] = useState<Member[]>([]);
   const [isGroup, setIsGroup] = useState(false);
   const [groupName, setGroupName] = useState<string | null>(null);
@@ -83,6 +92,23 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
       }
     };
 
+    const refreshAgreements = async (messageList: ChatMessage[]) => {
+      const agreementIds = messageList
+        .filter((m) => m.content.startsWith(AGREEMENT_MESSAGE_PREFIX))
+        .map((m) => m.content.slice(AGREEMENT_MESSAGE_PREFIX.length));
+      if (agreementIds.length === 0) return;
+
+      const agreements = await getAgreementsByIds(agreementIds);
+      if (!active) return;
+      setAgreementsById((prev) => {
+        const next = { ...prev };
+        agreements.forEach((a) => {
+          next[a.id] = a as unknown as AgreementData;
+        });
+        return next;
+      });
+    };
+
     const poll = async () => {
       const result = await getMessages(conversationId, currentUserId);
       if (!active || !Array.isArray(result)) return;
@@ -91,12 +117,16 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
         result.forEach((m) => knownIds.current.add(m.id));
         setMessages(result);
       }
+      refreshAgreements(result);
       setIsLoading(false);
     };
 
     loadConversation();
     poll();
-    const interval = setInterval(poll, POLL_INTERVAL_MS);
+    const interval = setInterval(() => {
+      poll();
+      loadConversation();
+    }, POLL_INTERVAL_MS);
 
     return () => {
       active = false;
@@ -145,6 +175,30 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
     } catch (error) {
       console.error('Failed to send special message:', error);
     }
+  };
+
+  const handleCreateAgreement = async (
+    title: string,
+    terms: string,
+    signerUserIds: string[],
+    signature: { signatureBase64: string; publicKeyJwk: JsonWebKey }
+  ) => {
+    const result = await createAgreement(currentUserId, conversationId, title, terms, signerUserIds, signature);
+    if (result.success && result.message) {
+      knownIds.current.add(result.message.id);
+      setMessages((prev) => [...prev, result.message as ChatMessage]);
+    } else if (result.error) {
+      console.error('Failed to create agreement:', result.error);
+    }
+    return result;
+  };
+
+  const handleSignAgreement = async (agreementId: string, signature: { signatureBase64: string; publicKeyJwk: JsonWebKey }) => {
+    const result = await signAgreement(agreementId, currentUserId, signature);
+    if (result.success && result.agreement) {
+      setAgreementsById((prev) => ({ ...prev, [agreementId]: result.agreement as unknown as AgreementData }));
+    }
+    return result;
   };
 
   const handleArchiveCall = async ({ messageId, callSessionId }: { messageId: string; callSessionId: string }) => {
@@ -283,16 +337,37 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center gap-3 min-w-0">
+            <Link
+              href="/collab"
+              className="shrink-0 p-1.5 -ml-1.5 rounded-full text-gray-500 hover:text-[#458B9E] hover:bg-[#F0F3F7] transition-colors"
+              aria-label="Back to Collab"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
             {isGroup ? (
               <div className="w-9 h-9 rounded-full bg-[#458B9E] flex items-center justify-center shrink-0">
                 <Users className="w-4 h-4 text-white" />
               </div>
             ) : (
-              members[0] && <UserAvatar userId={members[0].id} name={members[0].name} avatarUrl={members[0].avatar} size="md" />
+              members[0] && (
+                <UserAvatar
+                  userId={members[0].id}
+                  name={members[0].name}
+                  avatarUrl={members[0].avatar}
+                  size="md"
+                  presence={members[0].presence}
+                />
+              )
             )}
             <div className="min-w-0">
               <p className="font-semibold text-[#333333] truncate">{headerTitle}</p>
-              {isGroup && <p className="text-xs text-gray-500">{members.length + 1} members</p>}
+              {isGroup ? (
+                <p className="text-xs text-gray-500">{members.length + 1} members</p>
+              ) : (
+                members[0]?.presence && (
+                  <p className="text-xs text-gray-500">{PRESENCE_LABEL[members[0].presence]}</p>
+                )
+              )}
             </div>
           </div>
           
@@ -351,6 +426,8 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
                   onSendMessage={handleSendSpecialMessage}
                   onArchiveCall={handleArchiveCall}
                   onDeleteCall={handleDeleteCall}
+                  agreementsById={agreementsById}
+                  onSignAgreement={handleSignAgreement}
                 />
               ))}
               <div ref={messagesEndRef} />
@@ -389,8 +466,9 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
       <NewAgreementModal
         isOpen={isAgreementOpen}
         onClose={() => setIsAgreementOpen(false)}
-        onSend={handleSendSpecialMessage}
-        initiatorName={session?.user?.name || 'Partner'}
+        onCreate={handleCreateAgreement}
+        members={members}
+        isGroup={isGroup}
       />
 
       {/* LiveKit Calling Overlay Modal */}

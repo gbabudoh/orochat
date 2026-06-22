@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { regenerateCompassEmbedding } from '@/lib/ai/compassEmbedding';
 import { z } from 'zod';
 
 const createCommunitySchema = z.object({
@@ -358,8 +359,12 @@ export async function createCommunity(formData: FormData) {
 
     await ensureCompassConversation(community.id, community.name);
 
+    regenerateCompassEmbedding(community.id).catch((err) =>
+      console.error('Failed to embed new community:', err)
+    );
+
     revalidatePath('/compass');
-    
+
     return { success: true, slug: community.slug };
   } catch (error) {
     if (error instanceof z.ZodError) {

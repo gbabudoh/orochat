@@ -3,7 +3,8 @@ import { Novu } from '@novu/api';
 const novuApiKey = process.env.NOVU_API_KEY;
 
 export const novu = novuApiKey ? new Novu({
-  secretKey: novuApiKey
+  secretKey: novuApiKey,
+  serverURL: process.env.NOVU_BACKEND_URL,
 }) : null;
 
 export const triggerNotification = async (

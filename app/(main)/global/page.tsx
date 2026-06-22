@@ -3,8 +3,12 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import Card from '@/components/ui/Card';
 import PostCard from '@/components/feature/Feed/PostCard';
+import SponsoredPostCard from '@/components/feature/Feed/SponsoredPostCard';
 import GlobalFeedLoadMore from '@/components/feature/Feed/GlobalFeedLoadMore';
 import { getPostMeta } from '@/lib/feed/postMeta';
+import { getPresenceMap } from '@/lib/presence.server';
+import { selectAd } from '@/lib/ads/selectAd';
+import { interleaveSponsored, AD_INTERVAL } from '@/lib/feed/interleaveSponsored';
 import { Globe } from 'lucide-react';
 
 const PAGE_SIZE = 15;
@@ -28,6 +32,15 @@ export default async function GlobalFeedPage() {
   const postIds = posts.map((p) => p.id);
   const { likedPostIds, commentsByPostId } = await getPostMeta(postIds, session.user.id);
   const nextCursor = posts.length === PAGE_SIZE ? posts[posts.length - 1].id : null;
+
+  const presenceByUserId = await getPresenceMap(posts.map((p) => p.author.id));
+  const postsWithPresence = posts.map((post) => ({
+    ...post,
+    author: { ...post.author, presence: presenceByUserId[post.author.id] },
+  }));
+
+  const ad = await selectAd({ surface: 'GLOBAL' });
+  const entries = interleaveSponsored(postsWithPresence, ad, AD_INTERVAL, 0);
 
   return (
     <div className="max-w-3xl mx-auto px-2 sm:px-0">
@@ -61,20 +74,24 @@ export default async function GlobalFeedPage() {
         </Card>
       ) : (
         <div className="space-y-4 md:space-y-6">
-          {posts.map((post, index) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              index={index}
-              isLiked={likedPostIds.has(post.id)}
-              comments={commentsByPostId[post.id] || []}
-              currentUserId={session.user.id}
-            />
-          ))}
+          {entries.map((entry, index) =>
+            entry.kind === 'post' ? (
+              <PostCard
+                key={entry.post.id}
+                post={entry.post}
+                index={index}
+                isLiked={likedPostIds.has(entry.post.id)}
+                comments={commentsByPostId[entry.post.id] || []}
+                currentUserId={session.user.id}
+              />
+            ) : (
+              <SponsoredPostCard key={`ad-${entry.ad.id}-${index}`} ad={entry.ad} index={index} />
+            )
+          )}
         </div>
       )}
 
-      <GlobalFeedLoadMore initialCursor={nextCursor} currentUserId={session.user.id} />
+      <GlobalFeedLoadMore initialCursor={nextCursor} currentUserId={session.user.id} initialSeenCount={posts.length} />
     </div>
   );
 }

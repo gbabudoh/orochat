@@ -5,6 +5,7 @@ import { getPusherServer, getConversationChannel } from '@/services/realtime.ser
 import { TESService } from '@/services/tes.service';
 import { triggerNotification } from '@/lib/novu';
 import { deleteRoom } from '@/lib/livekit/roomAdmin';
+import { resolvePresence } from '@/lib/presence';
 import { z } from 'zod';
 
 const ALLOWED_CALL_DURATIONS_SECONDS = [900, 1800, 2700, 3600]; // 15/30/45/60 min
@@ -20,7 +21,21 @@ const MEMBER_SELECT = {
   title: true,
 } as const;
 
-async function assertParticipant(conversationId: string, userId: string) {
+const PARTICIPANT_SELECT = {
+  id: true,
+  name: true,
+  avatar: true,
+  title: true,
+  lastSeenAt: true,
+  presenceStatus: true,
+} as const;
+
+function withPresence<T extends { lastSeenAt: Date | null; presenceStatus: string }>(user: T) {
+  const { lastSeenAt, presenceStatus, ...rest } = user;
+  return { ...rest, presence: resolvePresence(lastSeenAt, presenceStatus) };
+}
+
+export async function assertParticipant(conversationId: string, userId: string) {
   const participant = await db.conversationParticipant.findUnique({
     where: { conversationId_userId: { conversationId, userId } },
   });
@@ -225,12 +240,19 @@ export async function getConversation(conversationId: string, userId: string) {
     const conversation = await db.conversation.findUnique({
       where: { id: conversationId },
       include: {
-        participants: { include: { user: { select: MEMBER_SELECT } } },
+        participants: { include: { user: { select: PARTICIPANT_SELECT } } },
       },
     });
 
     if (!conversation) return { error: 'Conversation not found' };
-    return { success: true, conversation };
+
+    return {
+      success: true,
+      conversation: {
+        ...conversation,
+        participants: conversation.participants.map((p) => ({ ...p, user: withPresence(p.user) })),
+      },
+    };
   } catch (error) {
     const err = error as Error;
     return { error: err.message || 'Failed to load conversation' };
@@ -263,11 +285,11 @@ export async function getMessages(conversationId: string, userId: string) {
 
 export async function getConversations(userId: string) {
   const participations = await db.conversationParticipant.findMany({
-    where: { userId },
+    where: { userId, conversation: { compassId: null, nest: null } },
     include: {
       conversation: {
         include: {
-          participants: { include: { user: { select: MEMBER_SELECT } } },
+          participants: { include: { user: { select: PARTICIPANT_SELECT } } },
           messages: { orderBy: { createdAt: 'desc' }, take: 1, include: { sender: { select: MEMBER_SELECT } } },
         },
       },
@@ -279,7 +301,7 @@ export async function getConversations(userId: string) {
     participations.map(async ({ conversation, lastReadAt }) => {
       const otherParticipants = conversation.participants
         .filter((p) => p.userId !== userId)
-        .map((p) => p.user);
+        .map((p) => withPresence(p.user));
 
       const latestMessage = conversation.messages[0] ?? null;
 

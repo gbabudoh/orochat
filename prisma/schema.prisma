@@ -40,6 +40,11 @@ model User {
   currentTES    Float     @default(0)
   lastTESUpdate DateTime? @default(now())
 
+  // Presence — raw client-reported status; lib/presence.ts resolves the
+  // real-time value, forcing "offline" once lastSeenAt goes stale
+  presenceStatus String    @default("offline")
+  lastSeenAt     DateTime?
+
   // Semantic search: USE (Universal Sentence Encoder) embedding of
   // title + company + bio + location, recomputed on every profile edit.
   embedding     Float[]   @default([])
@@ -67,6 +72,8 @@ model User {
   nestMemberships     NestMember[] @relation("NestMembership")
   assignedNestTasks   NestTask[] @relation("NestTaskAssignee")
   createdNestTasks    NestTask[] @relation("NestTaskCreator")
+  initiatedAgreements Agreement[] @relation("AgreementInitiator")
+  agreementSignatures AgreementSigner[]
 
   @@index([email])
   @@index([isPartner])
@@ -117,10 +124,14 @@ model Compass {
   sponsorLogo String?
   sponsorLink String?
   sponsorExpiresAt DateTime?
-  
+
+  // USE embedding of name + description, recomputed on create — used to
+  // score ad-campaign relevance (see lib/ai/compassEmbedding.ts)
+  embedding   Float[]  @default([])
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   memberships  CompassMembership[]
   posts        FeedPost[]
   conversation Conversation?
@@ -166,6 +177,7 @@ model Conversation {
   participants ConversationParticipant[]
   messages     Message[]
   callSessions CallSession[]
+  agreements   Agreement[]
   nest         Nest?
 
   @@index([updatedAt])
@@ -217,6 +229,48 @@ model CallSession {
   initiator    User         @relation("CallInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, startedAt])
+}
+
+// Multi-party cryptographic agreement — a relational source of truth (same
+// pattern as CallSession above) instead of encoding signer state into chat
+// message text. The initiator signs at drafting time (stored inline here);
+// each other required party gets its own AgreementSigner row.
+model Agreement {
+  id                 String          @id @default(cuid())
+  conversationId     String
+  title              String
+  terms              String
+  initiatorId        String
+  initiatorKey       Json
+  initiatorSignature String
+  messageId          String?         @unique // the chat message announcing this agreement
+  status             AgreementStatus @default(PENDING)
+  createdAt          DateTime        @default(now())
+
+  conversation Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  initiator    User              @relation("AgreementInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+  signers      AgreementSigner[]
+
+  @@index([conversationId])
+}
+
+enum AgreementStatus {
+  PENDING
+  EXECUTED
+}
+
+model AgreementSigner {
+  id           String    @id @default(cuid())
+  agreementId  String
+  userId       String
+  publicKeyJwk Json?
+  signature    String?
+  signedAt     DateTime?
+
+  agreement Agreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([agreementId, userId])
 }
 
 // OroNest - project workspaces (task board + notes + a reused group chat for messaging/calls)
@@ -385,7 +439,9 @@ model AdRevenuePool {
   id          String   @id @default(cuid())
   month       Int      // 1-12
   year        Int
-  totalAmount Float
+  totalAmount Float    // Oro-payable pool = grossAmount * PlatformConfig.oroSharePercent at creation time
+  grossAmount Float?    // Total ad revenue collected this period, before the platform cut
+  platformCutAmount Float? // grossAmount - totalAmount, retained by Orochat
   distributed Boolean  @default(false)
   distributedAt DateTime?
   
@@ -433,5 +489,110 @@ model FraudFlag {
 
   @@index([userId])
   @@index([resolved])
+}
+
+// Admin account — fully isolated from the consumer User table/session.
+// Authenticated via a separate NextAuth instance (lib/auth.admin.ts) so a
+// compromised consumer session can never grant admin access.
+model AdminUser {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String    // bcrypt, same approach as User.password
+  name      String
+  role      AdminRole @default(ADMIN)
+
+  createdAt DateTime  @default(now())
+
+  auditLogs AdminAuditLog[]
+}
+
+// Audit trail of admin actions — who did what, when, to what.
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  action     String   // e.g. "user.pause", "campaign.status_change"
+  targetType String?
+  targetId   String?
+  metadata   Json?
+
+  createdAt  DateTime @default(now())
+
+  admin AdminUser @relation(fields: [adminId], references: [id])
+
+  @@index([createdAt])
+  @@index([adminId])
+}
+
+enum AdminRole {
+  ADMIN
+  SUPER_ADMIN
+}
+
+// Singleton row (id always "singleton") holding admin-editable platform
+// settings — currently just the ad-revenue split between Oros and Orochat.
+model PlatformConfig {
+  id              String   @id @default("singleton")
+  oroSharePercent Float    @default(0.65) // 0-1; Oros' share of gross ad revenue
+
+  updatedAt       DateTime @updatedAt
+}
+
+// Ad campaign — creative + manual community targeting. Serving (placing
+// these into the Global/Compass feeds) is a separate follow-up; this is
+// campaign management only.
+model AdCampaign {
+  id               String           @id @default(cuid())
+  advertiserName   String
+  headline         String
+  body             String
+  imageUrl         String?
+  ctaLabel         String
+  ctaUrl           String
+  status           AdCampaignStatus @default(DRAFT)
+  startAt          DateTime
+  endAt            DateTime
+  targetGlobal     Boolean          @default(true)
+  targetCompassIds String[]         @default([]) // empty = no manual Compass targeting restriction
+  targetKeywords   String?          // free-text topics; embedded into targetEmbedding for relevance scoring
+  targetEmbedding  Float[]          @default([])
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  impressions AdImpression[]
+  clicks      AdClick[]
+
+  @@index([status])
+}
+
+enum AdCampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+model AdImpression {
+  id         String   @id @default(cuid())
+  campaignId String
+  userId     String
+  compassId  String?  // null = shown on Global/User feed
+  createdAt  DateTime @default(now())
+
+  campaign AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, createdAt])
+}
+
+model AdClick {
+  id         String   @id @default(cuid())
+  campaignId String
+  userId     String
+  compassId  String?
+  createdAt  DateTime @default(now())
+
+  campaign AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, createdAt])
 }
 

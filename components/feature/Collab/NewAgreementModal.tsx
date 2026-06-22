@@ -1,55 +1,81 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { X, FileText } from 'lucide-react';
 import { getOrCreateKeypair, signText } from '@/lib/utils/crypto';
 
+interface Member {
+  id: string;
+  name: string;
+  avatar?: string | null;
+}
+
 interface NewAgreementModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSend: (contractPayload: string) => void;
-  initiatorName: string;
+  onCreate: (
+    title: string,
+    terms: string,
+    signerUserIds: string[],
+    signature: { signatureBase64: string; publicKeyJwk: JsonWebKey }
+  ) => Promise<{ success?: boolean; error?: string }>;
+  members: Member[];
+  isGroup: boolean;
 }
 
-export default function NewAgreementModal({ isOpen, onClose, onSend, initiatorName }: NewAgreementModalProps) {
+export default function NewAgreementModal({ isOpen, onClose, onCreate, members, isGroup }: NewAgreementModalProps) {
   const [title, setTitle] = useState('');
   const [terms, setTerms] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [selectedSignerIds, setSelectedSignerIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (isOpen) setSelectedSignerIds(members.map((m) => m.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const toggleSigner = (id: string) => {
+    setSelectedSignerIds((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !terms.trim() || isLoading) return;
 
+    const signerUserIds = isGroup ? selectedSignerIds : members[0] ? [members[0].id] : [];
+    if (signerUserIds.length === 0) {
+      setError('Select at least one person who needs to sign');
+      return;
+    }
+
     setIsLoading(true);
+    setError('');
     try {
       // 1. Generate/get local keypair
-      const { publicKeyJwk } = await getOrCreateKeypair();
-      
-      // 2. Sign contract terms
-      const contractPayloadToSign = `${title.trim()}\n${terms.trim()}`;
-      const { signatureBase64 } = await signText(contractPayloadToSign);
+      await getOrCreateKeypair();
 
-      // 3. Assemble contract request JSON
-      const requestData = {
-        id: `contract-${Math.random().toString(36).substring(2, 11)}`,
-        title: title.trim(),
-        terms: terms.trim(),
-        initiatorName,
-        initiatorKey: publicKeyJwk,
-        initiatorSignature: signatureBase64,
-        status: 'PENDING'
-      };
+      // 2. Sign agreement terms
+      const payloadToSign = `${title.trim()}\n${terms.trim()}`;
+      const { signatureBase64, publicKeyJwk } = await signText(payloadToSign);
 
-      onSend(`📝 CONTRACT_REQUEST:${JSON.stringify(requestData)}`);
-      setTitle('');
-      setTerms('');
-      onClose();
-    } catch (error) {
-      console.error('Failed to create cryptographic agreement:', error);
+      // 3. Create the agreement (server records initiator signature + one PENDING row per signer)
+      const result = await onCreate(title.trim(), terms.trim(), signerUserIds, { signatureBase64, publicKeyJwk });
+
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setTitle('');
+        setTerms('');
+        onClose();
+      }
+    } catch (err) {
+      console.error('Failed to create cryptographic agreement:', err);
+      setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -91,9 +117,40 @@ export default function NewAgreementModal({ isOpen, onClose, onSend, initiatorNa
               className="w-full rounded-lg border border-gray-200 p-3 text-sm text-[#333333] focus:outline-none focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 transition-all resize-none"
             />
           </div>
+
+          {isGroup && (
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                Required Signers ({selectedSignerIds.length} of {members.length} selected)
+              </label>
+              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                {members.map((member) => (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onClick={() => toggleSigner(member.id)}
+                    className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+                      selectedSignerIds.includes(member.id)
+                        ? 'bg-[#458B9E] text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {member.name}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 mt-1.5">
+                The agreement is only fully executed once everyone selected here has signed.
+              </p>
+            </div>
+          )}
+
           <div className="bg-[#458B9E]/5 p-3 rounded-lg text-xs text-gray-500 border border-[#458B9E]/10 leading-relaxed">
             <strong>🔒 Browser Cryptography:</strong> Clicking submit generates a secure, asymmetric key pair (ECDSA P-256) locally inside this browser. A secure digital signature of these terms is computed using your private key (which never leaves your device).
           </div>
+
+          {error && <p className="text-sm text-red-600 bg-red-50 border-l-4 border-red-400 rounded-lg p-3">{error}</p>}
+
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
             <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading}>Cancel</Button>
             <Button type="submit" isLoading={isLoading} disabled={!title.trim() || !terms.trim()}>
