@@ -319,6 +319,13 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
     ? groupName || members.map((m) => m.name).join(', ')
     : members[0]?.name || 'Chat';
 
+  // The viewer is always "online" while looking at the page; other senders
+  // use their tracked presence from `members`.
+  const presenceBySenderId: Record<string, 'online' | 'offline'> = { [currentUserId]: 'online' };
+  members.forEach((m) => {
+    if (m.presence) presenceBySenderId[m.id] = m.presence;
+  });
+
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto">
@@ -428,6 +435,7 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
                   onDeleteCall={handleDeleteCall}
                   agreementsById={agreementsById}
                   onSignAgreement={handleSignAgreement}
+                  senderPresence={presenceBySenderId[message.senderId]}
                 />
               ))}
               <div ref={messagesEndRef} />

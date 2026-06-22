@@ -38,6 +38,7 @@ interface MessageBubbleProps {
   onDeleteCall?: (call: { messageId: string; callSessionId?: string }) => void;
   agreementsById?: Record<string, AgreementData>;
   onSignAgreement?: (agreementId: string, signature: { signatureBase64: string; publicKeyJwk: JsonWebKey }) => Promise<{ success?: boolean; error?: string }>;
+  senderPresence?: 'online' | 'offline';
 }
 
 // Verifies one signature against a payload + public key, async, and renders
@@ -74,6 +75,7 @@ export default function MessageBubble({
   onDeleteCall,
   agreementsById,
   onSignAgreement,
+  senderPresence,
 }: MessageBubbleProps) {
   const [isCallMenuOpen, setIsCallMenuOpen] = useState(false);
   const isOwn = message.senderId === currentUserId;
@@ -195,13 +197,23 @@ export default function MessageBubble({
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4`}>
       <div className={`flex items-start space-x-2 max-w-[80%] ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
-        <div className="w-8 h-8 rounded-full bg-[#458B9E] flex items-center justify-center flex-shrink-0 overflow-hidden">
-          {message.sender.avatar ? (
-            <img src={`/api/user/${message.sender.id}/avatar`} alt={message.sender.name} className="w-full h-full rounded-full object-cover" />
-          ) : (
-            <span className="text-white text-xs font-semibold">
-              {message.sender.name.charAt(0).toUpperCase()}
-            </span>
+        <div className="w-8 h-8 rounded-full flex-shrink-0 relative">
+          <div className="absolute inset-0 rounded-full bg-[#458B9E] flex items-center justify-center overflow-hidden">
+            {message.sender.avatar ? (
+              <img src={`/api/user/${message.sender.id}/avatar`} alt={message.sender.name} className="w-full h-full rounded-full object-cover" />
+            ) : (
+              <span className="text-white text-xs font-semibold">
+                {message.sender.name.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+          {senderPresence && (
+            <span
+              className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                senderPresence === 'online' ? 'bg-green-500' : 'bg-gray-300'
+              }`}
+              aria-label={senderPresence}
+            />
           )}
         </div>
 
