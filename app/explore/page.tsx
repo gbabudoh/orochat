@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import { Search, User, Building, MapPin, Users, Briefcase, LogOut, Home, AtSign, Globe, Map } from 'lucide-react';
+import { Search, User, Building, MapPin, Users, Briefcase, LogOut, Home, AtSign, Globe, Map, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { COUNTRIES, countryCodeToFlag, getCountryName, getFlagImageUrl } from '@/lib/constants/countries';
 import { PROFESSIONAL_CATEGORIES } from '@/lib/constants/categories';
@@ -179,6 +179,16 @@ export default function ExplorePage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        {session && (
+          <Link
+            href="/feed"
+            className="inline-flex items-center gap-1.5 text-sm text-[#458B9E] hover:underline mb-4 sm:mb-6"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Feed
+          </Link>
+        )}
+
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12">
           <h1 className="text-2xl sm:text-4xl font-bold text-[#333333] mb-3 sm:mb-4">
