@@ -40,6 +40,11 @@ model User {
   currentTES    Float     @default(0)
   lastTESUpdate DateTime? @default(now())
 
+  // Stripe Connect Express — payout account for Oro revenue-share distributions
+  stripeConnectAccountId        String?  @unique
+  stripeConnectOnboarded        Boolean  @default(false) // charges_enabled && payouts_enabled per Stripe account.updated
+  stripeConnectDetailsSubmitted Boolean  @default(false) // onboarding form completed, even if not yet fully verified
+
   // Presence — raw client-reported status; lib/presence.ts resolves the
   // real-time value, forcing "offline" once lastSeenAt goes stale
   presenceStatus String    @default("offline")
@@ -462,15 +467,30 @@ model RevenueDistribution {
   amount      Float    // Calculated payout amount
   paid        Boolean  @default(false)
   paidAt      DateTime?
-  
+
+  // Stripe Connect transfer tracking — set when a real money-movement
+  // attempt is made (initial batch distribution or manual retry)
+  stripeTransferId    String?      @unique
+  payoutStatus        PayoutStatus @default(PENDING)
+  payoutFailureReason String?
+  payoutAttemptedAt   DateTime?
+
   createdAt   DateTime @default(now())
-  
+
   pool      AdRevenuePool @relation(fields: [poolId], references: [id])
   user      User @relation(fields: [userId], references: [id])
 
   @@index([poolId])
   @@index([userId])
   @@index([paid])
+  @@index([payoutStatus])
+}
+
+enum PayoutStatus {
+  PENDING
+  PAID
+  FAILED
+  NOT_CONNECTED
 }
 
 // Fraud Flag Model - Records suspicious connection-graph patterns

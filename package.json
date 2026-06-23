@@ -46,6 +46,7 @@
     "react-dom": "19.2.0",
     "recharts": "^3.8.1",
     "sonner": "^2.0.7",
+    "stripe": "^22.2.3",
     "zod": "^4.1.13"
   },
   "devDependencies": {

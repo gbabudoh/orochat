@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { AdminService } from '@/services/admin.service';
 import Card from '@/components/ui/Card';
 import PoolDistributeButton from '@/components/admin/PoolDistributeButton';
-import MarkPaidButton from '@/components/admin/MarkPaidButton';
+import RetryPayoutButton from '@/components/admin/RetryPayoutButton';
 
 export default async function AdminRevenuePoolPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -32,7 +32,7 @@ export default async function AdminRevenuePoolPage({ params }: { params: Promise
               <th className="px-4 py-3 font-medium">User</th>
               <th className="px-4 py-3 font-medium">TES Share</th>
               <th className="px-4 py-3 font-medium">Amount</th>
-              <th className="px-4 py-3 font-medium">Paid</th>
+              <th className="px-4 py-3 font-medium">Payout Status</th>
               <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
@@ -45,8 +45,17 @@ export default async function AdminRevenuePoolPage({ params }: { params: Promise
                 </td>
                 <td className="px-4 py-3">{(dist.tesShare * 100).toFixed(2)}%</td>
                 <td className="px-4 py-3">${dist.amount.toFixed(2)}</td>
-                <td className="px-4 py-3">{dist.paid ? 'Yes' : 'No'}</td>
-                <td className="px-4 py-3">{!dist.paid && <MarkPaidButton distributionId={dist.id} />}</td>
+                <td className="px-4 py-3">
+                  {dist.payoutStatus === 'PAID' && <span className="text-green-600 font-medium">Paid</span>}
+                  {dist.payoutStatus === 'FAILED' && (
+                    <span className="text-red-600 font-medium" title={dist.payoutFailureReason ?? ''}>
+                      Failed{dist.payoutFailureReason ? `: ${dist.payoutFailureReason.slice(0, 40)}` : ''}
+                    </span>
+                  )}
+                  {dist.payoutStatus === 'NOT_CONNECTED' && <span className="text-amber-600 font-medium">Not connected</span>}
+                  {dist.payoutStatus === 'PENDING' && <span className="text-gray-400">Pending</span>}
+                </td>
+                <td className="px-4 py-3">{dist.payoutStatus !== 'PAID' && <RetryPayoutButton distributionId={dist.id} />}</td>
               </tr>
             ))}
           </tbody>

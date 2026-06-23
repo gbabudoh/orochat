@@ -3,17 +3,21 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { markPaid } from '@/features/admin/revenue-actions';
+import { retryDistributionPayout } from '@/features/admin/revenue-actions';
 
-export default function MarkPaidButton({ distributionId }: { distributionId: string }) {
+export default function RetryPayoutButton({ distributionId }: { distributionId: string }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   const run = async () => {
     setIsLoading(true);
-    await markPaid(distributionId);
+    const result = await retryDistributionPayout(distributionId);
     setIsLoading(false);
-    toast.success('Marked as paid');
+    if ('error' in result) {
+      toast.error(result.error);
+    } else {
+      toast.success('Payout sent');
+    }
     router.refresh();
   };
 
@@ -24,7 +28,7 @@ export default function MarkPaidButton({ distributionId }: { distributionId: str
       disabled={isLoading}
       className="text-xs font-medium text-[#458B9E] hover:underline disabled:opacity-60"
     >
-      Mark Paid
+      {isLoading ? 'Retrying…' : 'Retry payout'}
     </button>
   );
 }

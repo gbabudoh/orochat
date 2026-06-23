@@ -3,6 +3,7 @@
 import { getAdminSession, requireSuperAdmin } from '@/lib/auth.admin';
 import { getPlatformConfig, updateOroSharePercent } from '@/lib/platformConfig';
 import { AdminService } from '@/services/admin.service';
+import { StripeService } from '@/services/stripe.service';
 import { logAdminAction } from '@/lib/adminAudit';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -62,7 +63,7 @@ export async function distributePoolRevenue(poolId: string) {
   const adminId = await requireAdmin();
   try {
     await AdminService.distributeRevenue(poolId);
-    logAdminAction(adminId, 'revenue_pool.distribute', { targetType: 'AdRevenuePool', targetId: poolId });
+    logAdminAction(adminId, 'revenue_pool.distribute', { targetType: 'AdRevenuePool', targetId: poolId, metadata: { triggeredPayouts: true } });
     revalidatePath('/admin/revenue');
     return { success: true };
   } catch (error) {
@@ -71,10 +72,14 @@ export async function distributePoolRevenue(poolId: string) {
   }
 }
 
-export async function markPaid(distributionId: string) {
+export async function retryDistributionPayout(distributionId: string) {
   const adminId = await requireAdmin();
-  await AdminService.markDistributionPaid(distributionId);
-  logAdminAction(adminId, 'revenue_distribution.mark_paid', { targetType: 'RevenueDistribution', targetId: distributionId });
+  const result = await StripeService.payoutSingleDistribution(distributionId);
+  logAdminAction(adminId, 'revenue_distribution.retry_payout', {
+    targetType: 'RevenueDistribution',
+    targetId: distributionId,
+    metadata: { success: result.success, reason: result.reason },
+  });
   revalidatePath('/admin/revenue');
-  return { success: true };
+  return result.success ? { success: true } : { error: result.reason || 'Payout failed' };
 }

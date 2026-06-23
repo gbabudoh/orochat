@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { TESService } from './tes.service';
 import { FraudService } from './fraud.service';
+import { StripeService } from './stripe.service';
 import { getPlatformConfig } from '@/lib/platformConfig';
 
 /**
@@ -80,19 +81,10 @@ export class AdminService {
         distributedAt: new Date(),
       },
     });
-  }
 
-  /**
-   * Mark a distribution as paid
-   */
-  static async markDistributionPaid(distributionId: string): Promise<void> {
-    await db.revenueDistribution.update({
-      where: { id: distributionId },
-      data: {
-        paid: true,
-        paidAt: new Date(),
-      },
-    });
+    // Move real money: attempt a Stripe transfer to every eligible,
+    // payout-connected Oro in this pool.
+    await StripeService.payoutEligibleDistributions(poolId);
   }
 
   /**
