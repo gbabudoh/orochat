@@ -196,7 +196,7 @@ export default function MessageBubble({
 
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4`}>
-      <div className={`flex items-start space-x-2 max-w-[80%] ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
+      <div className={`flex items-start space-x-2 max-w-[88%] sm:max-w-[80%] min-w-0 ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
         <div className="w-8 h-8 rounded-full flex-shrink-0 relative">
           <div className="absolute inset-0 rounded-full bg-[#458B9E] flex items-center justify-center overflow-hidden">
             {message.sender.avatar ? (
@@ -217,7 +217,7 @@ export default function MessageBubble({
           )}
         </div>
 
-        <div className={`rounded-lg px-4 py-2 ${isOwn ? 'bg-[#458B9E] text-white' : 'bg-[#F0F3F7] text-[#333333]'}`}>
+        <div className={`rounded-lg px-4 py-2 min-w-0 ${isOwn ? 'bg-[#458B9E] text-white' : 'bg-[#F0F3F7] text-[#333333]'}`}>
           {!isOwn && (
             <div className="text-xs font-semibold mb-1 opacity-75">{message.sender.name}</div>
           )}
@@ -289,7 +289,7 @@ export default function MessageBubble({
               )}
             </div>
           ) : isContractRequest && contractData ? (
-            <div className="py-1 min-w-[260px] sm:min-w-[320px]">
+            <div className="py-1 min-w-0 sm:min-w-[320px]">
               <div className="flex items-center gap-2 mb-3 border-b pb-2 border-current/10">
                 <FileText className="w-4 h-4 shrink-0 animate-pulse" />
                 <span className="font-bold text-sm">Agreement Signature Request</span>
@@ -345,7 +345,7 @@ export default function MessageBubble({
               )}
             </div>
           ) : isContractSigned && contractData ? (
-            <div className="py-1 min-w-[260px] sm:min-w-[320px]">
+            <div className="py-1 min-w-0 sm:min-w-[320px]">
               <div className="flex items-center gap-2 mb-3 border-b pb-2 border-current/10 text-emerald-500">
                 <CheckCircle className="w-4 h-4 shrink-0" />
                 <span className="font-bold text-sm">Agreement Fully Executed</span>
@@ -395,7 +395,7 @@ export default function MessageBubble({
               </div>
             </div>
           ) : isAgreementV2 && agreement ? (
-            <div className="py-1 min-w-[260px] sm:min-w-[320px]">
+            <div className="py-1 min-w-0 sm:min-w-[320px]">
               {agreement.status === 'EXECUTED' ? (
                 <div className="flex items-center gap-2 mb-3 border-b pb-2 border-current/10 text-emerald-500">
                   <CheckCircle className="w-4 h-4 shrink-0" />

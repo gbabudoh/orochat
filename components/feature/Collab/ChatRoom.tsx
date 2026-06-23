@@ -342,8 +342,8 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
     <div className="max-w-4xl mx-auto">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col" style={{ height: 'calc(100vh - 200px)' }}>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 sm:p-4 border-b border-gray-200">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Link
               href="/collab"
               className="shrink-0 p-1.5 -ml-1.5 rounded-full text-gray-500 hover:text-[#458B9E] hover:bg-[#F0F3F7] transition-colors"
@@ -377,17 +377,17 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
               )}
             </div>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="ghost" size="sm" onClick={() => setIsAgreementOpen(true)} className="text-[#458B9E] hover:text-[#3a7585]">
-              <FileText className="w-4 h-4 mr-1.5" />
-              New Agreement
+
+          <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto sm:overflow-visible -mx-3 sm:mx-0 px-3 sm:px-0 pb-0.5 sm:pb-0">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setIsAgreementOpen(true)} className="text-[#458B9E] hover:text-[#3a7585] shrink-0 whitespace-nowrap">
+              <FileText className="w-4 h-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">New Agreement</span>
             </Button>
-            <div className="relative">
-              <Button type="button" variant="ghost" size="sm" onClick={() => setIsDurationMenuOpen((v) => !v)} className="text-[#458B9E] hover:text-[#3a7585]">
-                <Video className="w-4 h-4 mr-1.5" />
-                Start Call
-                <ChevronDown className="w-3.5 h-3.5 ml-1" />
+            <div className="relative shrink-0">
+              <Button type="button" variant="ghost" size="sm" onClick={() => setIsDurationMenuOpen((v) => !v)} className="text-[#458B9E] hover:text-[#3a7585] whitespace-nowrap">
+                <Video className="w-4 h-4 sm:mr-1.5" />
+                <span className="hidden sm:inline">Start Call</span>
+                <ChevronDown className="w-3.5 h-3.5 sm:ml-1" />
               </Button>
               {isDurationMenuOpen && (
                 <div className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
@@ -404,13 +404,13 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
                 </div>
               )}
             </div>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setIsHistoryOpen(true)} className="text-[#458B9E] hover:text-[#3a7585]">
-              <History className="w-4 h-4 mr-1.5" />
-              Call History
+            <Button type="button" variant="ghost" size="sm" onClick={() => setIsHistoryOpen(true)} className="text-[#458B9E] hover:text-[#3a7585] shrink-0 whitespace-nowrap">
+              <History className="w-4 h-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Call History</span>
             </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setIsAddOpen(true)}>
-              <UserPlus className="w-4 h-4 mr-1.5" />
-              Add people
+            <Button type="button" variant="ghost" size="sm" onClick={() => setIsAddOpen(true)} className="shrink-0 whitespace-nowrap">
+              <UserPlus className="w-4 h-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Add people</span>
             </Button>
           </div>
         </div>

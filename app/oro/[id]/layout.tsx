@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import MainHeader from '@/components/layout/MainHeader';
 import MainSidebar from '@/components/layout/MainSidebar';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 
 export default async function OroProfileLayout({
   children,
@@ -17,10 +18,11 @@ export default async function OroProfileLayout({
       {session && <MainHeader />}
       <div className="flex">
         {session && <MainSidebar />}
-        <main className={`flex-1 ${session ? 'lg:ml-64 mt-16' : ''} p-0`}>
+        <main className={`flex-1 ${session ? 'lg:ml-64 mt-16 pb-24 lg:pb-0' : ''} p-0`}>
           {children}
         </main>
       </div>
+      {session && <MobileBottomNav />}
     </div>
   );
 }

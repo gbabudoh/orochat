@@ -140,6 +140,12 @@ export default async function MyOrosPage() {
                       <p className="text-xs text-gray-500 truncate">{oro.company}</p>
                     )}
                     <div className="mt-4 flex items-center space-x-2">
+                      <Link href={`/oro/${oro.id}`}>
+                        <Button size="sm" variant="ghost" className="text-xs">
+                          <User className="w-3 h-3 mr-1" />
+                          View Profile
+                        </Button>
+                      </Link>
                       <Link href={`/collab/${oro.id}`}>
                         <Button size="sm" variant="ghost" className="text-xs">
                           <MessageSquare className="w-3 h-3 mr-1" />

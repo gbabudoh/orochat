@@ -4,7 +4,8 @@ import { db } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import Image from 'next/image';
-import { Users, MessageSquare, Calendar } from 'lucide-react';
+import Link from 'next/link';
+import { Users, MessageSquare, Calendar, ArrowLeft } from 'lucide-react';
 import CommunityActions from '@/components/feature/Compass/CommunityActions';
 import CommunityMembersButton from '@/components/feature/Compass/CommunityMembersButton';
 import CommunityTabs from '@/components/feature/Compass/CommunityTabs';
@@ -137,6 +138,14 @@ export default async function CompassCommunityPage({ params }: { params: Promise
 
   return (
     <div className="max-w-4xl mx-auto">
+      <Link
+        href="/compass"
+        className="flex sm:hidden items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#458B9E] mb-3"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to Compass
+      </Link>
+
       <Card padding="lg" className="mb-6 overflow-hidden">
         {community.image && (
           <div className="relative w-full h-40 -mx-6 -mt-6 mb-4 sm:-mx-8 sm:-mt-8">

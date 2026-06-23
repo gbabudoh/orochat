@@ -81,7 +81,7 @@ export default function PostCard({ post, isLiked, comments, index = 0, currentUs
             )}
           </Link>
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-1.5">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1.5 sm:gap-2 mb-1.5">
               <div className="flex-1 min-w-0">
                 <Link href={`/oro/${post.author.id}`} className="font-semibold text-[#333333] text-sm sm:text-lg hover:text-[#458B9E] transition-colors wrap-break-word">
                   {post.author.name}
@@ -111,7 +111,7 @@ export default function PostCard({ post, isLiked, comments, index = 0, currentUs
                   )}
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-1 shrink-0">
+              <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-1 shrink-0">
                 <div className="flex items-center gap-1.5">
                   <span className="px-1.5 py-0.5 bg-[#458B9E]/10 text-[#458B9E] text-[9px] sm:text-[10px] font-bold rounded-md uppercase tracking-wider">
                     Oro Post
@@ -126,7 +126,7 @@ export default function PostCard({ post, isLiked, comments, index = 0, currentUs
                   {(() => {
                     const relative = formatRelativeTime(post.createdAt);
                     const isRelative = !relative.includes(',');
-                    return isRelative 
+                    return isRelative
                       ? `${formatPostDateTime(post.createdAt)} (${relative})`
                       : formatPostDateTime(post.createdAt);
                   })()}

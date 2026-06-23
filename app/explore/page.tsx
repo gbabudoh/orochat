@@ -101,7 +101,7 @@ export default function ExplorePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center min-w-0">
-              <img src="/logo.png" alt="Orochat Logo" className="h-9 sm:h-14 w-auto" />
+              <img src="/logo.png" alt="Orochat Logo" className="h-12 sm:h-14 w-auto" />
             </Link>
 
             {session ? (
@@ -256,15 +256,15 @@ export default function ExplorePage() {
 
         {/* Loading skeleton */}
         {isSearching && (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i} className="p-6 animate-pulse">
-                <div className="flex items-start space-x-4">
-                  <div className="w-16 h-16 rounded-full bg-gray-200 shrink-0" />
-                  <div className="flex-1 space-y-2 pt-1">
-                    <div className="h-4 w-2/3 bg-gray-200 rounded" />
-                    <div className="h-3 w-1/2 bg-gray-100 rounded" />
-                    <div className="h-3 w-1/3 bg-gray-100 rounded" />
+              <Card key={i} className="p-3 sm:p-6 animate-pulse">
+                <div className="flex flex-col items-center sm:flex-row sm:items-start gap-2 sm:gap-4">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-200 shrink-0" />
+                  <div className="flex-1 w-full space-y-2 pt-1">
+                    <div className="h-4 w-2/3 mx-auto sm:mx-0 bg-gray-200 rounded" />
+                    <div className="h-3 w-1/2 mx-auto sm:mx-0 bg-gray-100 rounded" />
+                    <div className="h-3 w-1/3 mx-auto sm:mx-0 bg-gray-100 rounded" />
                   </div>
                 </div>
               </Card>
@@ -315,12 +315,12 @@ export default function ExplorePage() {
             </div>
 
             {viewMode === 'list' ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 {users.map((user) => (
-                  <Card key={user.id} hover className="p-5 sm:p-6">
-                    <div className="flex items-start gap-3 sm:gap-4">
+                  <Card key={user.id} hover className="p-3 sm:p-6">
+                    <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left gap-2 sm:gap-4">
                       <Link href={`/oro/${user.id}`} className="shrink-0">
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#458B9E] flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#458B9E] flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity">
                           {user.avatar ? (
                             <img
                               src={`/api/user/${user.id}/avatar`}
@@ -328,14 +328,14 @@ export default function ExplorePage() {
                               className="w-full h-full object-cover rounded-full"
                             />
                           ) : (
-                            <User className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                            <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                           )}
                         </div>
                       </Link>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                      <div className="flex-1 min-w-0 w-full">
+                        <div className="flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">
                           <Link href={`/oro/${user.id}`} className="min-w-0">
-                            <h3 className="font-semibold text-[#333333] hover:text-[#458B9E] transition-colors truncate">
+                            <h3 className="font-semibold text-sm sm:text-base text-[#333333] hover:text-[#458B9E] transition-colors truncate">
                               {user.name}
                             </h3>
                           </Link>
@@ -346,28 +346,28 @@ export default function ExplorePage() {
                           )}
                         </div>
                         {user.username && (
-                          <div className="flex items-center text-xs text-gray-400 mt-0.5">
+                          <div className="flex items-center justify-center sm:justify-start text-xs text-gray-400 mt-0.5">
                             <AtSign className="w-3 h-3 mr-1 shrink-0" />
                             <span className="truncate">{user.username}</span>
                           </div>
                         )}
                         {user.title && (
-                          <p className="text-sm text-gray-600 truncate mt-1">{user.title}</p>
+                          <p className="text-xs sm:text-sm text-gray-600 truncate mt-1">{user.title}</p>
                         )}
                         {user.company && (
-                          <div className="flex items-center text-xs text-gray-500 mt-1">
+                          <div className="flex items-center justify-center sm:justify-start text-xs text-gray-500 mt-1">
                             <Building className="w-3 h-3 mr-1 shrink-0" />
                             <span className="truncate">{user.company}</span>
                           </div>
                         )}
                         {user.location && (
-                          <div className="flex items-center text-xs text-gray-500 mt-1">
+                          <div className="flex items-center justify-center sm:justify-start text-xs text-gray-500 mt-1">
                             <MapPin className="w-3 h-3 mr-1 shrink-0" />
                             <span className="truncate">{user.location}</span>
                           </div>
                         )}
                         {user.countryCode && (
-                          <div className="flex items-center text-xs text-gray-500 mt-1">
+                          <div className="hidden sm:flex items-center text-xs text-gray-500 mt-1">
                             {getFlagImageUrl(user.countryCode) && (
                               <img
                                 src={getFlagImageUrl(user.countryCode)!}
@@ -380,13 +380,13 @@ export default function ExplorePage() {
                             <span className="truncate">{getCountryName(user.countryCode)}</span>
                           </div>
                         )}
-                        <div className="flex items-center mt-3 text-xs text-gray-500">
+                        <div className="flex items-center justify-center sm:justify-start mt-3 text-xs text-gray-500">
                           <Users className="w-3 h-3 mr-1" />
                           <span>{user.verifiedOrosCount || 0} Oros</span>
                         </div>
                         <div className="mt-4">
                           <Link href={`/oro/${user.id}`}>
-                            <Button size="sm" variant="ghost" className="w-full">
+                            <Button size="sm" variant="ghost" className="w-full text-xs sm:text-sm px-2">
                               View Profile
                             </Button>
                           </Link>
