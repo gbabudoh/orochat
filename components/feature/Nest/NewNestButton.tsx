@@ -10,8 +10,12 @@ export default function NewNestButton({ currentUserId }: { currentUserId: string
 
   return (
     <>
-      <Button size="sm" onClick={() => setIsOpen(true)}>
-        <Plus className="w-4 h-4 mr-1.5" />
+      <Button
+        size="sm"
+        onClick={() => setIsOpen(true)}
+        className="rounded-full gap-1.5 whitespace-nowrap px-4"
+      >
+        <Plus className="w-4 h-4 shrink-0" />
         New Nest
       </Button>
       <NewNestModal isOpen={isOpen} onClose={() => setIsOpen(false)} currentUserId={currentUserId} />
