@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 import Card from '@/components/ui/Card';
 import Image from 'next/image';
 import Button from '@/components/ui/Button';
-import { User, Building, MapPin, Users, TrendingUp, Award, Briefcase, AtSign, Calendar, Edit, FileText } from 'lucide-react';
+import { User, Building, MapPin, Users, TrendingUp, Award, Briefcase, AtSign, Calendar, Edit, FileText, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 import ProfileActions from '@/components/feature/Profile/ProfileActions';
 import { getCountryName } from '@/lib/constants/countries';
@@ -73,10 +73,18 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
   let workHistory: Array<{
     company: string;
     position: string;
+    city?: string;
+    country?: string;
     startDate: string;
     endDate: string;
     current: boolean;
     description: string;
+  }> = [];
+  let education: Array<{
+    institution: string;
+    city: string;
+    country: string;
+    yearCompleted: string;
   }> = [];
 
   try {
@@ -90,6 +98,13 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
     if (user.workHistory) {
       const parsed = JSON.parse(user.workHistory);
       workHistory = Array.isArray(parsed) ? parsed : [];
+    }
+  } catch {}
+
+  try {
+    if (user.education) {
+      const parsed = JSON.parse(user.education);
+      education = Array.isArray(parsed) ? parsed : [];
     }
   } catch {}
 
@@ -545,6 +560,12 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
                               <Building className="w-5 h-5 mr-2" />
                               {work.company}
                             </div>
+                            {(work.city || work.country) && (
+                              <div className="flex items-center text-gray-600 text-sm mb-1">
+                                <MapPin className="w-4 h-4 mr-2" />
+                                {[work.city, work.country].filter(Boolean).join(', ')}
+                              </div>
+                            )}
                           </div>
                           <div className="flex items-center space-x-2 px-4 py-2 bg-white rounded-lg border border-gray-200 text-sm text-gray-600 font-medium">
                             <Calendar className="w-4 h-4 text-[#458B9E]" />
@@ -602,6 +623,47 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
                           <div className="mt-2 inline-flex items-center px-2 py-1 bg-[#FFC93C]/10 rounded-full">
                             <span className="text-xs font-semibold text-[#333333]">Verified</span>
                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+          {/* Education */}
+          {education.length > 0 && (
+              <Card padding="lg" className="shadow-md border-l-4 border-[#458B9E]">
+                <div className="flex items-center mb-8">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#458B9E] to-[#3a7585] flex items-center justify-center mr-4 shadow-md">
+                    <GraduationCap className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Education</h2>
+                    <p className="text-sm text-gray-600">Academic background</p>
+                  </div>
+                </div>
+                <div className="space-y-8">
+                  {education.map((edu, index) => (
+                    <div key={index} className="relative pl-8 pb-8 border-l-2 border-gray-200 last:border-0 last:pb-0">
+                      <div className="absolute -left-3 top-0 w-6 h-6 rounded-full bg-[#458B9E] border-4 border-white shadow-md" />
+                      <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl border border-gray-200 hover:border-[#458B9E] hover:shadow-lg transition-all">
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                          <div className="flex-1">
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">{edu.institution}</h3>
+                            {(edu.city || edu.country) && (
+                              <div className="flex items-center text-gray-600 text-sm">
+                                <MapPin className="w-4 h-4 mr-2" />
+                                {[edu.city, edu.country].filter(Boolean).join(', ')}
+                              </div>
+                            )}
+                          </div>
+                          {edu.yearCompleted && (
+                            <div className="flex items-center space-x-2 px-4 py-2 bg-white rounded-lg border border-gray-200 text-sm text-gray-600 font-medium">
+                              <Calendar className="w-4 h-4 text-[#458B9E]" />
+                              <span>{edu.yearCompleted}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

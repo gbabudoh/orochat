@@ -15,6 +15,8 @@ import Modal from '@/components/ui/Modal';
 interface WorkHistoryEntry {
   company: string;
   position: string;
+  city: string;
+  country: string;
   startDate: string;
   endDate: string;
   current: boolean;
@@ -44,7 +46,7 @@ export default function ProfileSettingsPage() {
   const [countryCode, setCountryCode] = useState('');
   const [qualifications, setQualifications] = useState<string[]>(['']);
   const [workHistory, setWorkHistory] = useState<WorkHistoryEntry[]>([
-    { company: '', position: '', startDate: '', endDate: '', current: false, description: '' }
+    { company: '', position: '', city: '', country: '', startDate: '', endDate: '', current: false, description: '' }
   ]);
   const [education, setEducation] = useState<EducationEntry[]>([
     { institution: '', city: '', country: '', yearCompleted: '' }
@@ -96,11 +98,20 @@ export default function ProfileSettingsPage() {
               const history = typeof u.workHistory === 'string'
                 ? JSON.parse(u.workHistory)
                 : u.workHistory;
-              setWorkHistory(Array.isArray(history) && history.length > 0 ? history : [
-                { company: '', position: '', startDate: '', endDate: '', current: false, description: '' }
+              setWorkHistory(Array.isArray(history) && history.length > 0 ? history.map((entry: Partial<WorkHistoryEntry>) => ({
+                company: entry.company || '',
+                position: entry.position || '',
+                city: entry.city || '',
+                country: entry.country || '',
+                startDate: entry.startDate || '',
+                endDate: entry.endDate || '',
+                current: entry.current || false,
+                description: entry.description || '',
+              })) : [
+                { company: '', position: '', city: '', country: '', startDate: '', endDate: '', current: false, description: '' }
               ]);
             } catch {
-              setWorkHistory([{ company: '', position: '', startDate: '', endDate: '', current: false, description: '' }]);
+              setWorkHistory([{ company: '', position: '', city: '', country: '', startDate: '', endDate: '', current: false, description: '' }]);
             }
           }
 
@@ -197,7 +208,7 @@ export default function ProfileSettingsPage() {
   };
 
   const addWorkHistory = () => {
-    setWorkHistory((prev) => [...prev, { company: '', position: '', startDate: '', endDate: '', current: false, description: '' }]);
+    setWorkHistory((prev) => [...prev, { company: '', position: '', city: '', country: '', startDate: '', endDate: '', current: false, description: '' }]);
   };
 
   const removeWorkHistory = (index: number) => {
@@ -567,6 +578,29 @@ export default function ProfileSettingsPage() {
                       onChange={(e) => updateWorkHistory(index, 'position', e.target.value)}
                       placeholder="Job title"
                     />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input
+                        label="City"
+                        value={entry.city}
+                        onChange={(e) => updateWorkHistory(index, 'city', e.target.value)}
+                        placeholder="e.g., London"
+                      />
+                      <div>
+                        <label className="block text-sm font-medium text-[#333333] mb-1.5">
+                          Country
+                        </label>
+                        <select
+                          value={entry.country}
+                          onChange={(e) => updateWorkHistory(index, 'country', e.target.value)}
+                          className="w-full px-4 py-2.5 rounded-lg border-2 transition-all duration-200 bg-white text-[#333333] border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20"
+                        >
+                          <option value="">Select a country</option>
+                          {COUNTRIES.map((c) => (
+                            <option key={c.code} value={c.name}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       <Input
                         label="Start Date"
