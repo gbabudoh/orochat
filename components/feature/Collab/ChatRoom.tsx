@@ -65,6 +65,8 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
   const [isAgreementOpen, setIsAgreementOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isDurationMenuOpen, setIsDurationMenuOpen] = useState(false);
+  const [durationMenuPos, setDurationMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const callButtonRef = useRef<HTMLDivElement>(null);
   const [activeCallRoom, setActiveCallRoom] = useState<string | null>(null);
   const [activeCallSessionId, setActiveCallSessionId] = useState<string | null>(null);
   const [activeCallInitiatorId, setActiveCallInitiatorId] = useState<string | null>(null);
@@ -378,37 +380,63 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
             </div>
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto sm:overflow-visible -mx-3 sm:mx-0 px-3 sm:px-0 pb-0.5 sm:pb-0">
-            <Button type="button" variant="ghost" size="sm" onClick={() => setIsAgreementOpen(true)} className="text-[#458B9E] hover:text-[#3a7585] shrink-0 whitespace-nowrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-[#F8FAFB] sm:bg-transparent rounded-full sm:rounded-none p-1 sm:p-0">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setIsAgreementOpen(true)} className="text-[#458B9E] hover:text-[#3a7585] hover:bg-white shrink-0 whitespace-nowrap p-2! sm:px-3! sm:py-1.5!">
               <FileText className="w-4 h-4 sm:mr-1.5" />
               <span className="hidden sm:inline">New Agreement</span>
             </Button>
-            <div className="relative shrink-0">
-              <Button type="button" variant="ghost" size="sm" onClick={() => setIsDurationMenuOpen((v) => !v)} className="text-[#458B9E] hover:text-[#3a7585] whitespace-nowrap">
+            <div className="relative shrink-0" ref={callButtonRef}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (!isDurationMenuOpen && callButtonRef.current) {
+                    const rect = callButtonRef.current.getBoundingClientRect();
+                    const menuWidth = 160;
+                    const left = Math.min(
+                      Math.max(rect.left + rect.width / 2 - menuWidth / 2, 8),
+                      window.innerWidth - menuWidth - 8
+                    );
+                    setDurationMenuPos({ top: rect.bottom + 6, left });
+                  }
+                  setIsDurationMenuOpen((v) => !v);
+                }}
+                className="text-[#458B9E] hover:text-[#3a7585] hover:bg-white whitespace-nowrap p-2! sm:px-3! sm:py-1.5!"
+              >
                 <Video className="w-4 h-4 sm:mr-1.5" />
                 <span className="hidden sm:inline">Start Call</span>
                 <ChevronDown className="w-3.5 h-3.5 sm:ml-1" />
               </Button>
-              {isDurationMenuOpen && (
-                <div className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                  {CALL_DURATION_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.label}
-                      type="button"
-                      onClick={() => startVideoCall(opt.seconds)}
-                      className="w-full text-left px-3 py-2 text-sm text-[#333333] hover:bg-[#F0F3F7] transition-colors"
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
+              {isDurationMenuOpen && durationMenuPos && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsDurationMenuOpen(false)} />
+                  <div
+                    className="fixed w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 text-center"
+                    style={{ top: durationMenuPos.top, left: durationMenuPos.left }}
+                  >
+                    {CALL_DURATION_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.label}
+                        type="button"
+                        onClick={() => {
+                          setIsDurationMenuOpen(false);
+                          startVideoCall(opt.seconds);
+                        }}
+                        className="w-full px-3 py-2 text-sm text-[#333333] hover:bg-[#F0F3F7] transition-colors"
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setIsHistoryOpen(true)} className="text-[#458B9E] hover:text-[#3a7585] shrink-0 whitespace-nowrap">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setIsHistoryOpen(true)} className="text-[#458B9E] hover:text-[#3a7585] hover:bg-white shrink-0 whitespace-nowrap p-2! sm:px-3! sm:py-1.5!">
               <History className="w-4 h-4 sm:mr-1.5" />
               <span className="hidden sm:inline">Call History</span>
             </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setIsAddOpen(true)} className="shrink-0 whitespace-nowrap">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setIsAddOpen(true)} className="hover:bg-white shrink-0 whitespace-nowrap p-2! sm:px-3! sm:py-1.5!">
               <UserPlus className="w-4 h-4 sm:mr-1.5" />
               <span className="hidden sm:inline">Add people</span>
             </Button>
