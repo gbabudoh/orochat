@@ -25,9 +25,24 @@ export default async function PayoutsSettingsPage() {
   const isActive = !!user?.stripeConnectOnboarded;
   const isPending = isConnected && !isActive;
 
+  const totalEarned = distributions
+    .filter((dist) => dist.payoutStatus === 'PAID')
+    .reduce((sum, dist) => sum + dist.amount, 0);
+  const pendingAmount = distributions
+    .filter((dist) => dist.payoutStatus === 'PENDING' || dist.payoutStatus === 'NOT_CONNECTED')
+    .reduce((sum, dist) => sum + dist.amount, 0);
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-[#333333] mb-6">Payouts</h1>
+
+      <Card padding="lg" className="mb-6">
+        <p className="text-sm text-gray-500 mb-1">Total Earned</p>
+        <p className="text-3xl font-bold text-[#333333]">${totalEarned.toFixed(2)}</p>
+        {pendingAmount > 0 && (
+          <p className="text-sm text-gray-500 mt-1">${pendingAmount.toFixed(2)} pending payout</p>
+        )}
+      </Card>
 
       <Card padding="lg" className="mb-6">
         <h2 className="font-semibold text-[#333333] mb-1">Payout Account</h2>

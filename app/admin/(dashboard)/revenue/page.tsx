@@ -11,9 +11,28 @@ const MONTH_NAMES = [
 export default async function AdminRevenuePage() {
   const pools = await AdminService.getAllRevenuePools();
 
+  const totalGross = pools.reduce((sum, pool) => sum + (pool.grossAmount ?? 0), 0);
+  const totalOroPool = pools.reduce((sum, pool) => sum + pool.totalAmount, 0);
+  const totalPlatformCut = pools.reduce((sum, pool) => sum + (pool.platformCutAmount ?? 0), 0);
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-[#333333] mb-6">Revenue Pools</h1>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <Card>
+          <p className="text-sm text-gray-500 mb-1">Total Gross Revenue</p>
+          <p className="text-2xl font-bold text-[#333333]">${totalGross.toFixed(2)}</p>
+        </Card>
+        <Card>
+          <p className="text-sm text-gray-500 mb-1">Total Oro Pool</p>
+          <p className="text-2xl font-bold text-[#333333]">${totalOroPool.toFixed(2)}</p>
+        </Card>
+        <Card>
+          <p className="text-sm text-gray-500 mb-1">Total Platform Cut</p>
+          <p className="text-2xl font-bold text-[#333333]">${totalPlatformCut.toFixed(2)}</p>
+        </Card>
+      </div>
 
       <Card className="max-w-lg mb-6">
         <h2 className="font-semibold text-[#333333] mb-3">Create Pool</h2>
