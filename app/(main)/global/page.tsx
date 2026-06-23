@@ -5,36 +5,65 @@ import Card from '@/components/ui/Card';
 import PostCard from '@/components/feature/Feed/PostCard';
 import SponsoredPostCard from '@/components/feature/Feed/SponsoredPostCard';
 import GlobalFeedLoadMore from '@/components/feature/Feed/GlobalFeedLoadMore';
+import GlobalFeedFilters from '@/components/feature/Feed/GlobalFeedFilters';
 import { getPostMeta } from '@/lib/feed/postMeta';
 import { getPresenceMap } from '@/lib/presence.server';
 import { selectAd } from '@/lib/ads/selectAd';
 import { interleaveSponsored, AD_INTERVAL } from '@/lib/feed/interleaveSponsored';
+import { filterPostsByCategory } from '@/lib/feed/filterByCategory';
 import { Globe } from 'lucide-react';
+import { Prisma } from '@prisma/client';
 
 const PAGE_SIZE = 15;
+// When a category filter is active, posts must be fetched in a larger window
+// and filtered in app code (semantic match, not a DB column), so request more
+// than PAGE_SIZE up front to still have enough left after filtering.
+const CATEGORY_CANDIDATE_WINDOW = 200;
 
-export default async function GlobalFeedPage() {
+export default async function GlobalFeedPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ country?: string; category?: string }>;
+}) {
   const session = await getServerSession(authOptions);
   if (!session) return null;
 
+  const { country, category } = await searchParams;
+
+  const authorWhere: Prisma.UserWhereInput = { isPaused: false };
+  if (country) authorWhere.countryCode = country.toUpperCase();
+
   const posts = await db.feedPost.findMany({
-    where: { visibility: 'PUBLIC', archived: false, author: { isPaused: false } },
+    where: { visibility: 'PUBLIC', archived: false, author: authorWhere },
     include: {
       author: {
-        select: { id: true, name: true, avatar: true, title: true, username: true, countryCode: true },
+        select: {
+          id: true, name: true, avatar: true, title: true, username: true, countryCode: true,
+          ...(category ? { embedding: true } : {}),
+        },
       },
       compass: { select: { id: true, name: true, slug: true } },
     },
     orderBy: { createdAt: 'desc' },
-    take: PAGE_SIZE,
+    take: category ? CATEGORY_CANDIDATE_WINDOW : PAGE_SIZE,
   });
 
-  const postIds = posts.map((p) => p.id);
-  const { likedPostIds, commentsByPostId } = await getPostMeta(postIds, session.user.id);
-  const nextCursor = posts.length === PAGE_SIZE ? posts[posts.length - 1].id : null;
+  const matchedPosts = category
+    ? (await filterPostsByCategory(posts as Array<typeof posts[number] & { author: { embedding: number[] } }>, category)).slice(0, PAGE_SIZE)
+    : posts;
+  // Strip the embedding vector before it reaches the client — it's only
+  // needed server-side for the category similarity match above.
+  const filteredPosts = matchedPosts.map((post) => {
+    const { embedding: _embedding, ...author } = post.author as typeof post.author & { embedding?: number[] };
+    return { ...post, author };
+  });
 
-  const presenceByUserId = await getPresenceMap(posts.map((p) => p.author.id));
-  const postsWithPresence = posts.map((post) => ({
+  const postIds = filteredPosts.map((p) => p.id);
+  const { likedPostIds, commentsByPostId } = await getPostMeta(postIds, session.user.id);
+  const nextCursor = posts.length === (category ? CATEGORY_CANDIDATE_WINDOW : PAGE_SIZE) ? posts[posts.length - 1].id : null;
+
+  const presenceByUserId = await getPresenceMap(filteredPosts.map((p) => p.author.id));
+  const postsWithPresence = filteredPosts.map((post) => ({
     ...post,
     author: { ...post.author, presence: presenceByUserId[post.author.id] },
   }));
@@ -60,15 +89,21 @@ export default async function GlobalFeedPage() {
         </p>
       </div>
 
-      {posts.length === 0 ? (
+      <GlobalFeedFilters />
+
+      {filteredPosts.length === 0 ? (
         <Card>
           <div className="text-center py-16">
             <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
               <Globe className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-semibold text-[#333333] mb-2">No public posts yet</h3>
+            <h3 className="text-lg font-semibold text-[#333333] mb-2">
+              {country || category ? 'No matching posts' : 'No public posts yet'}
+            </h3>
             <p className="text-gray-500 max-w-md mx-auto">
-              Posts marked &quot;Public&quot; from anyone on Orochat will show up here
+              {country || category
+                ? 'Try a different country or category filter'
+                : 'Posts marked "Public" from anyone on Orochat will show up here'}
             </p>
           </div>
         </Card>
@@ -91,7 +126,13 @@ export default async function GlobalFeedPage() {
         </div>
       )}
 
-      <GlobalFeedLoadMore initialCursor={nextCursor} currentUserId={session.user.id} initialSeenCount={posts.length} />
+      <GlobalFeedLoadMore
+        initialCursor={nextCursor}
+        currentUserId={session.user.id}
+        initialSeenCount={filteredPosts.length}
+        country={country}
+        category={category}
+      />
     </div>
   );
 }

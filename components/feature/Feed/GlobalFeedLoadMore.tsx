@@ -25,9 +25,11 @@ interface Props {
   initialCursor: string | null;
   currentUserId: string;
   initialSeenCount: number;
+  country?: string;
+  category?: string;
 }
 
-export default function GlobalFeedLoadMore({ initialCursor, currentUserId, initialSeenCount }: Props) {
+export default function GlobalFeedLoadMore({ initialCursor, currentUserId, initialSeenCount, country, category }: Props) {
   const [entries, setEntries] = useState<FeedEntry[]>([]);
   const [cursor, setCursor] = useState(initialCursor);
   const [seenCount, setSeenCount] = useState(initialSeenCount);
@@ -37,7 +39,10 @@ export default function GlobalFeedLoadMore({ initialCursor, currentUserId, initi
     if (!cursor || isLoading) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/global/feed?cursor=${cursor}&seenCount=${seenCount}`);
+      const params = new URLSearchParams({ cursor, seenCount: String(seenCount) });
+      if (country) params.set('country', country);
+      if (category) params.set('category', category);
+      const res = await fetch(`/api/global/feed?${params.toString()}`);
       const data = await res.json();
       if (data.success) {
         setEntries((prev) => [...prev, ...data.entries]);
