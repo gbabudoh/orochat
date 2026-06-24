@@ -95,12 +95,12 @@ export default function DiscoverPage() {
             <Card key={user.id} className="p-6">
               <div className="flex items-start space-x-4">
                 <Link href={`/oro/${user.id}`} className="flex-shrink-0">
-                  <div className="w-16 h-16 rounded-full bg-[#458B9E] flex items-center justify-center hover:opacity-80 transition-opacity">
+                  <div className="w-16 h-16 rounded-full bg-[#458B9E] flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity">
                     {user.avatar ? (
                       <img
-                        src={user.avatar}
+                        src={`/api/user/${user.id}/avatar`}
                         alt={user.name}
-                        className="w-full h-full rounded-full"
+                        className="w-full h-full object-cover rounded-full"
                       />
                     ) : (
                       <User className="w-8 h-8 text-white" />
