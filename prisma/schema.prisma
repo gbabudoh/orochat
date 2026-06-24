@@ -16,6 +16,7 @@ model User {
   email         String    @unique
   password      String?   // Hashed with bcrypt — null for Google-only accounts
   googleId      String?   @unique // Google "sub" claim, set once a Google sign-in is linked
+  emailVerified DateTime? // Null until the signup verification link is clicked (or immediately set for Google sign-ins, which Google already verifies)
   name          String
   username      String?   @unique // Public @handle, shown on the Global feed
   bio           String?
@@ -69,6 +70,7 @@ model User {
   feedPosts           FeedPost[]
   tesLogs             TESLog[]
   passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
   revenueDistributions RevenueDistribution[]
   postLikes           PostLike[]
   postComments        PostComment[]
@@ -427,6 +429,21 @@ model TESLog {
 
 // Password Reset Token Model
 model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+// Email Verification Token Model — confirms a new signup's email address
+model EmailVerificationToken {
   id        String   @id @default(cuid())
   token     String   @unique
   userId    String

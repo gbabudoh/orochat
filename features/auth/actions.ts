@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 
 import { Prisma } from '@prisma/client';
 import { regenerateUserEmbedding } from '@/lib/ai/userEmbedding';
+import { sendPasswordResetEmail, sendVerificationEmail } from '@/lib/email';
 
 import dns from 'dns';
 
@@ -73,6 +74,28 @@ export async function generateUniqueUsername(name: string, email: string) {
   return candidate;
 }
 
+async function createAndSendVerificationToken(userId: string, email: string) {
+  await db.emailVerificationToken.updateMany({
+    where: { userId, used: false },
+    data: { used: true },
+  });
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+  await db.emailVerificationToken.create({
+    data: { token, userId, expiresAt },
+  });
+
+  const verifyUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
+
+  try {
+    await sendVerificationEmail(email, verifyUrl);
+  } catch (error) {
+    console.error('Failed to send verification email:', error);
+  }
+}
+
 export async function signup(formData: FormData) {
   const rawData = {
     email: formData.get('email') as string,
@@ -124,13 +147,55 @@ export async function signup(formData: FormData) {
       },
     });
 
-    return { success: true, userId: user.id };
+    await createAndSendVerificationToken(user.id, user.email);
+
+    return { success: true, userId: user.id, requiresVerification: true };
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { error: error.issues[0].message };
     }
     return { error: 'Failed to create account' };
   }
+}
+
+export async function verifyEmailToken(token: string) {
+  if (!token) return { error: 'Invalid verification link.' };
+
+  const record = await db.emailVerificationToken.findUnique({ where: { token } });
+
+  if (!record || record.used || record.expiresAt < new Date()) {
+    return { error: 'This verification link is invalid or has expired.' };
+  }
+
+  await db.user.update({
+    where: { id: record.userId },
+    data: { emailVerified: new Date() },
+  });
+
+  await db.emailVerificationToken.update({
+    where: { id: record.id },
+    data: { used: true },
+  });
+
+  return { success: true };
+}
+
+export async function resendVerificationEmail(formData: FormData) {
+  const email = (formData.get('email') as string)?.trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!email || !emailRegex.test(email)) {
+    return { error: 'Please enter a valid email address.' };
+  }
+
+  const user = await db.user.findUnique({ where: { email } });
+
+  // Always return success — never reveal whether an email is registered
+  if (!user || user.emailVerified) return { success: true };
+
+  await createAndSendVerificationToken(user.id, user.email);
+
+  return { success: true };
 }
 
 export async function login(formData: FormData) {
@@ -197,8 +262,11 @@ export async function requestPasswordReset(formData: FormData) {
 
   const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
 
-  // TODO: replace with your email provider (Resend, Nodemailer, etc.)
-  console.log(`[Password Reset] ${email} → ${resetUrl}`);
+  try {
+    await sendPasswordResetEmail(email, resetUrl);
+  } catch (error) {
+    console.error('Failed to send password reset email:', error);
+  }
 
   return { success: true };
 }

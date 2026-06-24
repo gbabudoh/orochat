@@ -58,6 +58,10 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        if (!user.emailVerified) {
+          throw new Error('EMAIL_NOT_VERIFIED');
+        }
+
         // Reactivate paused account on login
         if (user.isPaused) {
           await db.user.update({
@@ -104,12 +108,19 @@ export const authOptions: NextAuthOptions = {
               avatar: user.image || null,
               googleId: account.providerAccountId,
               username,
+              emailVerified: new Date(), // Google already verifies its users' emails
             },
           });
-        } else if (!dbUser.googleId) {
+        } else if (!dbUser.googleId || !dbUser.emailVerified) {
           dbUser = await db.user.update({
             where: { id: dbUser.id },
-            data: { googleId: account.providerAccountId },
+            data: {
+              googleId: dbUser.googleId ?? account.providerAccountId,
+              // Linking to Google confirms this email is real, even if the
+              // account originally signed up via Credentials and never
+              // clicked its verification link.
+              emailVerified: dbUser.emailVerified ?? new Date(),
+            },
           });
         }
 
