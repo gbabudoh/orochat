@@ -526,7 +526,7 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
                   </span>
                 )}
               </div>
-              <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
+              <div className="flex items-center justify-center sm:justify-end gap-1.5 sm:gap-2 shrink-0">
                 {isModerator && (
                   <Button
                     variant="ghost"
@@ -534,7 +534,7 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
                     onClick={endCallForEveryoneNow}
                     className="text-[#D32F2F] hover:bg-[#D32F2F]/10 font-semibold whitespace-nowrap px-2 sm:px-3"
                   >
-                    <PhoneOff className="w-4 h-4 sm:mr-1.5 shrink-0" />
+                    <PhoneOff className="w-4 h-4 mr-1 sm:mr-1.5 shrink-0" />
                     <span className="hidden sm:inline">End Call for Everyone</span>
                     <span className="sm:hidden">End</span>
                   </Button>
@@ -545,7 +545,7 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
                   onClick={endVideoCall}
                   className="text-gray-500 hover:bg-gray-200 font-semibold whitespace-nowrap px-2 sm:px-3"
                 >
-                  <PhoneOff className="w-4 h-4 sm:mr-1.5 shrink-0" />
+                  <PhoneOff className="w-4 h-4 mr-1 sm:mr-1.5 shrink-0" />
                   <span className="hidden sm:inline">Leave Call</span>
                   <span className="sm:hidden">Leave</span>
                 </Button>
