@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, MessageSquare, Compass, Users, TrendingUp, Search, Globe, X, FolderKanban } from 'lucide-react';
+import { Home, MessageSquare, Compass, Users, TrendingUp, Search, Globe, X, FolderKanban, Settings } from 'lucide-react';
 import { getPendingRequests } from '@/features/connections/actions';
 import { getUserStats } from '@/features/auth/actions';
 
@@ -44,6 +44,7 @@ export default function MainSidebar() {
     { href: '/compass', label: 'Compass', icon: Compass },
     { href: '/oro', label: 'My Oros', icon: Users, badge: pendingCount },
     { href: '/explore', label: 'Explore', icon: Search },
+    { href: '/settings/profile', label: 'Settings', icon: Settings },
   ];
 
   const closeMobileSidebar = () => setIsMobileOpen(false);
@@ -97,7 +98,9 @@ export default function MainSidebar() {
           <nav className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              const isActive = item.href === '/settings/profile'
+                ? pathname.startsWith('/settings')
+                : pathname === item.href || pathname.startsWith(item.href + '/');
 
               return (
                 <Link

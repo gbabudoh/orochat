@@ -124,7 +124,7 @@ export default function MainHeader() {
                     onClick={() => setShowUserMenu(false)}
                   >
                     <Settings className="w-4 h-4" />
-                    <span>Edit Profile</span>
+                    <span>Settings</span>
                   </Link>
                   <hr className="my-2 border-gray-200" />
                   <button
