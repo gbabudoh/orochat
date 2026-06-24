@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 const tabs = [
   { href: '/settings/profile', label: 'Profile' },
   { href: '/settings/security', label: 'Security' },
-  { href: '/settings/payouts', label: 'Payouts' },
+  { href: '/settings/payouts', label: 'Payment Setup' },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
