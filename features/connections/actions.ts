@@ -112,7 +112,30 @@ export async function searchUsers(query: string, currentUserId: string) {
       take: 20,
     });
 
-    return { success: true, users };
+    const userIds = users.map((u) => u.id);
+    const connections = await db.connection.findMany({
+      where: {
+        OR: [
+          { senderId: currentUserId, receiverId: { in: userIds } },
+          { receiverId: currentUserId, senderId: { in: userIds } },
+        ],
+      },
+      select: { senderId: true, receiverId: true, status: true },
+    });
+
+    const statusByUserId = new Map<string, 'PENDING' | 'ACCEPTED'>();
+    for (const connection of connections) {
+      if (connection.status !== 'PENDING' && connection.status !== 'ACCEPTED') continue;
+      const otherId = connection.senderId === currentUserId ? connection.receiverId : connection.senderId;
+      statusByUserId.set(otherId, connection.status);
+    }
+
+    const usersWithStatus = users.map((u) => ({
+      ...u,
+      connectionStatus: statusByUserId.get(u.id) ?? ('NONE' as const),
+    }));
+
+    return { success: true, users: usersWithStatus };
   } catch (error) {
     const err = error as Error;
     return { error: err.message || 'Failed to search users' };

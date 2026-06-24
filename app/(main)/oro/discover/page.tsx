@@ -20,6 +20,7 @@ interface SearchResultUser {
   location: string | null;
   isPartner: boolean;
   verifiedOrosCount: number;
+  connectionStatus: 'NONE' | 'PENDING' | 'ACCEPTED';
 }
 
 export default function DiscoverPage() {
@@ -134,7 +135,12 @@ export default function DiscoverPage() {
                     </span>
                   )}
                   <div className="mt-4">
-                    {connected.has(user.id) ? (
+                    {user.connectionStatus === 'ACCEPTED' ? (
+                      <Button size="sm" variant="secondary" disabled>
+                        <Check className="w-3 h-3 mr-1" />
+                        Connected
+                      </Button>
+                    ) : connected.has(user.id) || user.connectionStatus === 'PENDING' ? (
                       <Button size="sm" disabled>
                         <Check className="w-3 h-3 mr-1" />
                         Request Sent
