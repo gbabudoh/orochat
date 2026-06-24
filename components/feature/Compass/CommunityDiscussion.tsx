@@ -30,6 +30,7 @@ export default function CommunityDiscussion({ compassId, currentUserId }: Commun
   const [error, setError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const knownIds = useRef<Set<string>>(new Set());
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -71,6 +72,7 @@ export default function CommunityDiscussion({ compassId, currentUserId }: Commun
         knownIds.current.add(result.message.id);
         setMessages((prev) => [...prev, result.message]);
         setContent('');
+        if (textareaRef.current) textareaRef.current.style.height = 'auto';
       } else {
         setError(result.error || 'Failed to send message');
       }
@@ -115,14 +117,25 @@ export default function CommunityDiscussion({ compassId, currentUserId }: Commun
 
       <form onSubmit={handleSend} className="border-t border-gray-200 p-3 sm:p-4">
         {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
+        <div className="flex items-end gap-2">
+          <textarea
+            ref={textareaRef}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              setContent(e.target.value);
+              e.target.style.height = 'auto';
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend(e);
+              }
+            }}
             placeholder="Message this community..."
             maxLength={2000}
-            className="flex-1 px-4 py-2.5 rounded-lg border-2 border-gray-200 bg-white text-[#333333] placeholder:text-gray-400 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 transition-all text-sm"
+            rows={1}
+            className="flex-1 px-4 py-2.5 rounded-lg border-2 border-gray-200 bg-white text-[#333333] placeholder:text-gray-400 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 transition-all text-sm resize-none max-h-[120px] overflow-y-auto wrap-break-word"
           />
           <Button type="submit" size="sm" isLoading={isSending} disabled={!content.trim()}>
             <Send className="w-4 h-4" />
