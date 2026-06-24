@@ -223,12 +223,12 @@ export default function MessageBubble({
           )}
 
           {isCall && callRoom ? (
-            <div className="py-2 min-w-[200px] text-center relative">
-              <div className={`flex items-center justify-center gap-1.5 font-semibold mb-3 ${isOwn ? 'text-white' : 'text-[#458B9E]'}`}>
-                <Video className="w-4 h-4 animate-pulse" />
-                <span>Video Call by {message.sender.name}</span>
+            <div className="py-2 min-w-[200px] relative">
+              <div className={`flex items-center gap-1.5 font-semibold mb-3 text-left ${isOwn ? 'text-white' : 'text-[#458B9E]'}`}>
+                <Video className="w-4 h-4 shrink-0 animate-pulse" />
+                <span className="flex-1 min-w-0 truncate">Video Call by {message.sender.name}</span>
                 {isOwn && (onArchiveCall || onDeleteCall) && (
-                  <div className="relative">
+                  <div className="relative shrink-0">
                     <button
                       type="button"
                       onClick={() => setIsCallMenuOpen((v) => !v)}
