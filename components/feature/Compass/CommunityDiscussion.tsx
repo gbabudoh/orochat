@@ -114,7 +114,7 @@ export default function CommunityDiscussion({ compassId, currentUserId }: Commun
         )}
       </div>
 
-      <form onSubmit={handleSend} className="border-t border-gray-200 p-3 sm:p-4">
+      <form onSubmit={handleSend} className="border-t border-gray-200 p-3 sm:p-4 pb-16 sm:pb-4">
         {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
         <div className="relative">
           <textarea
