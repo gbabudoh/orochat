@@ -90,3 +90,24 @@ button:disabled {
 .oro-video-call .lk-chat-entry .lk-message-body {
   font-size: 0.9375rem;
 }
+
+/* On mobile, LiveKit's own default CSS makes .lk-chat `position: fixed` to
+   the browser viewport (top/right: 0), which escapes our modal and overlaps
+   our own call header instead of staying inside it. Anchor it instead to the
+   video stage div (already `position: relative` in ChatRoom.tsx) so it shows
+   as a full-screen panel over just the video, not the header/Leave button.
+   Also recenter the close button, which LiveKit positions assuming a wider
+   panel than we have here. */
+@media (max-width: 640px) {
+  .oro-video-call .lk-chat {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: 100%;
+    z-index: 20;
+  }
+  .oro-video-call .lk-chat-header .lk-close-button {
+    right: 0.5rem;
+    transform: none;
+  }
+}
