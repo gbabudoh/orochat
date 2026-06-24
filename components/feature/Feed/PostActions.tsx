@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Heart, MessageCircle, Share2, Send, Trash2, Archive, ArchiveRestore } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Heart, MessageCircle, Share2, Send, Trash2, Archive, ArchiveRestore, Link2, Facebook, Twitter } from 'lucide-react';
 import { toggleLike, addComment, deletePost, archivePost, unarchivePost } from '@/features/feed/actions';
 
 import Image from 'next/image';
@@ -46,6 +46,20 @@ export default function PostActions({
   const [isCommenting, setIsCommenting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
+  const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isShareMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target as Node)) {
+        setIsShareMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isShareMenuOpen]);
 
   const handleLike = async () => {
     if (isLiking) return;
@@ -90,10 +104,25 @@ export default function PostActions({
     }
   };
 
-  const handleShare = () => {
-    const url = `${window.location.origin}/feed?post=${postId}`;
-    navigator.clipboard.writeText(url);
-    alert('Link copied to clipboard!');
+  const getShareUrl = () => `${window.location.origin}/feed?post=${postId}`;
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(getShareUrl());
+    setCopied(true);
+    setIsShareMenuOpen(false);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShareToFacebook = () => {
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getShareUrl())}`;
+    window.open(url, '_blank', 'noopener,noreferrer,width=600,height=600');
+    setIsShareMenuOpen(false);
+  };
+
+  const handleShareToX = () => {
+    const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(getShareUrl())}`;
+    window.open(url, '_blank', 'noopener,noreferrer,width=600,height=600');
+    setIsShareMenuOpen(false);
   };
 
   const handleDelete = async () => {
@@ -155,13 +184,46 @@ export default function PostActions({
             <span className="font-medium text-sm sm:text-base">{commentsList.length}</span>
           </button>
 
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-1 sm:gap-2 text-gray-600 hover:text-[#458B9E] transition-colors group shrink-0"
-          >
-            <Share2 className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
-            <span className="font-medium text-sm sm:text-base hidden sm:inline">Share</span>
-          </button>
+          <div className="relative shrink-0" ref={shareMenuRef}>
+            <button
+              onClick={() => setIsShareMenuOpen((v) => !v)}
+              className="flex items-center gap-1 sm:gap-2 text-gray-600 hover:text-[#458B9E] transition-colors group"
+            >
+              <Share2 className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
+              <span className="font-medium text-sm sm:text-base hidden sm:inline">
+                {copied ? 'Copied!' : 'Share'}
+              </span>
+            </button>
+
+            {isShareMenuOpen && (
+              <div className="absolute left-0 bottom-full mb-2 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#333333] hover:bg-[#F0F3F7] transition-colors"
+                >
+                  <Link2 className="w-4 h-4 text-gray-500" />
+                  Copy link
+                </button>
+                <button
+                  type="button"
+                  onClick={handleShareToFacebook}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#333333] hover:bg-[#F0F3F7] transition-colors"
+                >
+                  <Facebook className="w-4 h-4 text-[#1877F2]" />
+                  Facebook
+                </button>
+                <button
+                  type="button"
+                  onClick={handleShareToX}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#333333] hover:bg-[#F0F3F7] transition-colors"
+                >
+                  <Twitter className="w-4 h-4 text-[#333333]" />
+                  X (Twitter)
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {isAuthor && (
