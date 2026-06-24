@@ -511,36 +511,43 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
       {activeCallRoom && liveKitToken && liveKitUrl && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-[100] p-4">
           <div className="oro-video-call bg-white rounded-xl shadow-2xl overflow-hidden w-full max-w-6xl h-[88vh] flex flex-col">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="font-semibold text-[#333333] flex items-center gap-2">
-                <Video className="w-5 h-5 text-[#458B9E]" />
-                <span>Collaborative Video Call (Orochat)</span>
+            <div className="bg-gray-50 px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 sm:justify-between">
+              <div className="flex items-center justify-between sm:justify-start gap-2 min-w-0">
+                <h3 className="font-semibold text-[#333333] flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <Video className="w-4 h-4 sm:w-5 sm:h-5 text-[#458B9E] shrink-0" />
+                  <span className="truncate text-sm sm:text-base">
+                    <span className="sm:hidden">Video Call</span>
+                    <span className="hidden sm:inline">Collaborative Video Call (Orochat)</span>
+                  </span>
+                </h3>
                 {secondsLeft !== null && (
-                  <span className="text-xs font-normal text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">
-                    {formatCountdown(secondsLeft)} remaining
+                  <span className="shrink-0 text-xs font-normal text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full whitespace-nowrap">
+                    {formatCountdown(secondsLeft)} left
                   </span>
                 )}
-              </h3>
-              <div className="flex items-center gap-2">
+              </div>
+              <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
                 {isModerator && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={endCallForEveryoneNow}
-                    className="text-[#D32F2F] hover:bg-[#D32F2F]/10 font-semibold"
+                    className="text-[#D32F2F] hover:bg-[#D32F2F]/10 font-semibold whitespace-nowrap px-2 sm:px-3"
                   >
-                    <PhoneOff className="w-4 h-4 mr-1.5" />
-                    End Call for Everyone
+                    <PhoneOff className="w-4 h-4 sm:mr-1.5 shrink-0" />
+                    <span className="hidden sm:inline">End Call for Everyone</span>
+                    <span className="sm:hidden">End</span>
                   </Button>
                 )}
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={endVideoCall}
-                  className="text-gray-500 hover:bg-gray-200 font-semibold"
+                  className="text-gray-500 hover:bg-gray-200 font-semibold whitespace-nowrap px-2 sm:px-3"
                 >
-                  <PhoneOff className="w-4 h-4 mr-1.5" />
-                  Leave Call
+                  <PhoneOff className="w-4 h-4 sm:mr-1.5 shrink-0" />
+                  <span className="hidden sm:inline">Leave Call</span>
+                  <span className="sm:hidden">Leave</span>
                 </Button>
               </div>
             </div>
