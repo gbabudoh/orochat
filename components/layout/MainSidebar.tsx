@@ -182,7 +182,8 @@ export default function MainSidebar() {
       {/* Mobile Toggle Button - Export for use in header */}
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="lg:hidden fixed bottom-20 right-4 z-50 w-12 h-12 bg-[#458B9E] text-white rounded-full shadow-lg flex items-center justify-center hover:bg-[#3a7585] transition-colors"
+        className="lg:hidden fixed right-4 z-50 w-12 h-12 bg-[#458B9E] text-white rounded-full shadow-lg flex items-center justify-center hover:bg-[#3a7585] transition-colors"
+        style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
         aria-label="Toggle menu"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

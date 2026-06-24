@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title: SITE_NAME,
   },
   icons: {
@@ -61,6 +61,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  // Lets installed/standalone PWA content extend into the iOS notch/home-
+  // indicator safe areas (paired with statusBarStyle: 'black-translucent'
+  // above and the env(safe-area-inset-*) padding used throughout the UI).
+  viewportFit: 'cover',
   themeColor: '#458B9E',
 };
 

@@ -9,12 +9,27 @@ body {
      horizontal scroll on mobile, which silently hides content off-screen
      with no obvious way to scroll to it. */
   overflow-x: hidden;
+  /* Stop pull-to-refresh and edge-of-page rubber-band scrolling from
+     reaching the browser chrome, so the installed PWA feels like a fixed
+     app surface rather than a scrollable web page. Individual scrollable
+     containers (chat lists, modals, etc.) keep their own native bounce. */
+  overscroll-behavior-y: contain;
+  /* Remove the gray tap-flash on buttons/links, which reads as "a website"
+     rather than a native app. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
   overflow-x: hidden;
+  overscroll-behavior-y: contain;
+}
+
+/* Skip the ~300ms double-tap-to-zoom delay on interactive elements without
+   touching pinch-zoom itself (which stays available for accessibility). */
+a, button, input, textarea, select {
+  touch-action: manipulation;
 }
 
 /* Custom scrollbar - minimal styling */
