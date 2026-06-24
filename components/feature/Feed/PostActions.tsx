@@ -273,12 +273,12 @@ export default function PostActions({
                     )}
                   </div>
                 </div>
-                <div className="flex-1 bg-gray-50 rounded-2xl px-3 py-2 text-sm">
+                <div className="flex-1 min-w-0 bg-gray-50 rounded-2xl px-3 py-2 text-sm">
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="font-semibold text-[#333333] truncate">{comment.user.name}</span>
+                    <span className="font-semibold text-[#333333] truncate min-w-0">{comment.user.name}</span>
                     <span className="text-[10px] text-gray-400 whitespace-nowrap shrink-0">{formatPostDateTime(new Date(comment.createdAt))}</span>
                   </div>
-                  <p className="text-gray-700 leading-snug">{comment.content}</p>
+                  <p className="text-gray-700 leading-snug wrap-break-word">{comment.content}</p>
                 </div>
               </div>
             ))}
