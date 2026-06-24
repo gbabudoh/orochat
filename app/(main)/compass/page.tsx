@@ -33,8 +33,8 @@ export default async function CompassPage() {
         <h1 className="text-2xl font-bold text-[#333333]">Compass</h1>
         {user?.isPartner && (
           <Link href="/compass/create">
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
+            <Button className="rounded-full gap-1.5 whitespace-nowrap px-4">
+              <Plus className="w-4 h-4 shrink-0" />
               Create Community
             </Button>
           </Link>

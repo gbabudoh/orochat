@@ -122,12 +122,12 @@ export default function CreateCommunityPage() {
             </div>
           )}
 
-          <div className="flex items-center justify-end space-x-4">
+          <div className="flex items-center justify-end gap-3">
             <Link href="/compass">
-              <Button variant="ghost" type="button">Cancel</Button>
+              <Button variant="ghost" type="button" className="rounded-full whitespace-nowrap">Cancel</Button>
             </Link>
-            <Button type="submit" isLoading={isLoading}>
-              <Plus className="w-4 h-4 mr-2" />
+            <Button type="submit" isLoading={isLoading} className="rounded-full gap-1.5 whitespace-nowrap px-4">
+              <Plus className="w-4 h-4 shrink-0" />
               Create Community
             </Button>
           </div>
