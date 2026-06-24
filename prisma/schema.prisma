@@ -14,7 +14,8 @@ datasource db {
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  password      String    // Hashed with bcrypt
+  password      String?   // Hashed with bcrypt — null for Google-only accounts
+  googleId      String?   @unique // Google "sub" claim, set once a Google sign-in is linked
   name          String
   username      String?   @unique // Public @handle, shown on the Global feed
   bio           String?

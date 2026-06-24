@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -43,6 +44,14 @@ export default function LoginForm() {
     <div>
       <h1 className="text-3xl font-bold text-[#333333] mb-2">Sign in to Orochat</h1>
       <p className="text-gray-600 mb-6">Connect with professionals worldwide</p>
+
+      <GoogleSignInButton />
+
+      <div className="flex items-center gap-3 my-5">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-xs text-gray-400 uppercase tracking-wide">or</span>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input

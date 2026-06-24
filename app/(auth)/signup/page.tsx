@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { signup } from '@/features/auth/actions';
 
 export default function SignupPage() {
@@ -53,6 +54,14 @@ export default function SignupPage() {
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-[#333333] mb-2">Create Account</h1>
         <p className="text-gray-600">Join Orochat and start building your professional network</p>
+      </div>
+
+      <GoogleSignInButton label="Sign up with Google" />
+
+      <div className="flex items-center gap-3 my-5">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-xs text-gray-400 uppercase tracking-wide">or</span>
+        <div className="flex-1 h-px bg-gray-200" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">

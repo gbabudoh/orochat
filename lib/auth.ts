@@ -1,8 +1,9 @@
 import { NextAuthOptions } from 'next-auth';
-import { PrismaAdapter } from '@auth/prisma-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
 import { db } from './db';
 import bcrypt from 'bcryptjs';
+import { generateUniqueUsername } from '@/features/auth/actions';
 
 interface ExtendedUser {
   id: string;
@@ -21,8 +22,14 @@ interface ExtendedUser {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(db) as NextAuthOptions['adapter'],
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      // Google verifies its users' email addresses, so it's safe to link a
+      // Google sign-in to an existing email/password account automatically.
+      allowDangerousEmailAccountLinking: true,
+    }),
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
@@ -38,7 +45,7 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
         });
 
-        if (!user) {
+        if (!user || !user.password) {
           return null;
         }
 
@@ -81,7 +88,44 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user, trigger, session: updateData }) {
+    async jwt({ token, user, account, trigger, session: updateData }) {
+      // Google sign-in: `user` here is the OAuth profile (id = Google's
+      // "sub", not our DB id), so find-or-create our own User row by email
+      // and use that instead.
+      if (user && account?.provider === 'google' && user.email) {
+        let dbUser = await db.user.findUnique({ where: { email: user.email } });
+
+        if (!dbUser) {
+          const username = await generateUniqueUsername(user.name || 'Orochat User', user.email);
+          dbUser = await db.user.create({
+            data: {
+              email: user.email,
+              name: user.name || 'Orochat User',
+              avatar: user.image || null,
+              googleId: account.providerAccountId,
+              username,
+            },
+          });
+        } else if (!dbUser.googleId) {
+          dbUser = await db.user.update({
+            where: { id: dbUser.id },
+            data: { googleId: account.providerAccountId },
+          });
+        }
+
+        if (dbUser.isPaused) {
+          dbUser = await db.user.update({ where: { id: dbUser.id }, data: { isPaused: false } });
+        }
+
+        token.id = dbUser.id;
+        token.name = dbUser.name;
+        token.avatar = dbUser.avatar;
+        token.isPartner = dbUser.isPartner;
+        token.verifiedOrosCount = dbUser.verifiedOrosCount;
+        token.compassMembershipsCount = dbUser.compassMembershipsCount;
+        return token;
+      }
+
       // On sign in, set user data
       if (user) {
         const u = user as unknown as ExtendedUser;

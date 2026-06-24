@@ -58,7 +58,7 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
-async function generateUniqueUsername(name: string, email: string) {
+export async function generateUniqueUsername(name: string, email: string) {
   const base = (name || email.split('@')[0])
     .replace(/[^a-zA-Z0-9_]/g, '')
     .slice(0, 16) || 'User';
@@ -146,7 +146,7 @@ export async function login(formData: FormData) {
       where: { email: validatedData.email },
     });
 
-    if (!user) {
+    if (!user || !user.password) {
       return { error: 'Invalid email or password' };
     }
 
@@ -345,6 +345,9 @@ export async function changePassword(formData: FormData) {
     });
 
     if (!user) return { error: 'User not found' };
+    if (!user.password) {
+      return { error: 'Your account signs in with Google and has no password to change.' };
+    }
 
     const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
     if (!isPasswordValid) return { error: 'Current password is incorrect' };
