@@ -271,14 +271,14 @@ export default function MessageBubble({
                 )}
               </div>
               {isEndedCall ? (
-                <div className={`w-full py-1.5 px-4 rounded-lg text-xs font-bold ${isOwn ? 'bg-white/20 text-white/80' : 'bg-gray-200 text-gray-500'}`}>
+                <div className={`w-full py-1.5 px-4 rounded-lg text-xs font-bold text-center ${isOwn ? 'bg-white/20 text-white/80' : 'bg-gray-200 text-gray-500'}`}>
                   Call Ended
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={() => onJoinCall && callInfo && onJoinCall(callInfo)}
-                  className={`w-full py-1.5 px-4 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                  className={`w-full py-1.5 px-4 rounded-lg text-xs font-bold text-center transition-all cursor-pointer shadow-xs ${
                     isOwn
                       ? 'bg-white text-[#458B9E] hover:bg-gray-50'
                       : 'bg-[#458B9E] text-white hover:bg-[#3a7585]'
