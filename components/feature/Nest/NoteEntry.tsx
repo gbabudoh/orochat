@@ -82,9 +82,9 @@ export default function NoteEntry({ note, startInEditMode, onSave, onDelete, onC
 
   return (
     <div className="bg-white rounded-xl border border-gray-200">
-      <div className="flex items-center justify-between gap-2 p-2 border-b border-gray-200">
+      <div className={`flex gap-2 p-2 border-b border-gray-200 ${isEditing ? 'flex-col sm:flex-row sm:items-center sm:justify-between' : 'items-center justify-between'}`}>
         {isEditing ? (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             {toolbarButton('Bold', <Bold className="w-4 h-4" />, editor.isActive('bold'), () => editor.chain().focus().toggleBold().run())}
             {toolbarButton('Italic', <Italic className="w-4 h-4" />, editor.isActive('italic'), () => editor.chain().focus().toggleItalic().run())}
             {toolbarButton('Heading 1', <Heading1 className="w-4 h-4" />, editor.isActive('heading', { level: 1 }), () => editor.chain().focus().toggleHeading({ level: 1 }).run())}
@@ -100,17 +100,18 @@ export default function NoteEntry({ note, startInEditMode, onSave, onDelete, onC
           </span>
         )}
 
-        <div className="flex items-center gap-1.5">
+        <div className={`flex items-center gap-1.5 ${isEditing ? 'self-end sm:self-auto shrink-0' : ''}`}>
           {isEditing ? (
             <>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={!note.id && onCancelDraft ? onCancelDraft : handleCancelEdit}
+                className="whitespace-nowrap"
               >
                 Cancel
               </Button>
-              <Button size="sm" onClick={handleSave} isLoading={isSaving}>
+              <Button size="sm" onClick={handleSave} isLoading={isSaving} className="whitespace-nowrap">
                 <Check className="w-4 h-4 mr-1.5" />
                 Save
               </Button>
