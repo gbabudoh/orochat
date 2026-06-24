@@ -119,17 +119,23 @@ export default function PostCard({ post, isLiked, comments, index = 0, currentUs
                   <Image src="/icon.png" alt="Orochat" width={24} height={24} className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <span
-                  className="text-[10px] sm:text-xs text-gray-400 whitespace-nowrap"
+                  className="text-[10px] sm:text-xs text-gray-400 whitespace-nowrap min-w-0"
                   title={formatDateTime(post.createdAt)}
                   suppressHydrationWarning
                 >
-                  {(() => {
-                    const relative = formatRelativeTime(post.createdAt);
-                    const isRelative = !relative.includes(',');
-                    return isRelative
-                      ? `${formatPostDateTime(post.createdAt)} (${relative})`
-                      : formatPostDateTime(post.createdAt);
-                  })()}
+                  {/* Full "<date> - <weekday> - <time> (<relative>)" string is too
+                      wide for mobile next to the badge, so only show the compact
+                      relative time there; the full string still appears on sm+. */}
+                  <span className="sm:hidden">{formatRelativeTime(post.createdAt)}</span>
+                  <span className="hidden sm:inline">
+                    {(() => {
+                      const relative = formatRelativeTime(post.createdAt);
+                      const isRelative = !relative.includes(',');
+                      return isRelative
+                        ? `${formatPostDateTime(post.createdAt)} (${relative})`
+                        : formatPostDateTime(post.createdAt);
+                    })()}
+                  </span>
                 </span>
               </div>
             </div>
