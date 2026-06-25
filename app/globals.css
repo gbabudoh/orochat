@@ -31,6 +31,20 @@ a, button, input, textarea, select {
   touch-action: manipulation;
 }
 
+/* Utility used throughout the app to break long unbroken strings
+   (URLs, handles, yyyyyy-type spam) so they never overflow their container */
+.wrap-break-word {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
+}
+
+/* Flex children must have min-width:0 or they can blow past their parent width.
+   Applied globally so cards, comment rows etc. stay within the viewport. */
+.flex > * {
+  min-width: 0;
+}
+
 /* Custom scrollbar - minimal styling */
 ::-webkit-scrollbar {
   width: 8px;

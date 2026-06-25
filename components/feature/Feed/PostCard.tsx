@@ -55,8 +55,8 @@ export default function PostCard({ post, isLiked, comments, index = 0, currentUs
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: Math.min(index, 6) * 0.05 }}
     >
-      <Card padding="none" className="hover:shadow-lg transition-shadow p-3.5 sm:p-6 overflow-hidden">
-        <div className="flex items-start gap-2.5 sm:gap-4">
+      <Card padding="none" className="hover:shadow-lg transition-shadow p-2 sm:p-6 overflow-hidden">
+        <div className="flex items-start gap-2 sm:gap-4">
           <Link href={`/oro/${post.author.id}`} className="shrink-0 relative">
             <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-linear-to-br from-[#458B9E] to-[#5BA3B8] flex items-center justify-center overflow-hidden">
               {post.author.avatar ? (

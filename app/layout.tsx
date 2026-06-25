@@ -6,6 +6,8 @@ import QueryProvider from "@/lib/providers/QueryProvider";
 import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 import MatomoAnalytics from "@/components/analytics/MatomoAnalytics";
 import ClarityAnalytics from "@/components/analytics/ClarityAnalytics";
+import PwaZoomPrevention from "@/components/layout/PwaZoomPrevention";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -64,6 +66,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   // Lets installed/standalone PWA content extend into the iOS notch/home-
   // indicator safe areas (paired with statusBarStyle: 'black-translucent'
   // above and the env(safe-area-inset-*) padding used throughout the UI).
@@ -112,6 +116,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <PwaZoomPrevention />
         <QueryProvider>
           <AuthProvider>
             {children}

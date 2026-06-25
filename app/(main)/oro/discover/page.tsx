@@ -6,7 +6,7 @@ import { searchUsers, sendConnectionRequest } from '@/features/connections/actio
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import { Search, User, Building, MapPin, UserPlus, Check } from 'lucide-react';
+import { Search, User, Building, MapPin, UserPlus, Check, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -69,6 +69,13 @@ export default function DiscoverPage() {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-6">
+        <Link
+          href="/oro"
+          className="inline-flex items-center gap-1.5 text-sm text-[#458B9E] hover:text-[#3a7585] mb-3 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to My Oros
+        </Link>
         <h1 className="text-2xl font-bold text-[#333333] mb-2">Find People</h1>
         <p className="text-gray-600">Search for professionals to connect with</p>
       </div>

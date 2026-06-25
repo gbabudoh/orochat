@@ -470,23 +470,40 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
             </div>
           )}
         </div>
-        <form onSubmit={handleSend} className="border-t border-gray-200 p-4">
-          <div className="flex items-center space-x-2">
-            <Input
+        <form onSubmit={handleSend} className="border-t border-gray-200 p-3 sm:p-4">
+          <div className="relative">
+            <textarea
+              rows={1}
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1"
-              onKeyPress={(e) => {
+              onChange={(e) => {
+                setNewMessage(e.target.value);
+                e.target.style.height = 'auto';
+                e.target.style.height = `${e.target.scrollHeight}px`;
+              }}
+              onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  handleSend(e);
+                  handleSend(e as any);
                 }
               }}
+              placeholder="Type a message..."
+              style={{
+                minHeight: '44px',
+                maxHeight: '140px',
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word',
+                resize: 'none',
+                overflow: 'hidden',
+              }}
+              className="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-4 pr-14 py-3 text-sm focus:outline-none focus:border-[#458B9E] focus:ring-1 focus:ring-[#458B9E]/20 leading-5 block"
             />
-            <Button type="submit" isLoading={isSending} disabled={!newMessage.trim()}>
+            <button
+              type="submit"
+              disabled={!newMessage.trim() || isSending}
+              className="absolute right-2 bottom-2 w-8 h-8 flex items-center justify-center bg-[#458B9E] text-white rounded-full disabled:opacity-40 hover:bg-[#3a7585] transition-colors shrink-0"
+            >
               <Send className="w-4 h-4" />
-            </Button>
+            </button>
           </div>
         </form>
       </div>

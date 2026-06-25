@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Heart, MessageCircle, Share2, Send, Trash2, Archive, ArchiveRestore, Link2, Facebook, Twitter } from 'lucide-react';
 import { toggleLike, addComment, deletePost, archivePost, unarchivePost } from '@/features/feed/actions';
 
@@ -48,7 +48,17 @@ export default function PostActions({
   const [isArchiving, setIsArchiving] = useState(false);
   const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const shareMenuRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-grow the textarea as the user types
+  const autoGrow = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, []);
 
   useEffect(() => {
     if (!isShareMenuOpen) return;
@@ -255,9 +265,9 @@ export default function PostActions({
       {showComments && (
         <div className="pt-4 space-y-4 border-t border-gray-50 animate-in fade-in slide-in-from-top-2">
           {/* Comments List */}
-          <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+          <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
             {commentsList.map((comment) => (
-              <div key={comment.id} className="flex space-x-3">
+              <div key={comment.id} className="flex space-x-2">
                 <div className="shrink-0">
                   <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden relative">
                     {comment.user.avatar ? (
@@ -273,7 +283,7 @@ export default function PostActions({
                     )}
                   </div>
                 </div>
-                <div className="flex-1 min-w-0 bg-gray-50 rounded-2xl px-3 py-2 text-sm">
+                <div className="flex-1 min-w-0 bg-gray-50 rounded-2xl px-2 py-2 text-sm">
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <span className="font-semibold text-[#333333] truncate min-w-0">{comment.user.name}</span>
                     <span
@@ -284,7 +294,7 @@ export default function PostActions({
                       <span className="hidden sm:inline">{formatPostDateTime(new Date(comment.createdAt))}</span>
                     </span>
                   </div>
-                  <p className="text-gray-700 leading-snug wrap-break-word">{comment.content}</p>
+                  <p className="text-gray-700 leading-snug wrap-break-word break-all">{comment.content}</p>
                 </div>
               </div>
             ))}
@@ -295,22 +305,51 @@ export default function PostActions({
 
           {/* Comment Form */}
           <form onSubmit={handleComment} className="pt-2">
-            <div className="relative">
-              <input
-                type="text"
+            <div className="relative flex items-end">
+              <textarea
+                ref={textareaRef}
+                rows={1}
                 value={commentContent}
-                onChange={(e) => setCommentContent(e.target.value)}
+                onChange={(e) => { setCommentContent(e.target.value); autoGrow(); }}
+                onFocus={() => setIsInputFocused(true)}
+                onBlur={() => setIsInputFocused(false)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (commentContent.trim() && !isCommenting) handleComment(e as any);
+                  }
+                }}
                 placeholder="Add a comment..."
-                className="w-full bg-gray-50 border border-gray-200 rounded-full pl-4 pr-11 py-2.5 text-sm focus:outline-none focus:border-[#458B9E] focus:ring-1 focus:ring-[#458B9E]/20"
+                className="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-4 pr-11 py-2.5 text-sm focus:outline-none focus:border-[#458B9E] focus:ring-1 focus:ring-[#458B9E]/20 resize-none overflow-hidden leading-5"
+                style={{ minHeight: '42px', maxHeight: '120px' }}
               />
               <button
                 type="submit"
                 disabled={!commentContent.trim() || isCommenting}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 text-[#458B9E] hover:bg-[#458B9E]/10 rounded-full disabled:opacity-40 transition-colors"
+                className="absolute right-1.5 bottom-1.5 p-1.5 text-[#458B9E] hover:bg-[#458B9E]/10 rounded-full disabled:opacity-40 transition-colors"
               >
                 <Send className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Inline menu button — appears below input when user is typing, on mobile only */}
+            {isInputFocused && (
+              <div className="flex justify-end mt-2 lg:hidden">
+                <button
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault(); // prevent textarea blur
+                    window.dispatchEvent(new Event('toggleMobileSidebar'));
+                  }}
+                  className="w-11 h-11 bg-[#458B9E] text-white rounded-full shadow-lg flex items-center justify-center hover:bg-[#3a7585] transition-colors"
+                  aria-label="Toggle menu"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </form>
         </div>
       )}
