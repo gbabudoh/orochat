@@ -14,7 +14,7 @@ export default async function RootPage() {
 
   // If not authenticated, show split-screen landing page
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FAFAFA] via-[#F5F5F5] to-[#F0F0F0] overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#FAFAFA] via-[#F5F5F5] to-[#F0F0F0]">
       <div className="min-h-screen flex items-center justify-center lg:gap-8 lg:px-6 px-4 py-8">
         {/* Left Side - Logo, Pitch and Product Preview */}
         <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-end">

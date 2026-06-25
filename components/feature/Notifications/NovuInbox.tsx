@@ -19,6 +19,11 @@ export default function NovuInbox({ subscriberId }: NovuInboxProps) {
       subscriberId={subscriberId}
       backendUrl={process.env.NEXT_PUBLIC_NOVU_BACKEND_URL || 'https://novu.feendesk.com/api'}
       socketUrl={process.env.NEXT_PUBLIC_NOVU_SOCKET_URL}
+      appearance={{
+        variables: {
+          colorPrimary: '#FFC93C',
+        },
+      }}
     />
   );
 }

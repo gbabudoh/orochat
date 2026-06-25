@@ -82,6 +82,8 @@ model User {
   createdNestTasks    NestTask[] @relation("NestTaskCreator")
   initiatedAgreements Agreement[] @relation("AgreementInitiator")
   agreementSignatures AgreementSigner[]
+  profileViewsReceived ProfileView[] @relation("ProfileViewsReceived")
+  profileViewsMade     ProfileView[] @relation("ProfileViewsMade")
 
   @@index([email])
   @@index([isPartner])
@@ -632,5 +634,23 @@ model AdClick {
   campaign AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@index([campaignId, createdAt])
+}
+
+// Profile View Model - Tracks who viewed a user's profile and from where.
+// viewerId is null for logged-out visitors; countryCode is resolved from the
+// viewer's own profile (logged-in) or their request IP via geoip-lite (anonymous).
+model ProfileView {
+  id          String   @id @default(cuid())
+  viewedId    String
+  viewerId    String?
+  countryCode String?
+
+  createdAt   DateTime @default(now())
+
+  viewed User  @relation("ProfileViewsReceived", fields: [viewedId], references: [id], onDelete: Cascade)
+  viewer User? @relation("ProfileViewsMade", fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@index([viewedId, createdAt])
+  @@index([viewerId])
 }
 

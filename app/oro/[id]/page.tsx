@@ -10,6 +10,7 @@ import Link from 'next/link';
 import ProfileActions from '@/components/feature/Profile/ProfileActions';
 import { getCountryName } from '@/lib/constants/countries';
 import { COUNTRY_COORDINATES } from '@/lib/constants/countryCoords';
+import { logProfileView } from '@/lib/profileViews';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -127,6 +128,10 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
     isOwnProfile = session.user.id === id;
     isConnected = connection?.status === 'ACCEPTED';
     hasPendingRequest = connection?.status === 'PENDING';
+  }
+
+  if (!isOwnProfile) {
+    await logProfileView(id, session?.user?.id ?? null);
   }
 
   // Geo-aware structured data: country-level coordinates so search/AI

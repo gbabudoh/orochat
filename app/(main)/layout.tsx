@@ -25,7 +25,7 @@ export default async function MainLayout({
       <MainHeader />
       <div className="flex">
         <MainSidebar />
-        <main className="flex-1 w-full min-w-0 lg:ml-64 mt-16 p-3 sm:p-6 pb-24 lg:pb-6 overflow-x-hidden">
+        <main className="flex-1 w-full min-w-0 lg:ml-64 mt-1 p-3 sm:p-6 pb-24 lg:pb-6 overflow-x-hidden">
           {children}
         </main>
       </div>

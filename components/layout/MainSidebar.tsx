@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, MessageSquare, Compass, Users, TrendingUp, Search, Globe, X, FolderKanban, Settings, Wallet } from 'lucide-react';
+import { Home, MessageSquare, Compass, Users, TrendingUp, Search, Globe, X, FolderKanban, Settings, Wallet, Eye } from 'lucide-react';
 import { getPendingRequests } from '@/features/connections/actions';
 import { getUserStats } from '@/features/auth/actions';
 
@@ -43,6 +43,7 @@ export default function MainSidebar() {
     { href: '/nest', label: 'OroNest', icon: FolderKanban },
     { href: '/compass', label: 'Compass', icon: Compass },
     { href: '/oro', label: 'My Oros', icon: Users, badge: pendingCount },
+    { href: '/analytics', label: 'Profile Views', icon: Eye },
     { href: '/payouts', label: 'Payouts', icon: Wallet },
     { href: '/explore', label: 'Explore', icon: Search },
     { href: '/settings/profile', label: 'Settings', icon: Settings },

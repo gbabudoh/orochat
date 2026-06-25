@@ -9,21 +9,20 @@ body {
      horizontal scroll on mobile, which silently hides content off-screen
      with no obvious way to scroll to it. */
   overflow-x: hidden;
-  /* Stop pull-to-refresh and edge-of-page rubber-band scrolling from
-     reaching the browser chrome, so the installed PWA feels like a fixed
-     app surface rather than a scrollable web page. Individual scrollable
-     containers (chat lists, modals, etc.) keep their own native bounce. */
-  overscroll-behavior-y: contain;
   /* Remove the gray tap-flash on buttons/links, which reads as "a website"
      rather than a native app. */
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Hide the Novu inbox "Development mode / Inbox by Novu" footer banner.
+   It has no @novu/nextjs appearance.elements key, so it must be hidden via CSS. */
+.nt-mt-auto.nt-py-3 {
+  display: none !important;
+}
+
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
-  overscroll-behavior-y: contain;
 }
 
 /* Skip the ~300ms double-tap-to-zoom delay on interactive elements without
@@ -125,4 +124,20 @@ button:disabled {
     right: 0.5rem;
     transform: none;
   }
+}
+
+/* Hide Novu Inbox branding footer & credits */
+[data-id="inbox-popover"] [class*="footer"],
+[data-id="inbox-popover"] footer,
+.nt-footer,
+.nv-footer,
+.nv-footerBranding,
+.nt-footerBranding,
+[class*="nv-footer"],
+[class*="nt-footer"],
+[class*="nv-powered-by"],
+[class*="nt-powered-by"],
+[class*="nv-branding"],
+[class*="nt-branding"] {
+  display: none !important;
 }

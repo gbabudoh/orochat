@@ -3,6 +3,9 @@ import { withSentryConfig } from "@sentry/nextjs";
 import withPWAInit from "@ducanh2912/next-pwa";
 
 const nextConfig: NextConfig = {
+  // geoip-lite reads its .dat files via __dirname at require time — bundling
+  // it rewrites that path and breaks the lookup, so it must load natively.
+  serverExternalPackages: ['geoip-lite'],
   images: {
     remotePatterns: [
       {
