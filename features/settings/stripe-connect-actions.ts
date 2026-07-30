@@ -24,6 +24,13 @@ export async function createOrRefreshConnectOnboardingLink(): Promise<{ url: str
         email: user.email,
         business_type: 'individual',
         capabilities: {
+          // card_payments is requested alongside transfers because Stripe
+          // gates "transfers only" Connect accounts behind manual platform
+          // approval (https://support.stripe.com/contact) — bookings still
+          // use destination charges on the platform account either way, so
+          // the Oro's connected account never actually processes a card
+          // charge directly.
+          card_payments: { requested: true },
           transfers: { requested: true },
         },
       });
