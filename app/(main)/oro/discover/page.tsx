@@ -20,6 +20,8 @@ interface SearchResultUser {
   location: string | null;
   isPartner: boolean;
   verifiedOrosCount: number;
+  consultEnabled: boolean;
+  consultTopic: string | null;
   connectionStatus: 'NONE' | 'PENDING' | 'ACCEPTED';
 }
 
@@ -69,13 +71,21 @@ export default function DiscoverPage() {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-6">
-        <Link
-          href="/oro"
-          className="inline-flex items-center gap-1.5 text-sm text-[#458B9E] hover:text-[#3a7585] mb-3 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to My Oros
-        </Link>
+        <div className="flex items-center justify-between mb-3">
+          <Link
+            href="/oro"
+            className="inline-flex items-center gap-1.5 text-sm text-[#458B9E] hover:text-[#3a7585] transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to My Oros
+          </Link>
+          <Link
+            href="/oro/consults"
+            className="text-sm text-[#458B9E] hover:text-[#3a7585] font-medium transition-colors"
+          >
+            Find a consult →
+          </Link>
+        </div>
         <h1 className="text-2xl font-bold text-[#333333] mb-2">Find People</h1>
         <p className="text-gray-600">Search for professionals to connect with</p>
       </div>
@@ -139,6 +149,11 @@ export default function DiscoverPage() {
                   {user.isPartner && (
                     <span className="inline-block mt-2 px-2 py-0.5 bg-[#FFC93C] text-[#333333] text-xs font-semibold rounded-full">
                       Partner
+                    </span>
+                  )}
+                  {user.consultEnabled && (
+                    <span className="inline-block mt-2 ml-1.5 px-2 py-0.5 bg-[#458B9E] text-white text-xs font-semibold rounded-full">
+                      Bookable
                     </span>
                   )}
                   <div className="mt-4">

@@ -7,6 +7,7 @@ import MessageBubble from '@/components/feature/Collab/MessageBubble';
 import AddParticipantsModal from '@/components/feature/Collab/AddParticipantsModal';
 import NewAgreementModal from '@/components/feature/Collab/NewAgreementModal';
 import CallHistoryModal from '@/components/feature/Collab/CallHistoryModal';
+import BookingBanner from '@/components/feature/Collab/BookingBanner';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import UserAvatar from '@/components/ui/UserAvatar';
@@ -442,6 +443,8 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
             </Button>
           </div>
         </div>
+
+        <BookingBanner conversationId={conversationId} currentUserId={currentUserId} />
 
         <div className="flex-1 overflow-y-auto p-6">
           {messages.length === 0 ? (

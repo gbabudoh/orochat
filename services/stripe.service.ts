@@ -88,4 +88,70 @@ export class StripeService {
       return { success: false, reason };
     }
   }
+
+  /**
+   * Creates a Stripe destination charge (PaymentIntent) for a Flash-Consult
+   * booking: the customer is charged the full price, and Stripe splits it in
+   * that same transaction — the Oro's connected account automatically
+   * receives (amount - application_fee_amount), Orochat keeps the rest.
+   */
+  static async chargeSingleBooking(bookingId: string): Promise<{ success: boolean; clientSecret?: string; reason?: string }> {
+    const booking = await db.booking.findUnique({
+      where: { id: bookingId },
+      include: { oro: { select: { stripeConnectAccountId: true, stripeConnectOnboarded: true } } },
+    });
+    if (!booking) return { success: false, reason: 'Booking not found' };
+
+    if (!booking.oro.stripeConnectAccountId || !booking.oro.stripeConnectOnboarded) {
+      return { success: false, reason: 'NOT_CONNECTED' };
+    }
+
+    try {
+      const intent = await getStripeClient().paymentIntents.create(
+        {
+          amount: booking.priceCents,
+          currency: 'usd',
+          application_fee_amount: booking.applicationFeeAmountCents,
+          transfer_data: { destination: booking.oro.stripeConnectAccountId },
+          metadata: { bookingId: booking.id },
+        },
+        { idempotencyKey: booking.id }
+      );
+
+      await db.booking.update({
+        where: { id: bookingId },
+        data: { stripePaymentIntentId: intent.id },
+      });
+
+      return { success: true, clientSecret: intent.client_secret ?? undefined };
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'Unknown Stripe error';
+      return { success: false, reason };
+    }
+  }
+
+  /**
+   * Fully refunds a Flash-Consult booking's charge, reversing both the Oro's
+   * transfer and Orochat's application fee — used for no-show/reschedule
+   * declines where no service was delivered.
+   */
+  static async refundBooking(bookingId: string): Promise<{ success: boolean; reason?: string }> {
+    const booking = await db.booking.findUnique({ where: { id: bookingId } });
+    if (!booking?.stripePaymentIntentId) return { success: false, reason: 'No payment to refund' };
+
+    try {
+      await getStripeClient().refunds.create(
+        {
+          payment_intent: booking.stripePaymentIntentId,
+          reverse_transfer: true,
+          refund_application_fee: true,
+        },
+        { idempotencyKey: `refund-${booking.id}` }
+      );
+      return { success: true };
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'Unknown Stripe error';
+      return { success: false, reason };
+    }
+  }
 }

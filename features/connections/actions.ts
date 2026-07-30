@@ -108,6 +108,8 @@ export async function searchUsers(query: string, currentUserId: string) {
         location: true,
         isPartner: true,
         verifiedOrosCount: true,
+        consultEnabled: true,
+        consultTopic: true,
       },
       take: 20,
     });

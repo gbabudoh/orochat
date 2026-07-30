@@ -7,6 +7,7 @@ const tabs = [
   { href: '/settings/profile', label: 'Profile' },
   { href: '/settings/security', label: 'Security' },
   { href: '/settings/payouts', label: 'Payment Setup' },
+  { href: '/settings/consults', label: 'Flash-Consult' },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {

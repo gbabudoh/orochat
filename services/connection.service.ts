@@ -183,6 +183,7 @@ export class ConnectionService {
             avatar: true,
             title: true,
             company: true,
+            consultEnabled: true,
           },
         },
         receiver: {
@@ -193,6 +194,7 @@ export class ConnectionService {
             avatar: true,
             title: true,
             company: true,
+            consultEnabled: true,
           },
         },
       },

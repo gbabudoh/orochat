@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import { User, Building, MapPin, Users, TrendingUp, Award, Briefcase, AtSign, Calendar, Edit, FileText, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 import ProfileActions from '@/components/feature/Profile/ProfileActions';
+import BookConsultButton from '@/components/feature/Booking/BookConsultButton';
 import { getCountryName } from '@/lib/constants/countries';
 import { COUNTRY_COORDINATES } from '@/lib/constants/countryCoords';
 import { logProfileView } from '@/lib/profileViews';
@@ -179,11 +180,21 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
               </Link>
             )}
             {session && !isOwnProfile && (
-              <ProfileActions 
+              <ProfileActions
                 userId={id}
                 currentUserId={session.user.id}
                 isConnected={isConnected}
                 hasPendingRequest={hasPendingRequest}
+              />
+            )}
+            {session && !isOwnProfile && user.consultEnabled && user.consultPriceCents && user.consultTopic && (
+              <BookConsultButton
+                oroId={id}
+                customerId={session.user.id}
+                priceCents={user.consultPriceCents}
+                topic={user.consultTopic}
+                description={user.consultDescription}
+                outcomes={user.consultOutcomes}
               />
             )}
             {!session && (

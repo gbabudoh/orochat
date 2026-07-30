@@ -39,11 +39,16 @@ export default async function MyOrosPage() {
             {connections.length} verified {connections.length === 1 ? 'connection' : 'connections'}
           </p>
         </div>
-        <Link href="/oro/discover">
-          <Button>
-            Find People
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/oro/consults" className="text-sm text-[#458B9E] hover:text-[#3a7585] font-medium transition-colors">
+            Find a consult
+          </Link>
+          <Link href="/oro/discover">
+            <Button>
+              Find People
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {pendingRequests.length > 0 && (
@@ -138,6 +143,11 @@ export default async function MyOrosPage() {
                     )}
                     {oro.company && (
                       <p className="text-xs text-gray-500 truncate">{oro.company}</p>
+                    )}
+                    {oro.consultEnabled && (
+                      <span className="inline-block mt-2 px-2 py-0.5 bg-[#458B9E] text-white text-xs font-semibold rounded-full">
+                        Bookable
+                      </span>
                     )}
                     <div className="mt-4 flex items-center space-x-2">
                       <Link href={`/oro/${oro.id}`}>

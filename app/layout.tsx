@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 import AuthProvider from "@/lib/providers/AuthProvider";
 import QueryProvider from "@/lib/providers/QueryProvider";
@@ -117,6 +118,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <PwaZoomPrevention />
+        <Toaster richColors position="top-right" />
         <QueryProvider>
           <AuthProvider>
             {children}

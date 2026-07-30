@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getStripeClient } from '@/lib/stripe';
 import { db } from '@/lib/db';
+import { activateBookingAfterPayment } from '@/features/booking/actions';
 import type Stripe from 'stripe';
 
 export async function POST(req: Request) {
@@ -45,6 +46,32 @@ export async function POST(req: Request) {
       await db.revenueDistribution.updateMany({
         where: { stripeTransferId: transfer.id },
         data: { payoutStatus: 'FAILED', paid: false, payoutFailureReason: 'Transfer reversed' },
+      });
+      break;
+    }
+    case 'payment_intent.succeeded': {
+      const intent = event.data.object as Stripe.PaymentIntent;
+      const booking = await db.booking.findUnique({ where: { stripePaymentIntentId: intent.id } });
+      if (booking && booking.status === 'PENDING_PAYMENT') {
+        const chargeId = typeof intent.latest_charge === 'string' ? intent.latest_charge : intent.latest_charge?.id ?? null;
+        await activateBookingAfterPayment(booking.id, chargeId);
+      }
+      break;
+    }
+    case 'payment_intent.payment_failed': {
+      const intent = event.data.object as Stripe.PaymentIntent;
+      const booking = await db.booking.findUnique({ where: { stripePaymentIntentId: intent.id } });
+      if (booking && booking.status === 'PENDING_PAYMENT') {
+        await db.booking.update({ where: { id: booking.id }, data: { status: 'CANCELLED' } });
+        await db.availabilitySlot.update({ where: { id: booking.availabilitySlotId }, data: { isBooked: false } });
+      }
+      break;
+    }
+    case 'charge.refunded': {
+      const charge = event.data.object as Stripe.Charge;
+      await db.booking.updateMany({
+        where: { stripeChargeId: charge.id, status: { not: 'REFUNDED' } },
+        data: { status: 'REFUNDED', refundedAt: new Date() },
       });
       break;
     }
