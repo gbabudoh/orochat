@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import { User, Building, MapPin, Users, TrendingUp, Award, Briefcase, AtSign, Calendar, Edit, FileText, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 import ProfileActions from '@/components/feature/Profile/ProfileActions';
+import ProfileAvatar from '@/components/feature/Profile/ProfileAvatar';
 import BookConsultButton from '@/components/feature/Booking/BookConsultButton';
 import { getCountryName } from '@/lib/constants/countries';
 import { COUNTRY_COORDINATES } from '@/lib/constants/countryCoords';
@@ -213,36 +214,21 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
         {/* Profile Header Card */}
         <Card padding="none" className="mb-4 md:mb-6 shadow-xl md:border-0 border-0 overflow-hidden md:rounded-2xl rounded-none">
           {/* Cover Background */}
-          <div className="h-20 md:h-48 bg-gradient-to-r from-[#458B9E] via-[#5BA3B8] to-[#458B9E] relative">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1)_0%,transparent_50%)]" />
+          <div className="h-28 md:h-48 bg-gradient-to-r from-[#458B9E] via-[#5BA3B8] to-[#3a7585] relative">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.15)_0%,transparent_50%)]" />
           </div>
           
           {/* Mobile Layout */}
           <div className="md:hidden px-4 pb-6">
             {/* Avatar */}
-            <div className="flex justify-center -mt-12 mb-4">
-              <div className="relative">
-                <div className="w-24 h-24 rounded-2xl bg-white p-1.5 shadow-2xl">
-                  <div className="w-full h-full rounded-xl bg-gradient-to-br from-[#458B9E] to-[#3a7585] flex items-center justify-center overflow-hidden">
-                    {user.avatar ? (
-                      <img 
-                        src={`/api/user/${user.id}/avatar`} 
-                        alt={user.name} 
-                        className="w-full h-full object-cover rounded-xl" 
-                      />
-                    ) : (
-                      <User className="w-12 h-12 text-white" />
-                    )}
-                  </div>
-                </div>
-                {user.isPartner && (
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
-                    <span className="px-2 py-0.5 bg-gradient-to-r from-[#FFC93C] to-[#FFD700] text-[#333333] text-xs font-bold rounded-full shadow-lg">
-                      Partner
-                    </span>
-                  </div>
-                )}
-              </div>
+            <div className="flex justify-center -mt-14 mb-4">
+              <ProfileAvatar
+                userId={user.id}
+                name={user.name}
+                hasAvatar={!!user.avatar}
+                isPartner={user.isPartner}
+                size="md"
+              />
             </div>
 
             {/* Name & Title */}
@@ -258,25 +244,25 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              <div className="text-center p-3 bg-gradient-to-br from-[#458B9E]/10 to-transparent rounded-lg">
+            <div className="grid grid-cols-2 gap-2.5 mb-4">
+              <div className="text-center p-3 bg-gradient-to-br from-[#458B9E]/10 via-[#458B9E]/5 to-transparent rounded-xl border border-[#458B9E]/20 shadow-xs">
                 <div className="text-xl font-bold text-[#458B9E]">{user.verifiedOrosCount}</div>
-                <div className="text-xs text-gray-600">Connections</div>
+                <div className="text-xs font-medium text-gray-600">Connections</div>
               </div>
-              <div className="text-center p-3 bg-gradient-to-br from-[#458B9E]/10 to-transparent rounded-lg">
+              <div className="text-center p-3 bg-gradient-to-br from-[#458B9E]/10 via-[#458B9E]/5 to-transparent rounded-xl border border-[#458B9E]/20 shadow-xs">
                 <div className="text-xl font-bold text-[#458B9E]">{postsCount}</div>
-                <div className="text-xs text-gray-600">Oro Posts</div>
+                <div className="text-xs font-medium text-gray-600">Oro Posts</div>
               </div>
               {user.isPartner && (
-                <div className="text-center p-3 bg-gradient-to-br from-[#FFC93C]/10 to-transparent rounded-lg">
-                  <div className="text-xl font-bold text-[#FFC93C]">{user.currentTES.toFixed(0)}</div>
-                  <div className="text-xs text-gray-600">TES</div>
+                <div className="text-center p-3 bg-gradient-to-br from-[#FFC93C]/15 via-[#FFC93C]/5 to-transparent rounded-xl border border-[#FFC93C]/30 shadow-xs">
+                  <div className="text-xl font-bold text-[#b8860b]">{user.currentTES.toFixed(0)}</div>
+                  <div className="text-xs font-medium text-gray-600">TES Score</div>
                 </div>
               )}
               {workHistory.length > 0 && (
-                <div className="text-center p-3 bg-gradient-to-br from-gray-100 to-transparent rounded-lg">
+                <div className="text-center p-3 bg-gradient-to-br from-gray-100 to-transparent rounded-xl border border-gray-200 shadow-xs">
                   <div className="text-xl font-bold text-gray-700">{workHistory.length}</div>
-                  <div className="text-xs text-gray-600">Positions</div>
+                  <div className="text-xs font-medium text-gray-600">Positions</div>
                 </div>
               )}
             </div>
@@ -284,27 +270,27 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
             {/* Contact Info */}
             <div className="space-y-2">
               {user.location && (
-                <div className="flex items-center p-3 bg-white rounded-lg border border-gray-200">
-                  <MapPin className="w-4 h-4 text-[#458B9E] mr-2 flex-shrink-0" />
+                <div className="flex items-center p-3 bg-white rounded-xl border border-gray-200 shadow-xs">
+                  <MapPin className="w-4 h-4 text-[#458B9E] mr-2.5 shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-500">Location</p>
+                    <p className="text-xs font-medium text-gray-500">Location</p>
                     <p className="font-semibold text-sm text-gray-900 truncate">{user.location}</p>
                   </div>
                 </div>
               )}
               {user.username && (
-                <div className="flex items-center p-3 bg-white rounded-lg border border-gray-200">
-                  <AtSign className="w-4 h-4 text-[#458B9E] mr-2 flex-shrink-0" />
+                <div className="flex items-center p-3 bg-white rounded-xl border border-gray-200 shadow-xs">
+                  <AtSign className="w-4 h-4 text-[#458B9E] mr-2.5 shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-500">Handle</p>
+                    <p className="text-xs font-medium text-gray-500">Handle</p>
                     <p className="font-semibold text-sm text-gray-900 truncate">@{user.username}</p>
                   </div>
                 </div>
               )}
-              <div className="flex items-center p-3 bg-white rounded-lg border border-gray-200">
-                <Calendar className="w-4 h-4 text-[#458B9E] mr-2 flex-shrink-0" />
+              <div className="flex items-center p-3 bg-white rounded-xl border border-gray-200 shadow-xs">
+                <Calendar className="w-4 h-4 text-[#458B9E] mr-2.5 shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-gray-500">Joined</p>
+                  <p className="text-xs font-medium text-gray-500">Joined</p>
                   <p className="font-semibold text-sm text-gray-900">
                     {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                   </p>
@@ -317,30 +303,14 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
           <div className="hidden md:block px-8 pb-8">
             <div className="flex gap-8 -mt-20">
               {/* Avatar */}
-              <div className="flex-shrink-0">
-                <div className="relative">
-                  <div className="w-40 h-40 rounded-3xl bg-white p-2 shadow-2xl">
-                    <div className="w-full h-full rounded-2xl bg-gradient-to-br from-[#458B9E] to-[#3a7585] flex items-center justify-center overflow-hidden">
-                      {user.avatar ? (
-                        <img 
-                          src={`/api/user/${user.id}/avatar`} 
-                          alt={user.name} 
-                          className="w-full h-full object-cover rounded-2xl" 
-                        />
-                      ) : (
-                        <User className="w-20 h-20 text-white" />
-                      )}
-                    </div>
-                  </div>
-                  {user.isPartner && (
-                    <div className="absolute -bottom-2 -right-2">
-                      <div className="px-3 py-1.5 bg-gradient-to-r from-[#FFC93C] to-[#FFD700] text-[#333333] text-xs font-bold rounded-full shadow-lg flex items-center space-x-1">
-                        <Award className="w-3 h-3" />
-                        <span>Partner</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
+              <div className="shrink-0">
+                <ProfileAvatar
+                  userId={user.id}
+                  name={user.name}
+                  hasAvatar={!!user.avatar}
+                  isPartner={user.isPartner}
+                  size="lg"
+                />
               </div>
 
               {/* Profile Info */}

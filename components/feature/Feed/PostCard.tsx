@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import PostActions from '@/components/feature/Feed/PostActions';
 import HandleBadge from '@/components/feature/Feed/HandleBadge';
-import { formatRelativeTime, formatDateTime, formatPostDateTime } from '@/lib/utils/formatters';
+import { formatRelativeTime, formatDateTime, formatPostDateTime, formatCompactDate } from '@/lib/utils/formatters';
 
 interface Comment {
   id: string;
@@ -55,8 +55,8 @@ export default function PostCard({ post, isLiked, comments, index = 0, currentUs
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: Math.min(index, 6) * 0.05 }}
     >
-      <Card padding="none" className="hover:shadow-lg transition-shadow p-2 sm:p-6 overflow-hidden">
-        <div className="flex items-start gap-2 sm:gap-4">
+      <Card padding="none" className="hover:shadow-lg transition-shadow p-4 sm:p-6 overflow-hidden">
+        <div className="flex items-start gap-3 sm:gap-4">
           <Link href={`/oro/${post.author.id}`} className="shrink-0 relative">
             <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-linear-to-br from-[#458B9E] to-[#5BA3B8] flex items-center justify-center overflow-hidden">
               {post.author.avatar ? (
@@ -126,7 +126,7 @@ export default function PostCard({ post, isLiked, comments, index = 0, currentUs
                   {/* Full "<date> - <weekday> - <time> (<relative>)" string is too
                       wide for mobile next to the badge, so only show the compact
                       relative time there; the full string still appears on sm+. */}
-                  <span className="sm:hidden">{formatRelativeTime(post.createdAt)}</span>
+                  <span className="sm:hidden">{formatCompactDate(post.createdAt)}</span>
                   <span className="hidden sm:inline">
                     {(() => {
                       const relative = formatRelativeTime(post.createdAt);
@@ -153,18 +153,18 @@ export default function PostCard({ post, isLiked, comments, index = 0, currentUs
                 className="w-full rounded-xl mb-3 sm:mb-4 max-h-96 object-cover"
               />
             )}
-
-            <PostActions
-              postId={post.id}
-              initialLikes={post.likesCount}
-              isLikedInitially={isLiked}
-              isAuthor={isAuthor}
-              isArchived={isArchived}
-              onRemoved={() => setIsRemoved(true)}
-              comments={comments}
-            />
           </div>
         </div>
+
+        <PostActions
+          postId={post.id}
+          initialLikes={post.likesCount}
+          isLikedInitially={isLiked}
+          isAuthor={isAuthor}
+          isArchived={isArchived}
+          onRemoved={() => setIsRemoved(true)}
+          comments={comments}
+        />
       </Card>
     </motion.div>
   );

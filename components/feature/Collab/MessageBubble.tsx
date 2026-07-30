@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { formatRelativeTime, formatDateTime } from '@/lib/utils/formatters';
+import { formatRelativeTime, formatDateTime, formatCompactDate } from '@/lib/utils/formatters';
 import { Video, FileText, CheckCircle, ShieldAlert, PenTool, MoreVertical, Archive, Trash2 } from 'lucide-react';
 import { verifyTextSignature, getOrCreateKeypair, signText } from '@/lib/utils/crypto';
 import { AgreementData, AGREEMENT_MESSAGE_PREFIX } from '@/types/chat';
@@ -196,8 +196,8 @@ export default function MessageBubble({
 
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4`}>
-      <div className={`flex items-start space-x-2 max-w-[88%] sm:max-w-[80%] min-w-0 ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
-        <div className="w-8 h-8 rounded-full flex-shrink-0 relative">
+      <div className={`flex items-start gap-2.5 max-w-[92%] sm:max-w-[80%] min-w-0 ${isOwn ? 'flex-row-reverse' : ''}`}>
+        <div className="w-8 h-8 rounded-full shrink-0 relative">
           <div className="absolute inset-0 rounded-full bg-[#458B9E] flex items-center justify-center overflow-hidden">
             {message.sender.avatar ? (
               <img src={`/api/user/${message.sender.id}/avatar`} alt={message.sender.name} className="w-full h-full rounded-full object-cover" />
@@ -486,7 +486,8 @@ export default function MessageBubble({
             className={`text-xs mt-1 ${isOwn ? 'text-white/70' : 'text-gray-500'}`}
             title={formatDateTime(message.createdAt)}
           >
-            {formatRelativeTime(message.createdAt)} &middot; {formatDateTime(message.createdAt)}
+            <span className="sm:hidden">{formatCompactDate(message.createdAt)}</span>
+            <span className="hidden sm:inline">{formatRelativeTime(message.createdAt)}</span>
           </div>
         </div>
       </div>

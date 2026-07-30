@@ -342,7 +342,7 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto w-full min-w-0">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col" style={{ height: 'calc(100vh - 200px)' }}>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 sm:p-4 border-b border-gray-200">
@@ -381,10 +381,10 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-[#F8FAFB] sm:bg-transparent rounded-full sm:rounded-none p-1 sm:p-0">
-            <Button type="button" variant="ghost" size="sm" onClick={() => setIsAgreementOpen(true)} className="text-[#458B9E] hover:text-[#3a7585] hover:bg-white shrink-0 whitespace-nowrap p-2! sm:px-3! sm:py-1.5!">
-              <FileText className="w-4 h-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">New Agreement</span>
+          <div className="flex items-center gap-1 sm:gap-2 bg-[#F8FAFB] sm:bg-transparent rounded-full sm:rounded-none p-1 sm:p-0 overflow-x-auto no-scrollbar">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setIsAgreementOpen(true)} className="text-[#458B9E] hover:text-[#3a7585] hover:bg-white shrink-0 whitespace-nowrap px-2! py-1! sm:px-3! sm:py-1.5! text-xs">
+              <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
+              <span><span className="sm:hidden">Agreement</span><span className="hidden sm:inline">New Agreement</span></span>
             </Button>
             <div className="relative shrink-0" ref={callButtonRef}>
               <Button
@@ -403,11 +403,11 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
                   }
                   setIsDurationMenuOpen((v) => !v);
                 }}
-                className="text-[#458B9E] hover:text-[#3a7585] hover:bg-white whitespace-nowrap p-2! sm:px-3! sm:py-1.5!"
+                className="text-[#458B9E] hover:text-[#3a7585] hover:bg-white shrink-0 whitespace-nowrap px-2! py-1! sm:px-3! sm:py-1.5! text-xs"
               >
-                <Video className="w-4 h-4 sm:mr-1.5" />
-                <span className="hidden sm:inline">Start Call</span>
-                <ChevronDown className="w-3.5 h-3.5 sm:ml-1" />
+                <Video className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
+                <span><span className="sm:hidden">Call</span><span className="hidden sm:inline">Start Call</span></span>
+                <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 ml-0.5 sm:ml-1" />
               </Button>
               {isDurationMenuOpen && durationMenuPos && (
                 <>
@@ -433,20 +433,20 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
                 </>
               )}
             </div>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setIsHistoryOpen(true)} className="text-[#458B9E] hover:text-[#3a7585] hover:bg-white shrink-0 whitespace-nowrap p-2! sm:px-3! sm:py-1.5!">
-              <History className="w-4 h-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">Call History</span>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setIsHistoryOpen(true)} className="text-[#458B9E] hover:text-[#3a7585] hover:bg-white shrink-0 whitespace-nowrap px-2! py-1! sm:px-3! sm:py-1.5! text-xs">
+              <History className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
+              <span><span className="sm:hidden">History</span><span className="hidden sm:inline">Call History</span></span>
             </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setIsAddOpen(true)} className="hover:bg-white shrink-0 whitespace-nowrap p-2! sm:px-3! sm:py-1.5!">
-              <UserPlus className="w-4 h-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">Add people</span>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setIsAddOpen(true)} className="hover:bg-white shrink-0 whitespace-nowrap px-2! py-1! sm:px-3! sm:py-1.5! text-xs">
+              <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
+              <span><span className="sm:hidden">Add</span><span className="hidden sm:inline">Add people</span></span>
             </Button>
           </div>
         </div>
 
         <BookingBanner conversationId={conversationId} currentUserId={currentUserId} />
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6">
           {messages.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500">No messages yet</p>

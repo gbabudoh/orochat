@@ -5,7 +5,7 @@ import { getPresenceMap } from '@/lib/presence.server';
 import Card from '@/components/ui/Card';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Users, MessageSquare, User, Clock } from 'lucide-react';
+import { Users, MessageSquare, User, Clock, UserPlus, Search } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import PendingRequestActions from '@/components/feature/Connections/PendingRequestActions';
 
@@ -31,21 +31,26 @@ export default async function MyOrosPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-6xl mx-auto w-full min-w-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#333333] mb-1">My Oros</h1>
-          <p className="text-gray-600">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-1">My Oros</h1>
+          <p className="text-sm sm:text-base text-gray-600">
             {connections.length} verified {connections.length === 1 ? 'connection' : 'connections'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link href="/oro/consults" className="text-sm text-[#458B9E] hover:text-[#3a7585] font-medium transition-colors">
-            Find a consult
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap sm:flex-nowrap">
+          <Link
+            href="/oro/consults"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs sm:text-sm font-semibold text-[#458B9E] bg-[#458B9E]/10 hover:bg-[#458B9E]/20 transition-colors shrink-0 whitespace-nowrap"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span>Find a consult</span>
           </Link>
-          <Link href="/oro/discover">
-            <Button>
-              Find People
+          <Link href="/oro/discover" className="shrink-0">
+            <Button size="sm" className="sm:text-base sm:px-4 sm:py-2 whitespace-nowrap">
+              <UserPlus className="w-4 h-4 mr-1.5" />
+              <span>Find People</span>
             </Button>
           </Link>
         </div>
@@ -95,7 +100,10 @@ export default async function MyOrosPage() {
               Start connecting with professionals to build your network
             </p>
             <Link href="/oro/discover">
-              <Button>Find People</Button>
+              <Button>
+                <UserPlus className="w-4 h-4 mr-1.5" />
+                <span>Find People</span>
+              </Button>
             </Link>
           </div>
         </Card>
@@ -104,10 +112,10 @@ export default async function MyOrosPage() {
           {connections.map((connection) => {
             const oro = connection.oro;
             return (
-              <Card key={connection.id} hover className="p-6">
-                <div className="flex items-start space-x-4">
-                  <Link href={`/oro/${oro.id}`} className="flex-shrink-0 relative">
-                    <div className="w-16 h-16 rounded-full bg-[#458B9E] flex items-center justify-center hover:opacity-80 transition-opacity overflow-hidden">
+              <Card key={connection.id} hover className="p-4 sm:p-6">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <Link href={`/oro/${oro.id}`} className="shrink-0 relative">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#458B9E] flex items-center justify-center hover:opacity-80 transition-opacity overflow-hidden">
                       {oro.avatar ? (
                         <Image
                           src={oro.avatar}
@@ -117,20 +125,20 @@ export default async function MyOrosPage() {
                           className="w-full h-full rounded-full object-cover"
                         />
                       ) : (
-                        <User className="w-8 h-8 text-white" />
+                        <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                       )}
                     </div>
                     <span
-                      className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                      className={`absolute bottom-0 right-0 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border-2 border-white ${
                         presenceByUserId[oro.id] === 'online' ? 'bg-green-500' : 'bg-gray-300'
                       }`}
                       aria-label={presenceByUserId[oro.id] === 'online' ? 'online' : 'offline'}
                     />
                   </Link>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between gap-2">
                       <Link href={`/oro/${oro.id}`} className="min-w-0">
-                        <h3 className="font-semibold text-[#333333] hover:text-[#458B9E] transition-colors truncate">
+                        <h3 className="font-semibold text-[#333333] hover:text-[#458B9E] transition-colors truncate text-sm sm:text-base">
                           {oro.name}
                         </h3>
                       </Link>
@@ -139,25 +147,25 @@ export default async function MyOrosPage() {
                       </span>
                     </div>
                     {oro.title && (
-                      <p className="text-sm text-gray-600 truncate mt-1">{oro.title}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 truncate mt-0.5">{oro.title}</p>
                     )}
                     {oro.company && (
                       <p className="text-xs text-gray-500 truncate">{oro.company}</p>
                     )}
                     {oro.consultEnabled && (
-                      <span className="inline-block mt-2 px-2 py-0.5 bg-[#458B9E] text-white text-xs font-semibold rounded-full">
+                      <span className="inline-block mt-1.5 px-2 py-0.5 bg-[#458B9E] text-white text-[10px] sm:text-xs font-semibold rounded-full">
                         Bookable
                       </span>
                     )}
-                    <div className="mt-4 flex items-center space-x-2">
+                    <div className="mt-3 sm:mt-4 flex items-center gap-1.5 sm:gap-2 flex-wrap">
                       <Link href={`/oro/${oro.id}`}>
-                        <Button size="sm" variant="ghost" className="text-xs">
+                        <Button size="sm" variant="ghost" className="text-xs px-2.5 py-1">
                           <User className="w-3 h-3 mr-1" />
                           View Profile
                         </Button>
                       </Link>
                       <Link href={`/collab/${oro.id}`}>
-                        <Button size="sm" variant="ghost" className="text-xs">
+                        <Button size="sm" variant="ghost" className="text-xs px-2.5 py-1">
                           <MessageSquare className="w-3 h-3 mr-1" />
                           Message
                         </Button>

@@ -72,7 +72,7 @@ export default async function GlobalFeedPage({
   const entries = interleaveSponsored(postsWithPresence, ad, AD_INTERVAL, 0);
 
   return (
-    <div className="max-w-3xl mx-auto px-2 sm:px-0">
+    <div className="max-w-3xl mx-auto w-full min-w-0">
       <div className="mb-6 md:mb-8">
         <div className="flex items-center gap-2 mb-1 md:mb-2">
           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#458B9E]/10">

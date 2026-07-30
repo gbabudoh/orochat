@@ -13,7 +13,6 @@ export default function MainSidebar() {
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
-  const [isInputActive, setIsInputActive] = useState(false);
   const [stats, setStats] = useState({ verifiedOrosCount: 0, compassMembershipsCount: 0, isPartner: false, postsCount: 0 });
 
   useEffect(() => {
@@ -37,31 +36,13 @@ export default function MainSidebar() {
     };
   }, [session?.user?.id, pathname]);
 
-  // Allow other components (e.g. PostActions inline button) to open the sidebar
+  // Allow other components (e.g. the bottom nav "More" tab, or the inline
+  // button PostActions shows while a comment textarea is focused) to open
+  // the sidebar without lifting isMobileOpen state out of this component.
   useEffect(() => {
     const handler = () => setIsMobileOpen((v) => !v);
     window.addEventListener('toggleMobileSidebar', handler);
     return () => window.removeEventListener('toggleMobileSidebar', handler);
-  }, []);
-
-  // Hide floating button whenever any input/textarea is focused
-  useEffect(() => {
-    const onFocusIn = (e: FocusEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        setIsInputActive(true);
-      }
-    };
-    const onFocusOut = (e: FocusEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        setIsInputActive(false);
-      }
-    };
-    document.addEventListener('focusin', onFocusIn);
-    document.addEventListener('focusout', onFocusOut);
-    return () => {
-      document.removeEventListener('focusin', onFocusIn);
-      document.removeEventListener('focusout', onFocusOut);
-    };
   }, []);
 
   const menuItems = [
@@ -219,20 +200,6 @@ export default function MainSidebar() {
           )}
         </div>
       </aside>
-
-      {/* Mobile Toggle Button — hidden while user is typing in any input */}
-      {!isInputActive && (
-        <button
-          onClick={() => setIsMobileOpen(!isMobileOpen)}
-          className="lg:hidden fixed right-4 z-50 w-12 h-12 bg-[#458B9E] text-white rounded-full shadow-lg flex items-center justify-center hover:bg-[#3a7585] transition-colors"
-          style={{ bottom: 'calc(3.75rem + env(safe-area-inset-bottom))' }}
-          aria-label="Toggle menu"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-      )}
     </>
   );
 }

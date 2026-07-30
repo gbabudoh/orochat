@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Heart, MessageCircle, Share2, Send, Trash2, Archive, ArchiveRestore, Link2, Facebook, Twitter } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Send, Trash2, Archive, ArchiveRestore, Link2, Facebook, Twitter, ChevronUp } from 'lucide-react';
 import { toggleLike, addComment, deletePost, archivePost, unarchivePost } from '@/features/feed/actions';
 
 import Image from 'next/image';
-import { formatPostDateTime, formatRelativeTime, formatDateTime } from '@/lib/utils/formatters';
+import { formatPostDateTime, formatRelativeTime, formatDateTime, formatCompactDate } from '@/lib/utils/formatters';
 
 interface Comment {
   id: string;
@@ -166,7 +166,7 @@ export default function PostActions({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="w-full space-y-4 mt-3">
       <div className="flex items-center justify-between gap-2 pt-3 border-t border-gray-100">
         <div className="flex items-center gap-3 sm:gap-6 min-w-0">
           <button
@@ -263,11 +263,11 @@ export default function PostActions({
       </div>
 
       {showComments && (
-        <div className="pt-4 space-y-4 border-t border-gray-50 animate-in fade-in slide-in-from-top-2">
+        <div className="pt-4 space-y-3 border-t border-gray-100 animate-in fade-in slide-in-from-top-2">
           {/* Comments List */}
           <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
             {commentsList.map((comment) => (
-              <div key={comment.id} className="flex space-x-2">
+              <div key={comment.id} className="w-full flex items-start gap-3">
                 <div className="shrink-0">
                   <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden relative">
                     {comment.user.avatar ? (
@@ -283,14 +283,14 @@ export default function PostActions({
                     )}
                   </div>
                 </div>
-                <div className="flex-1 min-w-0 bg-gray-50 rounded-2xl px-2 py-2 text-sm">
+                <div className="flex-1 min-w-0 bg-gray-50 rounded-2xl p-3 text-sm">
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <span className="font-semibold text-[#333333] truncate min-w-0">{comment.user.name}</span>
                     <span
                       className="text-[10px] text-gray-400 whitespace-nowrap shrink-0"
                       title={formatDateTime(new Date(comment.createdAt))}
                     >
-                      <span className="sm:hidden">{formatRelativeTime(new Date(comment.createdAt))}</span>
+                      <span className="sm:hidden">{formatCompactDate(new Date(comment.createdAt))}</span>
                       <span className="hidden sm:inline">{formatPostDateTime(new Date(comment.createdAt))}</span>
                     </span>
                   </div>
@@ -304,8 +304,8 @@ export default function PostActions({
           </div>
 
           {/* Comment Form */}
-          <form onSubmit={handleComment} className="pt-2">
-            <div className="relative flex items-end">
+          <form onSubmit={handleComment} className="w-full pt-2">
+            <div className="relative flex items-end w-full">
               <textarea
                 ref={textareaRef}
                 rows={1}
@@ -351,6 +351,15 @@ export default function PostActions({
               </div>
             )}
           </form>
+
+          <button
+            type="button"
+            onClick={() => setShowComments(false)}
+            className="flex items-center gap-1 mx-auto text-xs font-medium text-gray-400 hover:text-[#458B9E] transition-colors"
+          >
+            <ChevronUp className="w-3.5 h-3.5" />
+            Hide comments
+          </button>
         </div>
       )}
     </div>

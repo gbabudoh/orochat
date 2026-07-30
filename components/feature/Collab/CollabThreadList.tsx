@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { formatPostDateTime, formatMessagePreview } from '@/lib/utils/formatters';
+import { formatRelativeTime, formatMessagePreview } from '@/lib/utils/formatters';
 import { MessageSquare, Users } from 'lucide-react';
 import UserAvatar from '@/components/ui/UserAvatar';
 
@@ -43,7 +43,7 @@ export default function CollabThreadList({ conversations }: CollabThreadListProp
   }
 
   return (
-    <div className="space-y-1">
+    <div className="divide-y divide-gray-100">
       {conversations.map((conversation) => {
         const title = conversation.isGroup
           ? conversation.name || conversation.otherParticipants.map((m) => m.name).join(', ')
@@ -56,10 +56,10 @@ export default function CollabThreadList({ conversations }: CollabThreadListProp
           <Link
             key={conversation.conversationId}
             href={`/collab/${conversation.conversationId}`}
-            className="flex items-center space-x-3 p-4 rounded-lg hover:bg-[#F0F3F7] transition-colors group"
+            className="flex items-center gap-3 py-3 sm:py-4 px-2 sm:px-4 rounded-lg hover:bg-[#F0F3F7] active:bg-[#F0F3F7] transition-colors group"
           >
             {conversation.isGroup ? (
-              <div className="w-12 h-12 rounded-full bg-[#458B9E] flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-[#458B9E] flex items-center justify-center shrink-0">
                 <Users className="w-5 h-5 text-white" />
               </div>
             ) : (
@@ -72,14 +72,14 @@ export default function CollabThreadList({ conversations }: CollabThreadListProp
               />
             )}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="font-semibold text-[#333333] truncate">{title}</h3>
-                <span className="text-xs text-gray-500 flex-shrink-0 ml-2 whitespace-nowrap">
-                  {formatPostDateTime(conversation.latestMessage?.createdAt ?? conversation.createdAt)}
+              <div className="flex items-baseline justify-between gap-2 mb-0.5">
+                <h3 className="font-semibold text-[#333333] truncate min-w-0">{title}</h3>
+                <span className="text-xs text-gray-500 shrink-0 whitespace-nowrap">
+                  {formatRelativeTime(conversation.latestMessage?.createdAt ?? conversation.createdAt)}
                 </span>
               </div>
               {subtitle && (
-                <p className="text-sm text-gray-500 truncate mb-1">{subtitle}</p>
+                <p className="text-sm text-gray-500 truncate mb-0.5">{subtitle}</p>
               )}
               {conversation.latestMessage && (
                 <p className="text-sm text-gray-600 truncate">
@@ -89,7 +89,7 @@ export default function CollabThreadList({ conversations }: CollabThreadListProp
               )}
             </div>
             {conversation.unreadCount > 0 && (
-              <div className="bg-[#458B9E] text-white text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0">
+              <div className="bg-[#458B9E] text-white text-xs font-semibold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center shrink-0">
                 {conversation.unreadCount > 9 ? '9+' : conversation.unreadCount}
               </div>
             )}

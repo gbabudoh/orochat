@@ -63,10 +63,10 @@ export default function CreatePostCard({ userName, userAvatar, compassId }: Prop
   const initials = userName?.charAt(0).toUpperCase();
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-6 mb-4 md:mb-6">
-      <div className="flex items-center space-x-3 md:space-x-4">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+      <div className="flex items-center gap-3 sm:gap-4">
         <div className="shrink-0 text-center">
-          <div className="w-10 h-10 md:w-12 md:h-12 rounded-full relative">
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full relative">
             <div className="absolute inset-0 rounded-full bg-linear-to-br from-[#458B9E] to-[#5BA3B8] flex items-center justify-center overflow-hidden">
               {userAvatar && !error && (
                 <img

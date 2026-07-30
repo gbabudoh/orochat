@@ -23,7 +23,7 @@ export default function HandleBadge({ username, countryCode }: HandleBadgeProps)
             height={12}
             className="inline-block shrink-0 rounded-xs align-middle"
           />
-          <span className="whitespace-nowrap">{countryName}</span>
+          <span className="truncate max-w-[110px] sm:max-w-none">{countryName}</span>
         </span>
       )}
     </span>

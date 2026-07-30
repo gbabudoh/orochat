@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Globe, MessageSquare, Compass, Users } from 'lucide-react';
+import { Home, Globe, MessageSquare, Compass, Users, Menu } from 'lucide-react';
 
 const navItems = [
   { href: '/feed', label: 'Feed', icon: Home },
@@ -20,7 +20,7 @@ export default function MobileBottomNav() {
       className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 pb-[env(safe-area-inset-bottom)]"
       aria-label="Primary"
     >
-      <div className="grid grid-cols-5">
+      <div className="grid grid-cols-6">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -40,6 +40,15 @@ export default function MobileBottomNav() {
             </Link>
           );
         })}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event('toggleMobileSidebar'))}
+          className="flex flex-col items-center justify-center gap-0.5 py-2 min-w-0 text-gray-500"
+          aria-label="More"
+        >
+          <Menu className="w-5 h-5" strokeWidth={2} />
+          <span className="text-[11px] leading-none truncate max-w-full font-medium">More</span>
+        </button>
       </div>
     </nav>
   );
