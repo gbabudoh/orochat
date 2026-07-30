@@ -5,9 +5,14 @@ import { db } from '@/lib/db';
 import { getStripeClient } from '@/lib/stripe';
 
 export async function GET(req: Request) {
+  // Behind a reverse proxy, req.url can reflect the app's internal host/port
+  // rather than the public domain — always redirect against NEXTAUTH_URL
+  // instead, same as the accountLinks.create() call that sent the user here.
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.redirect(new URL('/login', req.url));
+    return NextResponse.redirect(new URL('/login', baseUrl));
   }
 
   const user = await db.user.findUnique({
@@ -30,5 +35,5 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.redirect(new URL('/settings/payouts', req.url));
+  return NextResponse.redirect(new URL('/settings/payouts', baseUrl));
 }
