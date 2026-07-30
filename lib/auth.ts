@@ -97,44 +97,49 @@ export const authOptions: NextAuthOptions = {
       // "sub", not our DB id), so find-or-create our own User row by email
       // and use that instead.
       if (user && account?.provider === 'google' && user.email) {
-        let dbUser = await db.user.findUnique({ where: { email: user.email } });
+        try {
+          let dbUser = await db.user.findUnique({ where: { email: user.email } });
 
-        if (!dbUser) {
-          const username = await generateUniqueUsername(user.name || 'Orochat User', user.email);
-          dbUser = await db.user.create({
-            data: {
-              email: user.email,
-              name: user.name || 'Orochat User',
-              avatar: user.image || null,
-              googleId: account.providerAccountId,
-              username,
-              emailVerified: new Date(), // Google already verifies its users' emails
-            },
-          });
-        } else if (!dbUser.googleId || !dbUser.emailVerified) {
-          dbUser = await db.user.update({
-            where: { id: dbUser.id },
-            data: {
-              googleId: dbUser.googleId ?? account.providerAccountId,
-              // Linking to Google confirms this email is real, even if the
-              // account originally signed up via Credentials and never
-              // clicked its verification link.
-              emailVerified: dbUser.emailVerified ?? new Date(),
-            },
-          });
+          if (!dbUser) {
+            const username = await generateUniqueUsername(user.name || 'Orochat User', user.email);
+            dbUser = await db.user.create({
+              data: {
+                email: user.email,
+                name: user.name || 'Orochat User',
+                avatar: user.image || null,
+                googleId: account.providerAccountId,
+                username,
+                emailVerified: new Date(), // Google already verifies its users' emails
+              },
+            });
+          } else if (!dbUser.googleId || !dbUser.emailVerified) {
+            dbUser = await db.user.update({
+              where: { id: dbUser.id },
+              data: {
+                googleId: dbUser.googleId ?? account.providerAccountId,
+                // Linking to Google confirms this email is real, even if the
+                // account originally signed up via Credentials and never
+                // clicked its verification link.
+                emailVerified: dbUser.emailVerified ?? new Date(),
+              },
+            });
+          }
+
+          if (dbUser.isPaused) {
+            dbUser = await db.user.update({ where: { id: dbUser.id }, data: { isPaused: false } });
+          }
+
+          token.id = dbUser.id;
+          token.name = dbUser.name;
+          token.avatar = dbUser.avatar;
+          token.isPartner = dbUser.isPartner;
+          token.verifiedOrosCount = dbUser.verifiedOrosCount;
+          token.compassMembershipsCount = dbUser.compassMembershipsCount;
+          return token;
+        } catch (error) {
+          console.error('[Google OAuth Callback Error]:', error);
+          throw error;
         }
-
-        if (dbUser.isPaused) {
-          dbUser = await db.user.update({ where: { id: dbUser.id }, data: { isPaused: false } });
-        }
-
-        token.id = dbUser.id;
-        token.name = dbUser.name;
-        token.avatar = dbUser.avatar;
-        token.isPartner = dbUser.isPartner;
-        token.verifiedOrosCount = dbUser.verifiedOrosCount;
-        token.compassMembershipsCount = dbUser.compassMembershipsCount;
-        return token;
       }
 
       // On sign in, set user data
