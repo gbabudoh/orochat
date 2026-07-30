@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { after } from 'next/server';
 import { triggerNotification } from '@/lib/novu';
 
 // Define a type-safe extended Prisma client to bypass stale types without using 'any'
@@ -189,23 +190,28 @@ export async function addComment(postId: string, content: string) {
       return c;
     });
 
-    // Notify post author
-    const post = await db.feedPost.findUnique({ 
-      where: { id: postId },
-      include: { author: true }
+    // Notification + cache revalidation aren't needed for the response the
+    // commenter is waiting on — deferring them with after() keeps the
+    // round-trip fast instead of making "send" wait on an external API call.
+    after(async () => {
+      const post = await db.feedPost.findUnique({
+        where: { id: postId },
+        select: { id: true, authorId: true },
+      });
+
+      if (post && post.authorId !== session.user.id) {
+        await triggerNotification('post-comment', post.authorId, {
+          message: `${session.user.name || 'Someone'} commented on your post`,
+          userName: session.user.name || 'Someone',
+          postId: post.id,
+          commentContent: content.trim()
+        }, session.user.id);
+      }
+
+      revalidatePath('/feed');
+      revalidatePath('/global');
     });
 
-    if (post && post.authorId !== session.user.id) {
-      await triggerNotification('post-comment', post.authorId, {
-        message: `${session.user.name || 'Someone'} commented on your post`,
-        userName: session.user.name || 'Someone',
-        postId: post.id,
-        commentContent: content.trim()
-      }, session.user.id);
-    }
-
-    revalidatePath('/feed');
-    revalidatePath('/global');
     return { success: true, comment };
   } catch (error) {
     console.error('Comment error:', error);

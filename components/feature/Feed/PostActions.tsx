@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { Heart, MessageCircle, Share2, Send, Trash2, Archive, ArchiveRestore, Link2, Facebook, Twitter, ChevronUp } from 'lucide-react';
 import { toggleLike, addComment, deletePost, archivePost, unarchivePost } from '@/features/feed/actions';
@@ -38,6 +39,7 @@ export default function PostActions({
   isArchived = false,
   onRemoved,
 }: PostActionsProps) {
+  const { data: session } = useSession();
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(isLikedInitially);
   const [showComments, setShowComments] = useState(false);
@@ -98,24 +100,44 @@ export default function PostActions({
 
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commentContent.trim() || isCommenting) return;
+    const content = commentContent.trim();
+    if (!content || isCommenting) return;
 
+    // Optimistic: show the comment and clear the box immediately instead of
+    // waiting on the full round-trip (DB write + notification) — that wait
+    // is what made sending feel like it was hanging.
+    const tempId = `temp-${crypto.randomUUID()}`;
+    setCommentsList(prev => [
+      ...prev,
+      {
+        id: tempId,
+        content,
+        createdAt: new Date(),
+        user: {
+          id: session?.user?.id ?? '',
+          name: session?.user?.name ?? 'You',
+          avatar: session?.user?.avatar ?? null,
+        },
+      },
+    ]);
+    setCommentContent('');
     setIsCommenting(true);
+    requestAnimationFrame(() => {
+      commentsListRef.current?.scrollTo({ top: commentsListRef.current.scrollHeight, behavior: 'smooth' });
+    });
+
     try {
-      const result = await addComment(postId, commentContent);
+      const result = await addComment(postId, content);
       if (result.success && result.comment) {
-        setCommentsList(prev => [...prev, result.comment as Comment]);
-        setCommentContent('');
-        // The comments list is a short scrollable box — without this, a
-        // successful comment can land below the fold and look like the
-        // send button silently did nothing.
-        requestAnimationFrame(() => {
-          commentsListRef.current?.scrollTo({ top: commentsListRef.current.scrollHeight, behavior: 'smooth' });
-        });
+        setCommentsList(prev => prev.map((c) => (c.id === tempId ? (result.comment as Comment) : c)));
       } else {
+        setCommentsList(prev => prev.filter((c) => c.id !== tempId));
+        setCommentContent(content);
         toast.error(result.error || 'Failed to add comment');
       }
     } catch {
+      setCommentsList(prev => prev.filter((c) => c.id !== tempId));
+      setCommentContent(content);
       toast.error('An error occurred');
     } finally {
       setIsCommenting(false);
