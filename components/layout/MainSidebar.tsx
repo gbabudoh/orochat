@@ -127,38 +127,49 @@ export default function MainSidebar() {
 
           {/* Navigation */}
           <nav className="space-y-1">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = item.href === '/settings/profile'
-                ? pathname.startsWith('/settings')
-                : pathname === item.href || pathname.startsWith(item.href + '/');
+            {(() => {
+              // Only the most specific (longest) matching href is active, so a
+              // nested route (e.g. /oro/consults) doesn't also light up its
+              // parent (e.g. /oro).
+              const activeHref = menuItems.reduce<string | null>((best, item) => {
+                const matches = item.href === '/settings/profile'
+                  ? pathname.startsWith('/settings')
+                  : pathname === item.href || pathname.startsWith(item.href + '/');
+                if (!matches) return best;
+                return !best || item.href.length > best.length ? item.href : best;
+              }, null);
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={closeMobileSidebar}
-                  className={`
-                    flex items-center space-x-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200
-                    ${isActive
-                      ? 'bg-white text-[#458B9E] shadow-lg'
-                      : 'text-white/90 hover:bg-white/10 hover:text-white'
-                    }
-                  `}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="font-medium flex-1">{item.label}</span>
-                  {!!item.badge && (
-                    <span
-                      className={`min-w-5 h-5 px-1.5 rounded-full text-xs font-semibold flex items-center justify-center ${isActive ? 'bg-[#458B9E] text-white' : 'bg-[#FFC93C] text-[#333333]'
-                        }`}
-                    >
-                      {item.badge > 9 ? '9+' : item.badge}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
+              return menuItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = item.href === activeHref;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={closeMobileSidebar}
+                    className={`
+                      flex items-center space-x-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200
+                      ${isActive
+                        ? 'bg-white text-[#458B9E] shadow-lg'
+                        : 'text-white/90 hover:bg-white/10 hover:text-white'
+                      }
+                    `}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="font-medium flex-1">{item.label}</span>
+                    {!!item.badge && (
+                      <span
+                        className={`min-w-5 h-5 px-1.5 rounded-full text-xs font-semibold flex items-center justify-center ${isActive ? 'bg-[#458B9E] text-white' : 'bg-[#FFC93C] text-[#333333]'
+                          }`}
+                      >
+                        {item.badge > 9 ? '9+' : item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              });
+            })()}
           </nav>
 
           {/* Partner Status */}
