@@ -501,9 +501,19 @@ export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProp
               className="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-4 pr-14 py-3 text-sm focus:outline-none focus:border-[#458B9E] focus:ring-1 focus:ring-[#458B9E]/20 leading-5 block"
             />
             <button
-              type="submit"
-              disabled={!newMessage.trim() || isSending}
-              className="absolute right-2 bottom-2 w-8 h-8 flex items-center justify-center bg-[#458B9E] text-white rounded-full disabled:opacity-40 hover:bg-[#3a7585] transition-colors shrink-0"
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                if (newMessage.trim() && !isSending) {
+                  handleSend(e as any);
+                }
+              }}
+              className={`absolute right-2 bottom-2 w-9 h-9 flex items-center justify-center rounded-full transition-all shrink-0 z-20 shadow-xs touch-manipulation ${
+                newMessage.trim() && !isSending
+                  ? 'bg-[#458B9E] text-white hover:bg-[#3a7585] active:scale-95 cursor-pointer shadow-md shadow-[#458B9E]/20 ring-2 ring-[#458B9E]/20'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+              }`}
+              aria-label="Send message"
             >
               <Send className="w-4 h-4" />
             </button>

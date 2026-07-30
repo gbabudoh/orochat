@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { Heart, MessageCircle, Share2, Send, Trash2, Archive, ArchiveRestore, Link2, Facebook, Twitter, ChevronUp } from 'lucide-react';
 import { toggleLike, addComment, deletePost, archivePost, unarchivePost } from '@/features/feed/actions';
 
@@ -51,6 +52,7 @@ export default function PostActions({
   const [isInputFocused, setIsInputFocused] = useState(false);
   const shareMenuRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const commentsListRef = useRef<HTMLDivElement>(null);
 
   // Auto-grow the textarea as the user types
   const autoGrow = useCallback(() => {
@@ -84,7 +86,7 @@ export default function PostActions({
       if (!result.success) {
         setIsLiked(!newLikedState);
         setLikesCount(prev => !newLikedState ? prev + 1 : prev - 1);
-        alert(result.error || 'Failed to update like');
+        toast.error(result.error || 'Failed to update like');
       }
     } catch {
       setIsLiked(!newLikedState);
@@ -104,11 +106,17 @@ export default function PostActions({
       if (result.success && result.comment) {
         setCommentsList(prev => [...prev, result.comment as Comment]);
         setCommentContent('');
+        // The comments list is a short scrollable box — without this, a
+        // successful comment can land below the fold and look like the
+        // send button silently did nothing.
+        requestAnimationFrame(() => {
+          commentsListRef.current?.scrollTo({ top: commentsListRef.current.scrollHeight, behavior: 'smooth' });
+        });
       } else {
-        alert(result.error || 'Failed to add comment');
+        toast.error(result.error || 'Failed to add comment');
       }
     } catch {
-      alert('An error occurred');
+      toast.error('An error occurred');
     } finally {
       setIsCommenting(false);
     }
@@ -143,7 +151,7 @@ export default function PostActions({
       if (result.success) {
         onRemoved?.();
       } else {
-        alert(result.error || 'Failed to delete post');
+        toast.error(result.error || 'Failed to delete post');
       }
     } finally {
       setIsDeleting(false);
@@ -158,7 +166,7 @@ export default function PostActions({
       if (result.success) {
         onRemoved?.();
       } else {
-        alert(result.error || `Failed to ${isArchived ? 'unarchive' : 'archive'} post`);
+        toast.error(result.error || `Failed to ${isArchived ? 'unarchive' : 'archive'} post`);
       }
     } finally {
       setIsArchiving(false);
@@ -265,7 +273,7 @@ export default function PostActions({
       {showComments && (
         <div className="pt-4 space-y-3 border-t border-gray-100 animate-in fade-in slide-in-from-top-2">
           {/* Comments List */}
-          <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
+          <div ref={commentsListRef} className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
             {commentsList.map((comment) => (
               <div key={comment.id} className="w-full flex items-start gap-3">
                 <div className="shrink-0">
@@ -320,13 +328,23 @@ export default function PostActions({
                   }
                 }}
                 placeholder="Add a comment..."
-                className="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-4 pr-11 py-2.5 text-sm focus:outline-none focus:border-[#458B9E] focus:ring-1 focus:ring-[#458B9E]/20 resize-none overflow-hidden leading-5"
+                className="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-4 pr-12 py-2.5 text-sm focus:outline-none focus:border-[#458B9E] focus:ring-1 focus:ring-[#458B9E]/20 resize-none overflow-hidden leading-5"
                 style={{ minHeight: '42px', maxHeight: '120px' }}
               />
               <button
-                type="submit"
-                disabled={!commentContent.trim() || isCommenting}
-                className="absolute right-1.5 bottom-1.5 p-1.5 text-[#458B9E] hover:bg-[#458B9E]/10 rounded-full disabled:opacity-40 transition-colors"
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (commentContent.trim() && !isCommenting) {
+                    handleComment(e as any);
+                  }
+                }}
+                className={`absolute right-1.5 bottom-1.5 w-8 h-8 flex items-center justify-center rounded-full transition-all shrink-0 z-20 shadow-xs touch-manipulation ${
+                  commentContent.trim() && !isCommenting
+                    ? 'bg-[#458B9E] text-white hover:bg-[#3a7585] active:scale-95 cursor-pointer shadow-md shadow-[#458B9E]/20 ring-2 ring-[#458B9E]/20'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+                }`}
+                aria-label="Send comment"
               >
                 <Send className="w-4 h-4" />
               </button>

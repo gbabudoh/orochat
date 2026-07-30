@@ -115,8 +115,12 @@ export default function CommunityDiscussion({ compassId, currentUserId }: Commun
       </div>
 
       <form onSubmit={handleSend} className="border-t border-gray-200 p-3 sm:p-4 pb-16 sm:pb-4">
-        {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
-        <div className="relative">
+        {error && (
+          <div className="mb-2 p-2 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600 font-medium">
+            {error}
+          </div>
+        )}
+        <div className="relative flex items-end">
           <textarea
             ref={textareaRef}
             value={content}
@@ -134,12 +138,27 @@ export default function CommunityDiscussion({ compassId, currentUserId }: Commun
             placeholder="Message this community..."
             maxLength={2000}
             rows={1}
-            className="w-full pl-4 pr-12 py-2.5 rounded-lg border-2 border-gray-200 bg-white text-[#333333] placeholder:text-gray-400 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 transition-all text-sm resize-none max-h-[120px] overflow-y-auto wrap-break-word"
+            style={{
+              minHeight: '44px',
+              maxHeight: '120px',
+              resize: 'none',
+            }}
+            className="w-full pl-4 pr-14 py-2.5 rounded-2xl border border-gray-200 bg-gray-50/70 text-[#333333] placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 transition-all text-sm leading-5 block"
           />
           <button
-            type="submit"
-            disabled={!content.trim() || isSending}
-            className="absolute right-1.5 top-1.5 p-1.5 text-[#458B9E] hover:bg-[#458B9E]/10 rounded-full disabled:opacity-40 transition-colors"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              if (content.trim() && !isSending) {
+                handleSend(e as any);
+              }
+            }}
+            className={`absolute right-2 bottom-2 w-9 h-9 flex items-center justify-center rounded-full transition-all shrink-0 z-20 shadow-xs touch-manipulation ${
+              content.trim() && !isSending
+                ? 'bg-[#458B9E] text-white hover:bg-[#3a7585] active:scale-95 cursor-pointer shadow-md shadow-[#458B9E]/20 ring-2 ring-[#458B9E]/20'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+            }`}
+            aria-label="Send message"
           >
             <Send className="w-4 h-4" />
           </button>

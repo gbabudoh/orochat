@@ -13,10 +13,10 @@ export default async function AnalyticsPage() {
   const stats = await getProfileViewStats(session.user.id);
 
   return (
-    <div className="max-w-6xl mx-auto px-2 sm:px-0">
+    <div className="max-w-6xl mx-auto w-full min-w-0 px-4 sm:px-6 py-4 sm:py-6">
       <div className="mb-6 md:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-1 md:mb-2">Analytics</h1>
-        <p className="text-sm sm:text-base text-gray-600">Track views and engagement on your profile</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-1">Analytics</h1>
+        <p className="text-sm sm:text-base text-gray-500 leading-relaxed">Track views and engagement on your profile</p>
       </div>
 
       <div className="space-y-6">

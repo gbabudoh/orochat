@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import { Search, User, Building, MapPin, Users, Briefcase, LogOut, Home, AtSign, Globe, Map, ArrowLeft } from 'lucide-react';
+import { Search, User, Building, MapPin, Users, Briefcase, LogOut, Home, AtSign, Globe, Map, ArrowLeft, ChevronDown, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { COUNTRIES, countryCodeToFlag, getCountryName, getFlagImageUrl } from '@/lib/constants/countries';
 import { PROFESSIONAL_CATEGORIES } from '@/lib/constants/categories';
@@ -178,11 +178,11 @@ export default function ExplorePage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
         {session && (
           <Link
             href="/feed"
-            className="inline-flex items-center gap-1.5 text-sm text-[#458B9E] hover:underline mb-4 sm:mb-6"
+            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#458B9E] hover:underline mb-4 sm:mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Feed
@@ -190,27 +190,27 @@ export default function ExplorePage() {
         )}
 
         {/* Header */}
-        <div className="text-center mb-8 sm:mb-12">
-          <h1 className="text-2xl sm:text-4xl font-bold text-[#333333] mb-3 sm:mb-4">
+        <div className="text-center mb-8 sm:mb-10">
+          <h1 className="text-2xl sm:text-4xl font-bold text-[#333333] mb-2 sm:mb-3">
             Explore Professionals
           </h1>
-          <p className="text-sm sm:text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xs sm:text-base text-gray-500 max-w-2xl mx-auto leading-relaxed">
             Discover and connect with professionals across industries. Search by name, company, or browse by category.
           </p>
         </div>
 
         {/* Search Bar */}
-        <Card className="mb-6 sm:mb-8 p-4 sm:p-6">
-          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4">
+        <Card className="mb-6 sm:mb-8 p-4 sm:p-6 border border-gray-200/90 rounded-2xl shadow-sm">
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-5">
             <div className="flex-1 min-w-0">
               <Input
                 type="text"
-                placeholder="Search by name, company, title, or location..."
+                placeholder="Search name, company, or title..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button type="submit" isLoading={isSearching} className="sm:w-auto">
+            <Button type="submit" isLoading={isSearching} className="sm:w-auto rounded-xl bg-[#458B9E] hover:bg-[#3a7585] text-white">
               <Search className="w-4 h-4 mr-2" />
               Search
             </Button>
@@ -218,15 +218,15 @@ export default function ExplorePage() {
 
           {/* Country Filter */}
           <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-              <Globe className="w-4 h-4 mr-2" />
+            <h3 className="text-xs sm:text-sm font-bold text-gray-700 mb-2 flex items-center">
+              <Globe className="w-4 h-4 mr-1.5 text-[#458B9E]" />
               Filter by Country
             </h3>
             <div className="relative max-w-xs">
               <select
                 value={selectedCountry}
                 onChange={(e) => handleCountryChange(e.target.value)}
-                className="w-full appearance-none px-3 py-2 pr-8 rounded-lg border border-gray-200 bg-[#F0F3F7] text-sm text-[#333333] focus:outline-none focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 transition-all"
+                className="w-full appearance-none px-3.5 py-2.5 pr-10 rounded-xl border border-gray-200 bg-gray-50/70 text-xs sm:text-sm font-medium text-gray-800 focus:outline-none focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 transition-all cursor-pointer"
               >
                 <option value="">All countries</option>
                 {COUNTRIES.map((c) => (
@@ -235,13 +235,14 @@ export default function ExplorePage() {
                   </option>
                 ))}
               </select>
+              <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
           {/* Professional Categories */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-              <Briefcase className="w-4 h-4 mr-2" />
+            <h3 className="text-xs sm:text-sm font-bold text-gray-700 mb-3 flex items-center">
+              <Briefcase className="w-4 h-4 mr-1.5 text-[#458B9E]" />
               Browse by Category
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -250,10 +251,10 @@ export default function ExplorePage() {
                   key={category}
                   onClick={() => handleCategoryClick(category)}
                   className={`
-                    px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors
+                    px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border
                     ${selectedCategory === category
-                      ? 'bg-[#458B9E] text-white'
-                      : 'bg-[#F0F3F7] text-[#333333] hover:bg-[#e0e5eb]'
+                      ? 'bg-[#458B9E] text-white border-[#458B9E] shadow-xs'
+                      : 'bg-gray-50 text-gray-700 border-gray-200/80 hover:bg-gray-100 hover:border-gray-300'
                     }
                   `}
                 >
@@ -268,7 +269,7 @@ export default function ExplorePage() {
         {isSearching && (
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i} className="p-3 sm:p-6 animate-pulse">
+              <Card key={i} className="p-3 sm:p-6 rounded-2xl animate-pulse">
                 <div className="flex flex-col items-center sm:flex-row sm:items-start gap-2 sm:gap-4">
                   <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-200 shrink-0" />
                   <div className="flex-1 w-full space-y-2 pt-1">
@@ -287,18 +288,18 @@ export default function ExplorePage() {
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
               <div>
-                <h2 className="text-lg sm:text-xl font-semibold text-[#333333]">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                   {selectedCategory ? `${selectedCategory} Professionals` : 'Search Results'}
                 </h2>
-                <span className="text-sm text-gray-500">{users.length} {users.length === 1 ? 'result' : 'results'}</span>
+                <span className="text-xs sm:text-sm text-gray-500 font-medium">{users.length} {users.length === 1 ? 'result' : 'results'}</span>
               </div>
 
               {/* View Mode Toggle */}
-              <div className="flex items-center gap-1 bg-white border border-gray-200 p-1 rounded-lg shadow-xs self-start sm:self-auto">
+              <div className="flex items-center gap-1 bg-white border border-gray-200 p-1 rounded-xl shadow-xs self-start sm:self-auto">
                 <button
                   onClick={() => setViewMode('list')}
                   className={`
-                    flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-150 cursor-pointer
+                    flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer
                     ${viewMode === 'list'
                       ? 'bg-[#458B9E] text-white shadow-xs'
                       : 'text-gray-600 hover:bg-[#F0F3F7] hover:text-[#333333]'
@@ -311,7 +312,7 @@ export default function ExplorePage() {
                 <button
                   onClick={() => setViewMode('map')}
                   className={`
-                    flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-150 cursor-pointer
+                    flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer
                     ${viewMode === 'map'
                       ? 'bg-[#458B9E] text-white shadow-xs'
                       : 'text-gray-600 hover:bg-[#F0F3F7] hover:text-[#333333]'
@@ -327,81 +328,81 @@ export default function ExplorePage() {
             {viewMode === 'list' ? (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 {users.map((user) => (
-                  <Card key={user.id} hover className="p-3 sm:p-6">
-                    <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left gap-2 sm:gap-4">
-                      <Link href={`/oro/${user.id}`} className="shrink-0">
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#458B9E] flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity">
-                          {user.avatar ? (
-                            <img
-                              src={`/api/user/${user.id}/avatar`}
-                              alt={user.name}
-                              className="w-full h-full object-cover rounded-full"
-                            />
-                          ) : (
-                            <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                          )}
-                        </div>
-                      </Link>
-                      <div className="flex-1 min-w-0 w-full">
-                        <div className="flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">
-                          <Link href={`/oro/${user.id}`} className="min-w-0">
-                            <h3 className="font-semibold text-sm sm:text-base text-[#333333] hover:text-[#458B9E] transition-colors truncate">
-                              {user.name}
-                            </h3>
-                          </Link>
-                          {user.isPartner && (
-                            <span className="shrink-0 px-2 py-0.5 bg-[#FFC93C] text-[#333333] text-[10px] font-semibold rounded-full">
-                              Partner
-                            </span>
-                          )}
-                        </div>
-                        {user.username && (
-                          <div className="flex items-center justify-center sm:justify-start text-xs text-gray-400 mt-0.5">
-                            <AtSign className="w-3 h-3 mr-1 shrink-0" />
-                            <span className="truncate">{user.username}</span>
-                          </div>
-                        )}
-                        {user.title && (
-                          <p className="text-xs sm:text-sm text-gray-600 truncate mt-1">{user.title}</p>
-                        )}
-                        {user.company && (
-                          <div className="flex items-center justify-center sm:justify-start text-xs text-gray-500 mt-1">
-                            <Building className="w-3 h-3 mr-1 shrink-0" />
-                            <span className="truncate">{user.company}</span>
-                          </div>
-                        )}
-                        {user.location && (
-                          <div className="flex items-center justify-center sm:justify-start text-xs text-gray-500 mt-1">
-                            <MapPin className="w-3 h-3 mr-1 shrink-0" />
-                            <span className="truncate">{user.location}</span>
-                          </div>
-                        )}
-                        {user.countryCode && (
-                          <div className="hidden sm:flex items-center text-xs text-gray-500 mt-1">
-                            {getFlagImageUrl(user.countryCode) && (
-                              <img
-                                src={getFlagImageUrl(user.countryCode)!}
-                                alt={getCountryName(user.countryCode) ?? ''}
-                                width={16}
-                                height={12}
-                                className="mr-1 shrink-0 rounded-xs"
-                              />
+                  <Card key={user.id} hover className="p-4 sm:p-5 rounded-2xl border border-gray-200/90 flex flex-col justify-between">
+                    <div>
+                      <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left gap-3 sm:gap-4 mb-3">
+                        <Link href={`/oro/${user.id}?from=explore`} className="shrink-0">
+                          <UserAvatar
+                            userId={user.id}
+                            name={user.name}
+                            avatarUrl={user.avatar}
+                            size="lg"
+                            className="w-14 h-14 sm:w-16 sm:h-16 shrink-0"
+                          />
+                        </Link>
+                        <div className="flex-1 min-w-0 w-full">
+                          <div className="flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">
+                            <Link href={`/oro/${user.id}?from=explore`} className="min-w-0">
+                              <h3 className="font-bold text-sm sm:text-base text-gray-900 hover:text-[#458B9E] transition-colors truncate">
+                                {user.name}
+                              </h3>
+                            </Link>
+                            {user.isPartner && (
+                              <span className="shrink-0 px-2 py-0.5 bg-[#FFC93C] text-[#333333] text-[10px] font-bold rounded-full">
+                                Partner
+                              </span>
                             )}
-                            <span className="truncate">{getCountryName(user.countryCode)}</span>
                           </div>
-                        )}
-                        <div className="flex items-center justify-center sm:justify-start mt-3 text-xs text-gray-500">
-                          <Users className="w-3 h-3 mr-1" />
-                          <span>{user.verifiedOrosCount || 0} Oros</span>
-                        </div>
-                        <div className="mt-4">
-                          <Link href={`/oro/${user.id}`}>
-                            <Button size="sm" variant="ghost" className="w-full text-xs sm:text-sm px-2">
-                              View Profile
-                            </Button>
-                          </Link>
+                          {user.username && (
+                            <div className="flex items-center justify-center sm:justify-start text-xs text-gray-400 mt-0.5">
+                              <AtSign className="w-3 h-3 mr-1 shrink-0" />
+                              <span className="truncate">{user.username}</span>
+                            </div>
+                          )}
+                          {user.title && (
+                            <p className="text-xs sm:text-sm font-medium text-gray-600 truncate mt-1">{user.title}</p>
+                          )}
+                          {user.company && (
+                            <div className="flex items-center justify-center sm:justify-start text-xs text-gray-500 mt-1">
+                              <Building className="w-3.5 h-3.5 mr-1 shrink-0 text-gray-400" />
+                              <span className="truncate">{user.company}</span>
+                            </div>
+                          )}
+                          {user.location && (
+                            <div className="flex items-center justify-center sm:justify-start text-xs text-gray-500 mt-1">
+                              <MapPin className="w-3.5 h-3.5 mr-1 shrink-0 text-gray-400" />
+                              <span className="truncate">{user.location}</span>
+                            </div>
+                          )}
+                          {user.countryCode && (
+                            <div className="hidden sm:flex items-center text-xs text-gray-500 mt-1">
+                              {getFlagImageUrl(user.countryCode) && (
+                                <img
+                                  src={getFlagImageUrl(user.countryCode)!}
+                                  alt={getCountryName(user.countryCode) ?? ''}
+                                  width={16}
+                                  height={12}
+                                  className="mr-1 shrink-0 rounded-xs"
+                                />
+                              )}
+                              <span className="truncate">{getCountryName(user.countryCode)}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-center sm:justify-start mt-2.5 text-xs text-gray-500 font-medium">
+                            <Users className="w-3.5 h-3.5 mr-1 text-[#458B9E]" />
+                            <span>{user.verifiedOrosCount || 0} Oros</span>
+                          </div>
                         </div>
                       </div>
+                    </div>
+
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <Link href={`/oro/${user.id}?from=explore`} className="block w-full">
+                        <Button size="sm" className="w-full text-xs font-semibold py-2 rounded-xl bg-[#458B9E] text-white hover:bg-[#3a7585] shadow-xs">
+                          <span>View Profile</span>
+                          <ArrowRight className="w-3.5 h-3.5 ml-1 shrink-0" />
+                        </Button>
+                      </Link>
                     </div>
                   </Card>
                 ))}
@@ -414,32 +415,29 @@ export default function ExplorePage() {
 
         {/* Empty State */}
         {!isSearching && !hasSearched && (
-          <Card>
-            <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-full bg-[#458B9E]/10 flex items-center justify-center mx-auto mb-4">
-                <Search className="w-8 h-8 text-[#458B9E]" />
-              </div>
-              <p className="text-gray-500 mb-2">Start exploring</p>
-              <p className="text-sm text-gray-400">
-                Search for professionals or browse by category to discover people on Orochat
-              </p>
+          <Card className="rounded-2xl border border-gray-200/90 p-8 sm:p-12 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-[#458B9E]/10 flex items-center justify-center mx-auto mb-4">
+              <Search className="w-8 h-8 text-[#458B9E]" />
             </div>
+            <p className="text-base font-bold text-gray-900 mb-1">Start exploring</p>
+            <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto">
+              Search for professionals or browse by category to discover people on Orochat
+            </p>
           </Card>
         )}
 
         {/* No Results */}
         {!isSearching && hasSearched && users.length === 0 && (
-          <Card>
-            <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <Search className="w-8 h-8 text-gray-400" />
-              </div>
-              <p className="text-gray-500 mb-2">No results found</p>
-              <p className="text-sm text-gray-400">Try a different search term or category</p>
+          <Card className="rounded-2xl border border-gray-200/90 p-8 sm:p-12 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <Search className="w-8 h-8 text-gray-400" />
             </div>
+            <p className="text-base font-bold text-gray-900 mb-1">No results found</p>
+            <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto">Try a different search term or category</p>
           </Card>
         )}
       </div>
     </div>
   );
 }
+

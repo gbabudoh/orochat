@@ -13,6 +13,7 @@ import BookConsultButton from '@/components/feature/Booking/BookConsultButton';
 import { getCountryName } from '@/lib/constants/countries';
 import { COUNTRY_COORDINATES } from '@/lib/constants/countryCoords';
 import { logProfileView } from '@/lib/profileViews';
+import ScrollToTop from '@/components/ui/ScrollToTop';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -45,9 +46,31 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-export default async function OroProfilePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function OroProfilePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ from?: string }>;
+}) {
   const { id } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const origin = resolvedSearchParams.from;
   const session = await getServerSession(authOptions);
+
+  let backHref = '/feed';
+  let backLabel = '← Back to Feed';
+
+  if (origin === 'explore') {
+    backHref = '/explore';
+    backLabel = '← Back to Explore';
+  } else if (origin === 'consults') {
+    backHref = '/oro/consults';
+    backLabel = '← Back to Consults';
+  } else if (origin === 'oro' || origin === 'connections') {
+    backHref = '/oro';
+    backLabel = '← Back to My Oros';
+  }
 
   // Always fetch fresh data from database
   const user = await db.user.findUnique({
@@ -159,6 +182,7 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-gray-50">
+      <ScrollToTop />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
@@ -167,8 +191,8 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
         {/* Top Bar with Actions */}
         <div className="flex justify-between items-center mb-4 md:mb-6 px-4 md:px-0 py-3 md:py-0">
           <div className="flex items-center space-x-4">
-            <Link href="/feed" className="text-gray-600 hover:text-[#458B9E] transition-colors">
-              ← Back to Feed
+            <Link href={backHref} className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-[#458B9E] hover:text-[#3a7585] transition-colors">
+              {backLabel}
             </Link>
           </div>
           <div className="flex items-center space-x-3">
@@ -233,7 +257,15 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
 
             {/* Name & Title */}
             <div className="text-center mb-4">
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">{user.name}</h1>
+              <div className="flex items-center justify-center gap-2 flex-wrap mb-1">
+                <h1 className="text-2xl font-bold text-gray-900">{user.name}</h1>
+                {user.isPartner && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-gradient-to-r from-[#FFC93C] to-[#FFD700] text-[#333333] text-xs font-bold rounded-full border border-amber-300 shadow-xs">
+                    <Award className="w-3.5 h-3.5 text-[#333333]" />
+                    <span>Partner</span>
+                  </span>
+                )}
+              </div>
               {user.title && <p className="text-sm text-gray-700 font-medium">{user.title}</p>}
               {user.company && (
                 <div className="flex items-center justify-center text-[#458B9E] font-semibold text-sm mt-2">
@@ -316,7 +348,15 @@ export default async function OroProfilePage({ params }: { params: Promise<{ id:
               {/* Profile Info */}
               <div className="flex-1 mt-20">
                 <div className="mb-6">
-                  <h1 className="text-4xl font-bold text-gray-900 mb-2">{user.name}</h1>
+                  <div className="flex items-center gap-3 flex-wrap mb-2">
+                    <h1 className="text-4xl font-bold text-gray-900">{user.name}</h1>
+                    {user.isPartner && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-[#FFC93C] to-[#FFD700] text-[#333333] text-xs font-bold rounded-full border border-amber-300 shadow-xs">
+                        <Award className="w-4 h-4 text-[#333333]" />
+                        <span>Partner</span>
+                      </span>
+                    )}
+                  </div>
                   {user.title && <p className="text-xl text-gray-700 mb-1 font-medium">{user.title}</p>}
                   {user.company && (
                     <div className="flex items-center text-[#458B9E] font-semibold text-lg mt-2">

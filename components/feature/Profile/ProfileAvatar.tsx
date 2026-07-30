@@ -53,15 +53,6 @@ export default function ProfileAvatar({
           )}
         </div>
       </div>
-
-      {isPartner && (
-        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
-          <span className="inline-flex items-center gap-1 px-3 py-0.5 bg-gradient-to-r from-[#FFC93C] to-[#FFD700] text-[#333333] text-xs font-bold rounded-full shadow-lg border border-white/60">
-            <Award className="w-3 h-3 text-[#333333]" />
-            <span>Partner</span>
-          </span>
-        </div>
-      )}
     </div>
   );
 }

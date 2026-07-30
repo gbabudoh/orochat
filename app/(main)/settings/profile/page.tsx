@@ -8,7 +8,7 @@ import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { updateProfile, getProfile, pauseAccount, reactivateAccount, deleteAccount } from '@/features/auth/actions';
-import { User, Upload, X, Plus, Loader2, ShieldAlert, PauseCircle, PlayCircle, Trash2 } from 'lucide-react';
+import { User, Upload, X, Plus, Loader2, ShieldAlert, PauseCircle, PlayCircle, Trash2, Mail, Briefcase, GraduationCap, Award, Globe, FileText, Building, MapPin, AtSign } from 'lucide-react';
 import { COUNTRIES, countryCodeToFlag } from '@/lib/constants/countries';
 import Modal from '@/components/ui/Modal';
 
@@ -143,19 +143,16 @@ export default function ProfileSettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       setMessage({ type: 'error', text: 'Please select an image file' });
       return;
     }
 
-    // Validate file size (2MB)
     if (file.size > 2 * 1024 * 1024) {
       setMessage({ type: 'error', text: 'File size must be less than 2MB' });
       return;
     }
 
-    // Show preview immediately
     const reader = new FileReader();
     reader.onloadend = () => {
       const result = reader.result as string;
@@ -163,7 +160,6 @@ export default function ProfileSettingsPage() {
     };
     reader.readAsDataURL(file);
 
-    // Upload file
     setIsUploadingAvatar(true);
     try {
       const uploadFormData = new FormData();
@@ -262,17 +258,14 @@ export default function ProfileSettingsPage() {
       formData.append('countryCode', countryCode);
       formData.append('avatar', avatar);
 
-      // Filter out empty qualifications
       const validQualifications = qualifications.filter(q => q.trim() !== '');
       formData.append('qualifications', JSON.stringify(validQualifications));
 
-      // Filter out empty work history entries
       const validWorkHistory = workHistory.filter(
         wh => wh.company.trim() !== '' && wh.position.trim() !== ''
       );
       formData.append('workHistory', JSON.stringify(validWorkHistory));
 
-      // Filter out empty education entries
       const validEducation = education.filter(ed => ed.institution.trim() !== '');
       formData.append('education', JSON.stringify(validEducation));
 
@@ -353,19 +346,22 @@ export default function ProfileSettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-[#333333] mb-6">Profile Settings</h1>
+    <div className="max-w-4xl mx-auto w-full min-w-0">
+      <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-1">Profile Settings</h1>
+      <p className="text-sm sm:text-base text-gray-500 mb-6 leading-relaxed">
+        Customize your public profile, professional credentials, and account settings.
+      </p>
 
-
-      <Card padding="lg">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Photo/Avatar */}
-          <div>
-            <label className="block text-sm font-medium text-[#333333] mb-2">
-              Profile Photo
+      <Card padding="none" className="p-4 sm:p-6 lg:p-8 shadow-md border-t-4 border-[#458B9E]">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Photo/Avatar Section */}
+          <div className="p-4 sm:p-5 bg-gradient-to-br from-[#458B9E]/10 via-[#458B9E]/5 to-transparent rounded-2xl border border-[#458B9E]/20">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-3">
+              <User className="w-4 h-4 text-[#458B9E]" />
+              <span>Profile Photo</span>
             </label>
-            <div className="flex items-center space-x-4">
-              <div className="w-24 h-24 rounded-full bg-[#458B9E] flex items-center justify-center overflow-hidden flex-shrink-0 relative">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 text-center sm:text-left">
+              <div className="w-24 h-24 rounded-2xl bg-[#458B9E] flex items-center justify-center overflow-hidden shrink-0 relative shadow-md">
                 {avatarPreview ? (
                   <Image src={avatarPreview} alt="Profile" fill className="object-cover" />
                 ) : (
@@ -377,7 +373,7 @@ export default function ProfileSettingsPage() {
                   </div>
                 )}
               </div>
-              <div>
+              <div className="flex flex-col items-center sm:items-start">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -388,409 +384,446 @@ export default function ProfileSettingsPage() {
                 />
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="secondary"
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
+                  className="mb-1.5"
                 >
                   <Upload className="w-4 h-4 mr-2" />
                   Upload Photo
                 </Button>
-                <p className="text-xs text-gray-500 mt-1">JPG, PNG or GIF. Max size 2MB</p>
+                <p className="text-xs text-gray-500">JPG, PNG or GIF. Max size 2MB</p>
               </div>
             </div>
           </div>
 
-          {/* Name */}
-          <Input
-            label="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g., John Doe"
-            required
-          />
+          {/* Section 1: Basic Information */}
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center gap-2 pb-2 border-b border-gray-100 text-[#458B9E]">
+              <User className="w-5 h-5" />
+              <h2 className="font-bold text-gray-900 text-base sm:text-lg">Basic Information</h2>
+            </div>
 
-          {/* Email (Read-only) */}
-          <div>
-            <label className="block text-sm font-medium text-[#333333] mb-1.5">
-              Email Address
-            </label>
-            <input
-              type="email"
-              value={session?.user?.email || ''}
-              disabled
-              className="w-full px-4 py-2.5 rounded-lg border-2 bg-gray-50 text-gray-600 border-gray-200 cursor-not-allowed"
+            <Input
+              label="Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., John Doe"
+              required
             />
-            <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
-          </div>
-
-          {/* Profession/Title */}
-          <Input
-            label="Professional Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g., Senior Software Engineer"
-          />
-
-          {/* Company */}
-          <Input
-            label="Current Company"
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-            placeholder="e.g., Tech Corp"
-          />
-
-          {/* Location */}
-          <Input
-            label="Location"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="e.g., San Francisco, CA or London, UK"
-          />
-
-          {/* Handle + Country (used on the Global feed) */}
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[#333333] mb-1.5">
-                Handle
-              </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">@</span>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
-                  placeholder="yourhandle"
-                  maxLength={20}
-                  disabled={hasExistingUsername}
-                  className={`w-full pl-8 pr-4 py-2.5 rounded-lg border-2 transition-all duration-200 ${hasExistingUsername
-                      ? 'bg-gray-50 text-gray-600 border-gray-200 cursor-not-allowed'
-                      : 'bg-white text-[#333333] placeholder:text-gray-400 border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20'
-                    }`}
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {hasExistingUsername
-                  ? 'Handles cannot be changed once created. Please contact an admin to request a change.'
-                  : 'Shown on your public posts in the Global feed'}
-              </p>
-            </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#333333] mb-1.5">
-                Country
+              <label className="flex items-center gap-2 text-sm font-semibold text-[#333333] mb-1.5">
+                <Mail className="w-4 h-4 text-[#458B9E]" />
+                <span>Email Address</span>
               </label>
-              <select
-                value={countryCode}
-                onChange={(e) => setCountryCode(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border-2 transition-all duration-200 bg-white text-[#333333] border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20"
-              >
-                <option value="">Select a country</option>
-                {COUNTRIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {countryCodeToFlag(c.code)} {c.name}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">Shown as a flag badge next to your handle</p>
+              <input
+                type="email"
+                value={session?.user?.email || ''}
+                disabled
+                className="w-full px-4 py-2.5 rounded-xl border-2 bg-gray-50 text-gray-600 border-gray-200 cursor-not-allowed text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
             </div>
           </div>
 
-          {/* Qualifications */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-[#333333]">
-                Qualifications
-              </label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={addQualification}
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add
-              </Button>
+          {/* Section 2: Professional Identity */}
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center gap-2 pb-2 border-b border-gray-100 text-[#458B9E]">
+              <Briefcase className="w-5 h-5" />
+              <h2 className="font-bold text-gray-900 text-base sm:text-lg">Professional Identity</h2>
             </div>
-            <div className="space-y-2">
-              {qualifications.map((qual, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Input
-                    value={qual}
-                    onChange={(e) => updateQualification(index, e.target.value)}
-                    placeholder="e.g., MBA, PMP Certification, AWS Solutions Architect"
-                    className="flex-1"
+
+            <Input
+              label="Professional Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g., Senior Software Engineer"
+            />
+
+            <Input
+              label="Current Company"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              placeholder="e.g., Tech Corp"
+            />
+
+            <Input
+              label="Location"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g., San Francisco, CA or London, UK"
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-semibold text-[#333333] mb-1.5">
+                  <AtSign className="w-4 h-4 text-[#458B9E]" />
+                  <span>Handle</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">@</span>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
+                    placeholder="yourhandle"
+                    maxLength={20}
+                    disabled={hasExistingUsername}
+                    className={`w-full pl-8 pr-4 py-2.5 rounded-xl border-2 text-sm transition-all duration-200 ${hasExistingUsername
+                        ? 'bg-gray-50 text-gray-600 border-gray-200 cursor-not-allowed'
+                        : 'bg-white text-[#333333] placeholder:text-gray-400 border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20'
+                      }`}
                   />
-                  {qualifications.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeQualification(index)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
                 </div>
-              ))}
+                <p className="text-xs text-gray-500 mt-1">
+                  {hasExistingUsername
+                    ? 'Handles cannot be changed once created. Contact admin to request a change.'
+                    : 'Shown on your public posts in the Global feed'}
+                </p>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-semibold text-[#333333] mb-1.5">
+                  <Globe className="w-4 h-4 text-[#458B9E]" />
+                  <span>Country</span>
+                </label>
+                <select
+                  value={countryCode}
+                  onChange={(e) => setCountryCode(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border-2 text-sm transition-all duration-200 bg-white text-[#333333] border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20"
+                >
+                  <option value="">Select a country</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {countryCodeToFlag(c.code)} {c.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Shown as a flag badge next to your handle</p>
+              </div>
             </div>
           </div>
 
-          {/* Work History */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-[#333333]">
-                Work History
-              </label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={addWorkHistory}
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add Position
-              </Button>
+          {/* Section 3: Credentials & Experience */}
+          <div className="space-y-6 pt-2">
+            <div className="flex items-center gap-2 pb-2 border-b border-gray-100 text-[#458B9E]">
+              <Award className="w-5 h-5" />
+              <h2 className="font-bold text-gray-900 text-base sm:text-lg">Credentials & Experience</h2>
             </div>
-            <div className="space-y-4">
-              {workHistory.map((entry, index) => (
-                <Card key={index} className="p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-[#333333]">Position {index + 1}</h4>
-                      {workHistory.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeWorkHistory(index)}
-                          className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
+
+            {/* Qualifications */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-[#333333]">
+                  <Award className="w-4 h-4 text-[#458B9E]" />
+                  <span>Qualifications</span>
+                </label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={addQualification}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {qualifications.map((qual, index) => (
+                  <div key={index} className="flex items-center space-x-2">
                     <Input
-                      label="Company"
-                      value={entry.company}
-                      onChange={(e) => updateWorkHistory(index, 'company', e.target.value)}
-                      placeholder="Company name"
+                      value={qual}
+                      onChange={(e) => updateQualification(index, e.target.value)}
+                      placeholder="e.g., MBA, PMP Certification, AWS Solutions Architect"
+                      className="flex-1"
                     />
-                    <Input
-                      label="Position"
-                      value={entry.position}
-                      onChange={(e) => updateWorkHistory(index, 'position', e.target.value)}
-                      placeholder="Job title"
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="City"
-                        value={entry.city}
-                        onChange={(e) => updateWorkHistory(index, 'city', e.target.value)}
-                        placeholder="e.g., London"
-                      />
-                      <div>
-                        <label className="block text-sm font-medium text-[#333333] mb-1.5">
-                          Country
-                        </label>
-                        <select
-                          value={entry.country}
-                          onChange={(e) => updateWorkHistory(index, 'country', e.target.value)}
-                          className="w-full px-4 py-2.5 rounded-lg border-2 transition-all duration-200 bg-white text-[#333333] border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20"
-                        >
-                          <option value="">Select a country</option>
-                          {COUNTRIES.map((c) => (
-                            <option key={c.code} value={c.name}>{c.name}</option>
-                          ))}
-                        </select>
+                    {qualifications.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeQualification(index)}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Work History */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-[#333333]">
+                  <Briefcase className="w-4 h-4 text-[#458B9E]" />
+                  <span>Work History</span>
+                </label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={addWorkHistory}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Position
+                </Button>
+              </div>
+              <div className="space-y-4">
+                {workHistory.map((entry, index) => (
+                  <Card key={index} className="p-4 sm:p-5 border border-gray-200">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-gray-900 text-sm sm:text-base">Position {index + 1}</h4>
+                        {workHistory.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeWorkHistory(index)}
+                            className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
                       <Input
-                        label="Start Date"
-                        type="month"
-                        value={entry.startDate}
-                        onChange={(e) => updateWorkHistory(index, 'startDate', e.target.value)}
+                        label="Company"
+                        value={entry.company}
+                        onChange={(e) => updateWorkHistory(index, 'company', e.target.value)}
+                        placeholder="Company name"
                       />
-                      {!entry.current && (
+                      <Input
+                        label="Position"
+                        value={entry.position}
+                        onChange={(e) => updateWorkHistory(index, 'position', e.target.value)}
+                        placeholder="Job title"
+                      />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Input
-                          label="End Date"
-                          type="month"
-                          value={entry.endDate}
-                          onChange={(e) => updateWorkHistory(index, 'endDate', e.target.value)}
+                          label="City"
+                          value={entry.city}
+                          onChange={(e) => updateWorkHistory(index, 'city', e.target.value)}
+                          placeholder="e.g., London"
                         />
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`current-${index}`}
-                        checked={entry.current}
-                        onChange={(e) => {
-                          updateWorkHistory(index, 'current', e.target.checked);
-                          if (e.target.checked) {
-                            updateWorkHistory(index, 'endDate', '');
-                          }
-                        }}
-                        className="w-4 h-4 text-[#458B9E] border-gray-300 rounded focus:ring-[#458B9E]"
-                      />
-                      <label htmlFor={`current-${index}`} className="text-sm text-gray-700">
-                        I currently work here
-                      </label>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[#333333] mb-1.5">
-                        Description (Optional)
-                      </label>
-                      <textarea
-                        value={entry.description}
-                        onChange={(e) => updateWorkHistory(index, 'description', e.target.value)}
-                        placeholder="Brief description of your role and achievements"
-                        className="w-full px-4 py-2.5 rounded-lg border-2 transition-all duration-200 bg-white text-[#333333] placeholder:text-gray-400 border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 min-h-[80px]"
-                      />
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          {/* Education */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-[#333333]">
-                Education
-              </label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={addEducation}
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add Education
-              </Button>
-            </div>
-            <div className="space-y-4">
-              {education.map((entry, index) => (
-                <Card key={index} className="p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-[#333333]">Education {index + 1}</h4>
-                      {education.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeEducation(index)}
-                          className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                    <Input
-                      label="Institution"
-                      value={entry.institution}
-                      onChange={(e) => updateEducation(index, 'institution', e.target.value)}
-                      placeholder="e.g., Stanford University"
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="City"
-                        value={entry.city}
-                        onChange={(e) => updateEducation(index, 'city', e.target.value)}
-                        placeholder="e.g., London"
-                      />
+                        <div>
+                          <label className="block text-sm font-medium text-[#333333] mb-1.5">
+                            Country
+                          </label>
+                          <select
+                            value={entry.country}
+                            onChange={(e) => updateWorkHistory(index, 'country', e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border-2 transition-all duration-200 bg-white text-[#333333] border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 text-sm"
+                          >
+                            <option value="">Select a country</option>
+                            {COUNTRIES.map((c) => (
+                              <option key={c.code} value={c.name}>{c.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                          label="Start Date"
+                          type="month"
+                          value={entry.startDate}
+                          onChange={(e) => updateWorkHistory(index, 'startDate', e.target.value)}
+                        />
+                        {!entry.current && (
+                          <Input
+                            label="End Date"
+                            type="month"
+                            value={entry.endDate}
+                            onChange={(e) => updateWorkHistory(index, 'endDate', e.target.value)}
+                          />
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-2 pt-1">
+                        <input
+                          type="checkbox"
+                          id={`current-${index}`}
+                          checked={entry.current}
+                          onChange={(e) => {
+                            updateWorkHistory(index, 'current', e.target.checked);
+                            if (e.target.checked) {
+                              updateWorkHistory(index, 'endDate', '');
+                            }
+                          }}
+                          className="w-4 h-4 text-[#458B9E] border-gray-300 rounded focus:ring-[#458B9E]"
+                        />
+                        <label htmlFor={`current-${index}`} className="text-xs sm:text-sm text-gray-700">
+                          I currently work here
+                        </label>
+                      </div>
                       <div>
                         <label className="block text-sm font-medium text-[#333333] mb-1.5">
-                          Country
+                          Description (Optional)
                         </label>
-                        <select
-                          value={entry.country}
-                          onChange={(e) => updateEducation(index, 'country', e.target.value)}
-                          className="w-full px-4 py-2.5 rounded-lg border-2 transition-all duration-200 bg-white text-[#333333] border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20"
-                        >
-                          <option value="">Select a country</option>
-                          {COUNTRIES.map((c) => (
-                            <option key={c.code} value={c.name}>{c.name}</option>
-                          ))}
-                        </select>
+                        <textarea
+                          value={entry.description}
+                          onChange={(e) => updateWorkHistory(index, 'description', e.target.value)}
+                          placeholder="Brief description of your role and achievements"
+                          className="w-full px-4 py-2.5 rounded-xl border-2 transition-all duration-200 bg-white text-[#333333] placeholder:text-gray-400 border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 min-h-[80px] text-sm"
+                        />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Education */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-[#333333]">
+                  <GraduationCap className="w-4 h-4 text-[#458B9E]" />
+                  <span>Education</span>
+                </label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={addEducation}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Education
+                </Button>
+              </div>
+              <div className="space-y-4">
+                {education.map((entry, index) => (
+                  <Card key={index} className="p-4 sm:p-5 border border-gray-200">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-gray-900 text-sm sm:text-base">Education {index + 1}</h4>
+                        {education.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeEducation(index)}
+                            className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                       <Input
-                        label="Year Completed"
-                        type="number"
-                        min="1950"
-                        max="2100"
-                        value={entry.yearCompleted}
-                        onChange={(e) => updateEducation(index, 'yearCompleted', e.target.value)}
-                        placeholder="e.g., 2022"
+                        label="Institution"
+                        value={entry.institution}
+                        onChange={(e) => updateEducation(index, 'institution', e.target.value)}
+                        placeholder="e.g., Stanford University"
                       />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                          label="City"
+                          value={entry.city}
+                          onChange={(e) => updateEducation(index, 'city', e.target.value)}
+                          placeholder="e.g., London"
+                        />
+                        <div>
+                          <label className="block text-sm font-medium text-[#333333] mb-1.5">
+                            Country
+                          </label>
+                          <select
+                            value={entry.country}
+                            onChange={(e) => updateEducation(index, 'country', e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border-2 transition-all duration-200 bg-white text-[#333333] border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 text-sm"
+                          >
+                            <option value="">Select a country</option>
+                            {COUNTRIES.map((c) => (
+                              <option key={c.code} value={c.name}>{c.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                          label="Year Completed"
+                          type="number"
+                          min="1950"
+                          max="2100"
+                          value={entry.yearCompleted}
+                          onChange={(e) => updateEducation(index, 'yearCompleted', e.target.value)}
+                          placeholder="e.g., 2022"
+                        />
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Bio */}
-          <div>
-            <label className="block text-sm font-medium text-[#333333] mb-1.5">
-              Bio
-            </label>
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="Tell us about yourself, your professional background, and what you're looking for..."
-              className="w-full px-4 py-2.5 rounded-lg border-2 transition-all duration-200 bg-white text-[#333333] placeholder:text-gray-400 border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 min-h-[120px]"
-            />
+          {/* Section 4: Biography & Summary */}
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center gap-2 pb-2 border-b border-gray-100 text-[#458B9E]">
+              <FileText className="w-5 h-5" />
+              <h2 className="font-bold text-gray-900 text-base sm:text-lg">Biography & Summary</h2>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-[#333333] mb-1.5">
+                Bio
+              </label>
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Tell us about yourself, your professional background, and what you're looking for..."
+                className="w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 bg-white text-[#333333] placeholder:text-gray-400 border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 min-h-[120px] text-sm leading-relaxed"
+              />
+            </div>
           </div>
 
           {message && (
             <div
-              className={`p-3 rounded-lg ${message.type === 'success'
-                  ? 'bg-green-50 border border-green-200 text-green-600'
-                  : 'bg-red-50 border border-red-200 text-red-600'
+              className={`p-3.5 rounded-xl text-sm font-medium ${message.type === 'success'
+                  ? 'bg-green-50 border border-green-200 text-green-700'
+                  : 'bg-red-50 border border-red-200 text-red-700'
                 }`}
             >
               {message.text}
             </div>
           )}
 
-          <Button type="submit" isLoading={isLoading} disabled={isUploadingAvatar}>
-            {isUploadingAvatar ? 'Uploading photo…' : 'Save Changes'}
-          </Button>
+          <div className="pt-2">
+            <Button type="submit" isLoading={isLoading} disabled={isUploadingAvatar} className="w-full sm:w-auto px-6 py-2.5">
+              {isUploadingAvatar ? 'Uploading photo…' : 'Save Changes'}
+            </Button>
+          </div>
         </form>
       </Card>
 
-      <Card padding="lg" className="mt-6 border-2 border-red-100">
-        <h2 className="text-lg font-semibold text-[#333333] mb-4 flex items-center gap-2">
+      {/* Danger Zone */}
+      <Card padding="none" className="p-4 sm:p-6 lg:p-8 mt-6 border-2 border-red-100 shadow-sm">
+        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
           <ShieldAlert className="w-5 h-5 text-red-500" />
           Danger Zone
         </h2>
         <div className="space-y-4">
           {isPaused ? (
-            <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-amber-50 border border-amber-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-amber-50 border border-amber-200">
               <div>
-                <p className="font-medium text-[#333333]">Account Paused</p>
-                <p className="text-sm text-gray-600">Your account is deactivated and hidden from other Oros.</p>
+                <p className="font-semibold text-gray-900 text-sm sm:text-base">Account Paused</p>
+                <p className="text-xs sm:text-sm text-gray-600">Your account is deactivated and hidden from other Oros.</p>
               </div>
               <Button
                 type="button"
                 variant="secondary"
                 onClick={handleReactivateAccount}
                 isLoading={accountActionLoading}
+                className="w-full sm:w-auto"
               >
                 <PlayCircle className="w-4 h-4 mr-2" />
                 Reactivate Account
               </Button>
             </div>
           ) : (
-            <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-gray-50 border border-gray-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-gray-50 border border-gray-200">
               <div>
-                <p className="font-medium text-[#333333]">Pause Account</p>
-                <p className="text-sm text-gray-600">Temporarily deactivate your account. You can reactivate anytime by logging back in.</p>
+                <p className="font-semibold text-gray-900 text-sm sm:text-base">Pause Account</p>
+                <p className="text-xs sm:text-sm text-gray-600">Temporarily deactivate your account. Reactivate anytime by logging in.</p>
               </div>
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => setConfirmModal('pause')}
+                className="w-full sm:w-auto"
               >
                 <PauseCircle className="w-4 h-4 mr-2" />
                 Pause Account
@@ -798,15 +831,16 @@ export default function ProfileSettingsPage() {
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-red-50 border border-red-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-red-50 border border-red-200">
             <div>
-              <p className="font-medium text-[#333333]">Delete Account</p>
-              <p className="text-sm text-gray-600">Permanently delete your account and all associated data. This cannot be undone.</p>
+              <p className="font-semibold text-gray-900 text-sm sm:text-base">Delete Account</p>
+              <p className="text-xs sm:text-sm text-gray-600">Permanently delete your account and all associated data. Cannot be undone.</p>
             </div>
             <Button
               type="button"
               variant="danger"
               onClick={() => setConfirmModal('delete')}
+              className="w-full sm:w-auto"
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Delete Account
@@ -855,3 +889,4 @@ export default function ProfileSettingsPage() {
     </div>
   );
 }
+

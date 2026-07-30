@@ -27,9 +27,9 @@ export default async function ConsultsSettingsPage() {
   const slots = await getAvailabilitySlots(userId, false);
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-[#333333] mb-1">Flash-Consult</h1>
-      <p className="text-sm text-gray-500 mb-6">
+    <div className="max-w-4xl mx-auto w-full min-w-0">
+      <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-1">Flash-Consult</h1>
+      <p className="text-sm sm:text-base text-gray-500 mb-6 leading-relaxed">
         Offer paid, scheduled video consults directly on your profile. Bookings pay out 70% to you and
         30% to Orochat, split automatically the moment a customer pays.
       </p>
@@ -45,8 +45,7 @@ export default async function ConsultsSettingsPage() {
         </Card>
       ) : (
         <div className="space-y-6">
-          <Card padding="lg">
-            <h2 className="font-semibold text-[#333333] mb-4">Accept paid consults</h2>
+          <Card padding="none" className="p-4 sm:p-6">
             <ConsultSettingsForm
               userId={userId}
               initialEnabled={user.consultEnabled}
@@ -59,11 +58,17 @@ export default async function ConsultsSettingsPage() {
           </Card>
 
           {user.consultEnabled && (
-            <Card padding="lg">
-              <h2 className="font-semibold text-[#333333] mb-4">Available times</h2>
+            <Card padding="none" className="p-4 sm:p-6">
+              <h2 className="font-semibold text-gray-900 text-lg mb-4">Available times</h2>
               <AvailabilityManager
                 userId={userId}
-                initialSlots={slots.map((s) => ({ ...s, startAt: s.startAt.toISOString() }))}
+                initialSlots={(slots as any[]).map((s) => ({
+                  id: s.id,
+                  startAt: typeof s.startAt === 'string' ? s.startAt : new Date(s.startAt).toISOString(),
+                  durationSeconds: s.durationSeconds,
+                  capacity: s.capacity ?? 1,
+                  bookedCount: s.bookedCount ?? (s.isBooked ? 1 : 0),
+                }))}
                 allowedDurations={user.consultDurations}
               />
             </Card>
