@@ -17,6 +17,8 @@ interface Slot {
   id: string;
   startAt: Date;
   durationSeconds: number;
+  capacity: number;
+  bookedCount: number;
 }
 
 const DURATION_LABELS: Record<number, string> = {
@@ -107,6 +109,11 @@ export default function BookConsultButton({ oroId, customerId, priceCents, topic
                       <span className="ml-2 text-xs text-gray-500">
                         {DURATION_LABELS[slot.durationSeconds] ?? `${slot.durationSeconds / 60} min`}
                       </span>
+                      {slot.capacity > 1 && (
+                        <span className="ml-2 text-xs text-gray-500">
+                          {slot.capacity - slot.bookedCount} seat{slot.capacity - slot.bookedCount === 1 ? '' : 's'} left
+                        </span>
+                      )}
                     </button>
                   </li>
                 ))}

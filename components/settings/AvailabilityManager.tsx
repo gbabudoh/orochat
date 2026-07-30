@@ -14,11 +14,15 @@ const DURATION_LABELS: Record<number, string> = {
   3600: '60 min',
 };
 
+const CAPACITIES = [1, 5, 10, 20, 30, 40, 50];
+const CAPACITY_LABELS: Record<number, string> = { 1: 'Solo (1:1)' };
+
 interface Slot {
   id: string;
   startAt: string; // ISO
   durationSeconds: number;
-  isBooked: boolean;
+  capacity: number;
+  bookedCount: number;
 }
 
 interface AvailabilityManagerProps {
@@ -31,6 +35,7 @@ export default function AvailabilityManager({ userId, initialSlots, allowedDurat
   const [slots, setSlots] = useState<Slot[]>(initialSlots);
   const [startAt, setStartAt] = useState('');
   const [durationSeconds, setDurationSeconds] = useState(allowedDurations[0] ?? 900);
+  const [capacity, setCapacity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAdd = async () => {
@@ -40,7 +45,7 @@ export default function AvailabilityManager({ userId, initialSlots, allowedDurat
     }
 
     setIsAdding(true);
-    const result = await addAvailabilitySlot(userId, new Date(startAt), durationSeconds);
+    const result = await addAvailabilitySlot(userId, new Date(startAt), durationSeconds, capacity);
     setIsAdding(false);
 
     if ('error' in result) {
@@ -83,6 +88,18 @@ export default function AvailabilityManager({ userId, initialSlots, allowedDurat
             ))}
           </select>
         </div>
+        <div>
+          <label className="block text-sm font-medium text-[#333333] mb-1.5">Attendees</label>
+          <select
+            value={capacity}
+            onChange={(e) => setCapacity(Number(e.target.value))}
+            className="w-full px-4 py-2.5 rounded-lg border-2 border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20"
+          >
+            {CAPACITIES.map((c) => (
+              <option key={c} value={c}>{CAPACITY_LABELS[c] ?? `Up to ${c} attendees`}</option>
+            ))}
+          </select>
+        </div>
         <Button type="button" onClick={handleAdd} isLoading={isAdding}>
           Add slot
         </Button>
@@ -100,10 +117,14 @@ export default function AvailabilityManager({ userId, initialSlots, allowedDurat
                 </p>
                 <p className="text-xs text-gray-500">
                   {DURATION_LABELS[slot.durationSeconds] ?? `${slot.durationSeconds / 60} min`}
-                  {slot.isBooked && <span className="ml-2 text-[#458B9E] font-medium">Booked</span>}
+                  {slot.capacity > 1 ? (
+                    <span className="ml-2 text-[#458B9E] font-medium">{slot.bookedCount}/{slot.capacity} booked</span>
+                  ) : (
+                    slot.bookedCount > 0 && <span className="ml-2 text-[#458B9E] font-medium">Booked</span>
+                  )}
                 </p>
               </div>
-              {!slot.isBooked && (
+              {slot.bookedCount === 0 && (
                 <button
                   type="button"
                   onClick={() => handleRemove(slot.id)}

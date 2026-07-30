@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import type { Booking } from '@prisma/client';
+import type { Booking, AvailabilitySlot } from '@prisma/client';
 import Button from '@/components/ui/Button';
 import {
   getBookingForConversation,
@@ -17,6 +17,8 @@ const POLL_INTERVAL_MS = 5000;
 const NO_SHOW_GRACE_SECONDS = 600;
 const ORO_RESPONSE_WINDOW_SECONDS = 86400;
 
+type BookingWithSlot = Booking & { slot: AvailabilitySlot };
+
 function formatTime(date: Date) {
   return new Date(date).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 }
@@ -27,7 +29,7 @@ interface BookingBannerProps {
 }
 
 export default function BookingBanner({ conversationId, currentUserId }: BookingBannerProps) {
-  const [booking, setBooking] = useState<Booking | null>(null);
+  const [booking, setBooking] = useState<BookingWithSlot | null>(null);
   const [rescheduleTime, setRescheduleTime] = useState('');
   const [isActing, setIsActing] = useState(false);
   const autoActionInFlight = useRef(false);
@@ -43,16 +45,16 @@ export default function BookingBanner({ conversationId, currentUserId }: Booking
       if (autoActionInFlight.current || !result.booking) return;
       const b = result.booking;
 
-      const effectiveTime = b.status === 'RESCHEDULE_ACCEPTED' ? b.rescheduleProposedFor : b.status === 'SCHEDULED' ? b.scheduledFor : null;
-      if (effectiveTime && !b.callSessionId && Date.now() >= new Date(effectiveTime).getTime()) {
+      const isActive = b.status === 'SCHEDULED' || b.status === 'RESCHEDULE_ACCEPTED';
+      if (isActive && !b.callSessionId && Date.now() >= b.scheduledFor.getTime()) {
         autoActionInFlight.current = true;
         await activateScheduledCall(b.id, currentUserId);
         autoActionInFlight.current = false;
         return;
       }
 
-      if (b.status === 'NO_SHOW_REPORTED' && b.noShowReportedAt) {
-        const deadline = new Date(b.noShowReportedAt).getTime() + ORO_RESPONSE_WINDOW_SECONDS * 1000;
+      if (b.slot.noShowReportedAt && !b.slot.rescheduleProposedAt) {
+        const deadline = new Date(b.slot.noShowReportedAt).getTime() + ORO_RESPONSE_WINDOW_SECONDS * 1000;
         if (Date.now() >= deadline) {
           autoActionInFlight.current = true;
           await expireNoShowWindow(b.id, currentUserId);
@@ -77,6 +79,7 @@ export default function BookingBanner({ conversationId, currentUserId }: Booking
   const canReportNoShow =
     isCustomer &&
     booking.status === 'SCHEDULED' &&
+    !booking.slot.noShowReportedAt &&
     Date.now() >= booking.scheduledFor.getTime() + booking.durationSeconds * 1000 + NO_SHOW_GRACE_SECONDS * 1000;
 
   const handleReportNoShow = async () => {
@@ -101,20 +104,45 @@ export default function BookingBanner({ conversationId, currentUserId }: Booking
     if ('error' in result) toast.error(result.error);
   };
 
+  // The Oro's fetched `booking` row may belong to an arbitrary attendee (a
+  // group slot has many), so only slot-wide fields are safe to show them —
+  // an individual customer's own accept/decline outcome (RESCHEDULE_ACCEPTED,
+  // REFUNDED) is only shown to that same customer.
+  if (isCustomer && booking.status === 'REFUNDED') {
+    return (
+      <div className="mx-3 sm:mx-4 mt-3 p-3 rounded-lg border border-[#458B9E]/30 bg-[#458B9E]/5 text-sm">
+        <span className="text-gray-500">This consult was refunded.</span>
+      </div>
+    );
+  }
+
+  if (isCustomer && booking.status === 'RESCHEDULE_ACCEPTED') {
+    return (
+      <div className="mx-3 sm:mx-4 mt-3 p-3 rounded-lg border border-[#458B9E]/30 bg-[#458B9E]/5 text-sm">
+        <span className="text-[#333333]">Rescheduled for {formatTime(booking.scheduledFor)}.</span>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-3 sm:mx-4 mt-3 p-3 rounded-lg border border-[#458B9E]/30 bg-[#458B9E]/5 text-sm">
-      {booking.status === 'SCHEDULED' && (
+      {booking.slot.rescheduleProposedAt && booking.slot.rescheduleProposedFor && (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-[#333333]">Consult scheduled for {formatTime(booking.scheduledFor)}.</span>
-          {canReportNoShow && (
-            <Button type="button" variant="ghost" size="sm" onClick={handleReportNoShow} isLoading={isActing}>
-              Report no-show
-            </Button>
+          <span className="text-[#333333]">New time proposed: {formatTime(booking.slot.rescheduleProposedFor)}.</span>
+          {isCustomer && booking.status === 'SCHEDULED' && (
+            <div className="flex gap-2">
+              <Button type="button" size="sm" onClick={() => handleRespond(true)} isLoading={isActing}>
+                Accept
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => handleRespond(false)} isLoading={isActing}>
+                Decline (refund)
+              </Button>
+            </div>
           )}
         </div>
       )}
 
-      {booking.status === 'NO_SHOW_REPORTED' && (
+      {booking.slot.noShowReportedAt && !booking.slot.rescheduleProposedAt && (
         <div>
           {isOro ? (
             <div className="flex flex-wrap items-center gap-2">
@@ -135,28 +163,15 @@ export default function BookingBanner({ conversationId, currentUserId }: Booking
         </div>
       )}
 
-      {booking.status === 'RESCHEDULE_PROPOSED' && booking.rescheduleProposedFor && (
+      {!booking.slot.noShowReportedAt && (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-[#333333]">New time proposed: {formatTime(booking.rescheduleProposedFor)}.</span>
-          {isCustomer && (
-            <div className="flex gap-2">
-              <Button type="button" size="sm" onClick={() => handleRespond(true)} isLoading={isActing}>
-                Accept
-              </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={() => handleRespond(false)} isLoading={isActing}>
-                Decline (refund)
-              </Button>
-            </div>
+          <span className="text-[#333333]">Consult scheduled for {formatTime(booking.scheduledFor)}.</span>
+          {canReportNoShow && (
+            <Button type="button" variant="ghost" size="sm" onClick={handleReportNoShow} isLoading={isActing}>
+              Report no-show
+            </Button>
           )}
         </div>
-      )}
-
-      {booking.status === 'RESCHEDULE_ACCEPTED' && booking.rescheduleProposedFor && (
-        <span className="text-[#333333]">Rescheduled for {formatTime(booking.rescheduleProposedFor)}.</span>
-      )}
-
-      {booking.status === 'REFUNDED' && (
-        <span className="text-gray-500">This consult was refunded.</span>
       )}
     </div>
   );

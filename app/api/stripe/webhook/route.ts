@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       const booking = await db.booking.findUnique({ where: { stripePaymentIntentId: intent.id } });
       if (booking && booking.status === 'PENDING_PAYMENT') {
         await db.booking.update({ where: { id: booking.id }, data: { status: 'CANCELLED' } });
-        await db.availabilitySlot.update({ where: { id: booking.availabilitySlotId }, data: { isBooked: false } });
+        await db.availabilitySlot.update({ where: { id: booking.availabilitySlotId }, data: { bookedCount: { decrement: 1 } } });
       }
       break;
     }

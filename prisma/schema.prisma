@@ -254,41 +254,59 @@ model CallSession {
 
 // Flash-Consult — an Oro's open, unbooked future time windows. Deliberately a
 // flat list the Oro adds/removes one at a time rather than a recurring-rule
-// calendar engine; a booked slot links to exactly one Booking.
+// calendar engine. A slot is also the shared "session" unit for a group
+// consult: capacity/bookedCount gate how many Bookings it can hold, and the
+// conversation/call/no-show/reschedule state that's common to every attendee
+// lives here rather than being duplicated per Booking (payment and refund
+// state stay per Booking below, since Stripe charges are unavoidably
+// per-customer).
 model AvailabilitySlot {
   id              String   @id @default(cuid())
   oroId           String
   startAt         DateTime
   durationSeconds Int
-  isBooked        Boolean  @default(false)
+  capacity        Int       @default(1) // max attendees; 1 = the original private 1:1 consult
+  bookedCount     Int       @default(0) // successful Bookings claimed so far; oversell guard is bookedCount < capacity
   createdAt       DateTime @default(now())
 
-  oro     User     @relation("OroAvailability", fields: [oroId], references: [id], onDelete: Cascade)
-  booking Booking?
+  // Shared across every attendee of this slot once the first booking pays.
+  conversationId        String?
+  callSessionId         String?
+  noShowReportedAt      DateTime?
+  rescheduleProposedAt  DateTime?
+  rescheduleProposedFor DateTime?
+
+  oro      User      @relation("OroAvailability", fields: [oroId], references: [id], onDelete: Cascade)
+  bookings Booking[]
 
   @@index([oroId, startAt])
-  @@index([oroId, isBooked])
+  @@index([oroId, bookedCount])
 }
 
+// No-show/reschedule-offer are slot-level facts now (AvailabilitySlot.noShowReportedAt /
+// rescheduleProposedAt / rescheduleProposedFor), since one report/offer covers every
+// attendee of a slot. A Booking only moves to RESCHEDULE_ACCEPTED once *this* customer
+// individually accepts the slot's offer; declining goes straight to REFUNDED.
 enum BookingStatus {
   PENDING_PAYMENT // PaymentIntent created; awaiting confirm/webhook
   SCHEDULED // paid; conversation created; call activates at scheduledFor
-  NO_SHOW_REPORTED // customer reported the Oro no-showed; awaiting reschedule offer or timeout
-  RESCHEDULE_PROPOSED // Oro proposed a new time; awaiting customer accept/decline
-  RESCHEDULE_ACCEPTED // customer accepted; call activates at the new rescheduledProposedFor time
+  RESCHEDULE_ACCEPTED // this customer accepted the slot's reschedule offer; call activates at the new rescheduleProposedFor time
   REFUNDED // full refund issued (reverse_transfer + refund_application_fee)
   CANCELLED // payment never completed (failed/abandoned); no money moved
 }
 
-// Flash-Consult booking — a paid 1:1 scheduled video consult purchased on an
-// Oro's public profile. Deliberately NOT a Connection (no network
-// relationship is created); it creates a plain Conversation and reuses the
-// existing call flow once the scheduled time arrives.
+// Flash-Consult booking — one customer's paid seat in a scheduled video
+// consult purchased on an Oro's public profile. Deliberately NOT a
+// Connection (no network relationship is created). A slot with
+// capacity > 1 holds many Bookings sharing the same slot-level
+// conversation/call — see AvailabilitySlot. Payment/refund fields stay
+// per-Booking since Stripe charges are always per-customer; no-show/
+// reschedule reporting lives on the slot instead (see AvailabilitySlot).
 model Booking {
   id                 String   @id @default(cuid())
   customerId         String
   oroId              String
-  availabilitySlotId String   @unique
+  availabilitySlotId String
   scheduledFor       DateTime // snapshot of the slot's startAt at booking time
   durationSeconds    Int
 
@@ -303,14 +321,11 @@ model Booking {
   stripePaymentIntentId String?       @unique
   stripeChargeId        String? // set from webhook; needed to issue a refund
 
-  conversationId String? @unique // set once payment succeeds
-  callSessionId  String? @unique // set once the scheduled call activates
+  conversationId String? // shared with every other Booking on the same slot
+  callSessionId  String? // copy of the slot's shared callSessionId, kept for read-compat
 
-  noShowReportedAt      DateTime?
-  rescheduleProposedAt  DateTime?
-  rescheduleProposedFor DateTime? // the new time the Oro is offering
-  refundedAt            DateTime?
-  refundReason          String?
+  refundedAt   DateTime?
+  refundReason String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
