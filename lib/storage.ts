@@ -1,14 +1,32 @@
 import * as Minio from 'minio';
 
-const minioClient = new Minio.Client({
-  endPoint: process.env.MINIO_ENDPOINT || 'localhost',
-  port: parseInt(process.env.MINIO_PORT || '9000'),
-  useSSL: process.env.MINIO_USE_SSL === 'true',
-  accessKey: process.env.MINIO_ACCESS_KEY || '',
-  secretKey: process.env.MINIO_SECRET_KEY || '',
-});
+// S3_ENDPOINT is a full URL (e.g. https://s3.feendesk.com) rather than a bare
+// host, so pull the hostname/port/protocol Minio.Client actually wants out of
+// it — tolerating a bare host:port value too, in case it's ever set that way.
+function parseS3Endpoint() {
+  const raw = process.env.S3_ENDPOINT || 'http://localhost:9000';
+  const withProtocol = /^https?:\/\//i.test(raw)
+    ? raw
+    : `http${process.env.S3_USE_SSL === 'true' ? 's' : ''}://${raw}`;
+  const url = new URL(withProtocol);
+  const useSSL = process.env.S3_USE_SSL !== undefined ? process.env.S3_USE_SSL === 'true' : url.protocol === 'https:';
+  const port = url.port ? parseInt(url.port, 10) : undefined;
+  return { hostname: url.hostname, useSSL, port };
+}
 
-const bucketName = process.env.MINIO_BUCKET || 'orochat';
+const { hostname, useSSL, port } = parseS3Endpoint();
+const region = process.env.S3_REGION || 'us-east-1';
+const bucketName = process.env.S3_BUCKET || 'orochat';
+
+const minioClient = new Minio.Client({
+  endPoint: hostname,
+  ...(port !== undefined ? { port } : {}),
+  useSSL,
+  accessKey: process.env.S3_ACCESS_KEY || '',
+  secretKey: process.env.S3_SECRET_KEY || '',
+  region,
+  pathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
+});
 
 /**
  * Ensures the bucket exists, creating it if it doesn't.
@@ -16,7 +34,7 @@ const bucketName = process.env.MINIO_BUCKET || 'orochat';
 export async function ensureBucket() {
   const exists = await minioClient.bucketExists(bucketName);
   if (!exists) {
-    await minioClient.makeBucket(bucketName, 'us-east-1');
+    await minioClient.makeBucket(bucketName, region);
   }
 
   // Always ensure the bucket policy is set for public read access to objects
@@ -31,16 +49,16 @@ export async function ensureBucket() {
       },
     ],
   };
-  
+
   try {
     await minioClient.setBucketPolicy(bucketName, JSON.stringify(policy));
   } catch (error) {
-    console.error('Error setting MinIO bucket policy:', error);
+    console.error('Error setting S3 bucket policy:', error);
   }
 }
 
 /**
- * Uploads a file to MinIO storage.
+ * Uploads a file to S3-compatible storage.
  */
 export async function uploadFile(
   file: Buffer,
@@ -48,24 +66,24 @@ export async function uploadFile(
   contentType: string
 ): Promise<string> {
   await ensureBucket();
-  
+
   const objectName = `${Date.now()}-${fileName}`;
-  
+
   await minioClient.putObject(bucketName, objectName, file, file.length, {
     'Content-Type': contentType,
   });
-  
-  const baseUrl = process.env.NEXT_PUBLIC_MINIO_URL || `http://${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}`;
+
+  const baseUrl = (process.env.S3_ENDPOINT || 'http://localhost:9000').replace(/\/+$/, '');
   return `${baseUrl}/${bucketName}/${encodeURIComponent(objectName)}`;
 }
 
 /**
- * Deletes a file from MinIO storage.
+ * Deletes a file from S3-compatible storage.
  */
 export async function deleteFile(objectName: string) {
   try {
     await minioClient.removeObject(bucketName, objectName);
   } catch (error) {
-    console.error('Error deleting file from MinIO:', error);
+    console.error('Error deleting file from storage:', error);
   }
 }

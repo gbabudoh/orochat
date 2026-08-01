@@ -26,6 +26,8 @@ interface NestWorkspaceProps {
   currentUserId: string;
   archived: boolean;
   expiresAt: Date | string | null;
+  backHref?: string;
+  backLabel?: string;
 }
 
 type Tab = 'board' | 'notes' | 'chat';
@@ -36,7 +38,7 @@ const TABS: { id: Tab; label: string; icon: typeof ListChecks }[] = [
   { id: 'chat', label: 'Chat', icon: MessageSquare },
 ];
 
-export default function NestWorkspace({ nestId, nestName, ownerId, conversationId, members, currentUserId, archived, expiresAt }: NestWorkspaceProps) {
+export default function NestWorkspace({ nestId, nestName, ownerId, conversationId, members, currentUserId, archived, expiresAt, backHref = '/nest', backLabel = 'Back to OroNest' }: NestWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<Tab>('board');
   const [isArchived, setIsArchived] = useState(archived);
   const [isUnarchiving, setIsUnarchiving] = useState(false);
@@ -57,11 +59,11 @@ export default function NestWorkspace({ nestId, nestName, ownerId, conversationI
   return (
     <div className="max-w-6xl mx-auto">
       <Link
-        href="/nest"
+        href={backHref}
         className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#458B9E] transition-colors mb-4"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to OroNest
+        {backLabel}
       </Link>
 
       <div className="flex items-center gap-3 mb-6">
@@ -112,7 +114,7 @@ export default function NestWorkspace({ nestId, nestName, ownerId, conversationI
 
       {activeTab === 'board' && <TaskBoard nestId={nestId} currentUserId={currentUserId} members={members} />}
       {activeTab === 'notes' && <NotesEditor nestId={nestId} currentUserId={currentUserId} />}
-      {activeTab === 'chat' && <ChatRoom conversationId={conversationId} currentUserId={currentUserId} />}
+      {activeTab === 'chat' && <ChatRoom conversationId={conversationId} currentUserId={currentUserId} slateId={nestId} />}
     </div>
   );
 }

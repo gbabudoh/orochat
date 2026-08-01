@@ -70,3 +70,66 @@ export async function sendVerificationEmail(to: string, verifyUrl: string): Prom
   );
   await sendMail({ to, subject: 'Verify your Orochat email address', html });
 }
+
+function formatGBP(cents: number): string {
+  return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(
+    cents / 100
+  );
+}
+
+export async function sendTrialReminderEmail(
+  to: string,
+  organizationName: string,
+  daysLeft: number,
+  upgradeUrl: string,
+  estimate: { baseFeeCents: number; seatCount: number; seatFeeCents: number } | null
+): Promise<void> {
+  const totalCents = estimate ? estimate.baseFeeCents + estimate.seatFeeCents * estimate.seatCount : null;
+
+  const html = emailLayout(
+    'Keep your team moving',
+    `
+      <p>Hi there,</p>
+      <p>
+        Over the last few days, your team has turned connections into real-time execution on
+        <strong>${organizationName}</strong>&rsquo;s Oroslate workspace. You&rsquo;ve unlocked unlimited chat
+        history, managed complex timelines, and centralised your business operations right inside Orochat.
+      </p>
+      <p>Your Pro Slate trial ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}. To keep your workflows running
+      seamlessly, upgrade your workspace today.</p>
+      ${
+        totalCents !== null && estimate
+          ? `<div style="background: #F0F3F7; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 14px;">
+              <p style="margin: 0 0 6px;">Pro Slate Base: ${formatGBP(estimate.baseFeeCents)}/month</p>
+              <p style="margin: 0 0 6px;">Team Seats (${estimate.seatCount} active): ${formatGBP(estimate.seatFeeCents * estimate.seatCount)}/month</p>
+              <p style="margin: 0; font-weight: 600;">Total Estimated: ${formatGBP(totalCents)}/month</p>
+            </div>`
+          : ''
+      }
+      ${emailButton(upgradeUrl, 'Upgrade My Slate Now')}
+      <p style="font-size: 13px; color: #666666;">Save 20% by switching to an annual plan at checkout.</p>
+    `
+  );
+  await sendMail({ to, subject: `Your Oroslate trial ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`, html });
+}
+
+export async function sendTrialExpiredEmail(to: string, organizationName: string, upgradeUrl: string): Promise<void> {
+  const html = emailLayout(
+    'Action required: your trial has expired',
+    `
+      <p>Hi there,</p>
+      <p>
+        Today was the final day of <strong>${organizationName}</strong>&rsquo;s Oroslate Pro Trial. Your
+        workspace has now been automatically paused.
+      </p>
+      <p style="font-weight: 600;">What happens to your data?</p>
+      <p>
+        Don&rsquo;t worry — your chat history, project boards, and team configuration are completely safe, but
+        they&rsquo;ll stay locked until an upgrade is completed. Your team will temporarily lose access to their
+        task tracking.
+      </p>
+      ${emailButton(upgradeUrl, 'Lock In Pro Access')}
+    `
+  );
+  await sendMail({ to, subject: `Your Oroslate trial for ${organizationName} has expired`, html });
+}

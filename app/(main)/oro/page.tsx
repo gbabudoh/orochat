@@ -22,6 +22,7 @@ export default async function MyOrosPage() {
 
   interface PendingRequest {
     id: string;
+    note: string | null;
     sender: {
       id: string;
       name: string;
@@ -77,6 +78,11 @@ export default async function MyOrosPage() {
                     <p className="text-xs text-gray-500 truncate">{request.sender.title || 'Professional'}</p>
                   </div>
                 </div>
+                {request.note && (
+                  <p className="text-xs text-gray-600 italic bg-white/60 rounded-lg px-3 py-2 mb-3 leading-relaxed">
+                    &ldquo;{request.note}&rdquo;
+                  </p>
+                )}
                 <PendingRequestActions connectionId={request.id} userId={session.user.id} />
               </Card>
             ))}

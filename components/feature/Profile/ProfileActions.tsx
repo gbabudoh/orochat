@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import { sendConnectionRequest } from '@/features/connections/actions';
-import { UserPlus, Check, MessageSquare } from 'lucide-react';
+import WarmIntroModal from '@/components/feature/Profile/WarmIntroModal';
+import { UserPlus, Check, MessageSquare, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 interface ProfileActionsProps {
   userId: string;
+  userName: string;
   currentUserId: string | undefined;
   isConnected: boolean;
   hasPendingRequest: boolean;
@@ -16,6 +18,7 @@ interface ProfileActionsProps {
 
 export default function ProfileActions({
   userId,
+  userName,
   currentUserId,
   isConnected,
   hasPendingRequest: initialPending,
@@ -23,6 +26,7 @@ export default function ProfileActions({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [hasPending, setHasPending] = useState(initialPending);
+  const [isWarmIntroOpen, setIsWarmIntroOpen] = useState(false);
 
   const handleConnect = async () => {
     if (!currentUserId) {
@@ -67,9 +71,29 @@ export default function ProfileActions({
   }
 
   return (
-    <Button size="sm" onClick={handleConnect} isLoading={isLoading}>
-      <UserPlus className="w-4 h-4 mr-2" />
-      Connect
-    </Button>
+    <>
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={handleConnect} isLoading={isLoading}>
+          <UserPlus className="w-4 h-4 mr-2" />
+          Connect
+        </Button>
+        {currentUserId && (
+          <Button size="sm" variant="ghost" onClick={() => setIsWarmIntroOpen(true)} className="border border-[#458B9E]/30">
+            <Sparkles className="w-4 h-4 mr-1.5" />
+            Draft Warm Intro
+          </Button>
+        )}
+      </div>
+
+      {currentUserId && (
+        <WarmIntroModal
+          isOpen={isWarmIntroOpen}
+          onClose={() => setIsWarmIntroOpen(false)}
+          currentUserId={currentUserId}
+          recipientId={userId}
+          recipientName={userName}
+        />
+      )}
+    </>
   );
 }

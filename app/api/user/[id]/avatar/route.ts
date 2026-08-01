@@ -41,9 +41,13 @@ export async function GET(
     });
   }
 
-  // Plain URL — fetch and stream to bypass browser security blocks (like Firefox HTTPS-Only)
+  // Plain URL — fetch and stream to bypass browser security blocks (like Firefox HTTPS-Only).
+  // A hard timeout matters here: without one, a dead/unreachable stored URL
+  // (e.g. a decommissioned storage host) hangs the request for minutes, and
+  // the browser's <img> sits in a stuck "still loading" state the whole time
+  // instead of quickly falling back to the initials placeholder.
   try {
-    const response = await fetch(user.avatar, { cache: 'no-store' });
+    const response = await fetch(user.avatar, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
     if (!response.ok) throw new Error('Failed to fetch from storage');
     
     const blob = await response.blob();

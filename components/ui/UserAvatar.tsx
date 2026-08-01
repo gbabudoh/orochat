@@ -32,6 +32,16 @@ const presenceColors: Record<PresenceStatus, string> = {
 export default function UserAvatar({ userId, name, avatarUrl, size = 'sm', className = '', presence }: Props) {
   const [failed, setFailed] = useState(false);
 
+  // A prior failed load (e.g. a transient network blip or a dev-server
+  // recompile) shouldn't permanently pin this avatar to its fallback letter
+  // once a new/changed avatarUrl comes in — retry it. Resetting during
+  // render (rather than in an effect) avoids an extra render pass.
+  const [prevAvatarUrl, setPrevAvatarUrl] = useState(avatarUrl);
+  if (avatarUrl !== prevAvatarUrl) {
+    setPrevAvatarUrl(avatarUrl);
+    setFailed(false);
+  }
+
   const initial = name?.charAt(0).toUpperCase() || '?';
   const sizeClass = sizes[size];
 

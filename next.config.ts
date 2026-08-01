@@ -9,6 +9,17 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
+        protocol: 'https',
+        hostname: 's3.feendesk.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img.feendesk.com',
+        pathname: '/**',
+      },
+      // Legacy MinIO host — keep until any stored URLs pointing at it are gone.
+      {
         protocol: 'http',
         hostname: '149.102.155.247',
         port: '9000',

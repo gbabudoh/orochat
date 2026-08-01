@@ -4,10 +4,10 @@ import { ConnectionService } from '@/services/connection.service';
 import { db } from '@/lib/db';
 import { triggerNotification } from '@/lib/novu';
 
-export async function sendConnectionRequest(senderId: string, receiverId: string) {
+export async function sendConnectionRequest(senderId: string, receiverId: string, note?: string, usedAiNote = false) {
   try {
-    await ConnectionService.sendConnectionRequest(senderId, receiverId);
-    
+    await ConnectionService.sendConnectionRequest(senderId, receiverId, note, usedAiNote);
+
     // Get sender info for notification
     const sender = await db.user.findUnique({ where: { id: senderId } });
     

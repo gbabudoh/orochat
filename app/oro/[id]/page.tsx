@@ -207,6 +207,7 @@ export default async function OroProfilePage({
             {session && !isOwnProfile && (
               <ProfileActions
                 userId={id}
+                userName={user.name}
                 currentUserId={session.user.id}
                 isConnected={isConnected}
                 hasPendingRequest={hasPendingRequest}

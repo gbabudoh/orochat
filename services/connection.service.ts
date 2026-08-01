@@ -11,7 +11,7 @@ export class ConnectionService {
   /**
    * Send a connection request
    */
-  static async sendConnectionRequest(senderId: string, receiverId: string) {
+  static async sendConnectionRequest(senderId: string, receiverId: string, note?: string, usedAiNote = false) {
     if (senderId === receiverId) {
       throw new Error('Cannot connect to yourself');
     }
@@ -35,6 +35,8 @@ export class ConnectionService {
         senderId,
         receiverId,
         status: 'PENDING',
+        note: note?.trim() || null,
+        usedAiNote,
       },
     });
   }
@@ -227,6 +229,7 @@ export class ConnectionService {
           },
         },
       },
+      orderBy: { createdAt: 'desc' },
     });
   }
 

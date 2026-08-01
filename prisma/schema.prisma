@@ -96,6 +96,11 @@ model User {
   bookingsAsOro           Booking[]                 @relation("BookingOro")
   bookingsAsCustomer      Booking[]                 @relation("BookingCustomer")
 
+  // Oroslate — organizations, seats, and Compass-leader affiliate referrals
+  ownedOrganizations      Organization[]             @relation("OrganizationOwner")
+  organizationMemberships OrganizationMember[]       @relation("OrgMembership")
+  affiliateReferrals      AffiliateReferral[]        @relation("AffiliateReferrals")
+
   @@index([email])
   @@index([isPartner])
 }
@@ -107,6 +112,8 @@ model Connection {
   receiverId String
   status     ConnectionStatus @default(PENDING)
   verifiedAt DateTime? // When connection was verified/accepted
+  note       String? // optional message shown to the receiver alongside the request
+  usedAiNote Boolean          @default(false) // note was drafted via the Smart Warm-Intro AI — feeds conversion analytics
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -382,6 +389,8 @@ model AgreementSigner {
 }
 
 // OroNest - project workspaces (task board + notes + a reused group chat for messaging/calls)
+// When organizationId is set, this Nest is an Oroslate "Slate" — an org-owned,
+// billed workspace — rather than a free peer-to-peer Nest. Same board/notes/chat.
 model Nest {
   id             String    @id @default(cuid())
   name           String
@@ -389,16 +398,19 @@ model Nest {
   conversationId String    @unique
   archived       Boolean   @default(false)
   expiresAt      DateTime? // null = no time limit
+  organizationId String? // set when this Nest is a paid Oroslate Slate
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  owner        User         @relation("NestOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  owner        User          @relation("NestOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  conversation Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   members      NestMember[]
   tasks        NestTask[]
   notes        NestNote[]
 
   @@index([ownerId])
+  @@index([organizationId])
 }
 
 model NestMember {
@@ -450,6 +462,141 @@ model NestNote {
   nest Nest @relation(fields: [nestId], references: [id], onDelete: Cascade)
 
   @@index([nestId, createdAt])
+}
+
+// ============================================================
+// Oroslate — org-owned paid workspaces, billing, and the
+// Compass-leader affiliate revenue-share program.
+// ============================================================
+
+// A paying company. Slates (see Nest.organizationId) are the org's
+// workspaces; Subscription is the org's single billing record.
+model Organization {
+  id               String   @id @default(cuid())
+  name             String
+  slug             String   @unique
+  ownerId          String
+  logo             String?
+  stripeCustomerId String?  @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner        User                 @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members      OrganizationMember[]
+  slates       Nest[]
+  subscription Subscription?
+  referral     AffiliateReferral?
+
+  @@index([ownerId])
+}
+
+enum OrgRole {
+  ADMIN
+  MEMBER
+}
+
+model OrganizationMember {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  role           OrgRole  @default(MEMBER)
+  isExternalOro  Boolean  @default(false) // guest seat — external Oro invited into a paying org's Slate
+  joinedAt       DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation("OrgMembership", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+enum SlateTier {
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+// One row per Organization. Created alongside the Organization itself with
+// status TRIALING and a 14-day trialEndsAt — there is no separate
+// "start trial" step.
+model Subscription {
+  id                   String             @id @default(cuid())
+  organizationId       String             @unique
+  tier                 SlateTier          @default(STARTER)
+  status               SubscriptionStatus @default(TRIALING)
+  seatCount            Int                @default(1)
+  stripeSubscriptionId String?            @unique
+  stripePriceIdBase    String?
+  stripePriceIdSeat    String?
+  trialEndsAt          DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+
+  // Idempotency markers for the daily trial-check cron, so a re-run (or a
+  // slow cron overlapping the next day's run) never double-sends an email.
+  trialReminderSentAt    DateTime?
+  trialExpiredEmailSentAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+enum AffiliateStatus {
+  ACTIVE
+  CHURNED
+}
+
+// Links a paying Organization back to the Compass community leader who
+// referred it, for revenue-share attribution. One referral per org.
+model AffiliateReferral {
+  id             String          @id @default(cuid())
+  affiliateId    String // the Compass leader (User.id)
+  organizationId String          @unique
+  compassId      String? // which Compass community the leader referred from
+  status         AffiliateStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+
+  affiliate     User                   @relation("AffiliateReferrals", fields: [affiliateId], references: [id], onDelete: Cascade)
+  organization  Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ledgerEntries AffiliateLedgerEntry[]
+
+  @@index([affiliateId])
+}
+
+enum AffiliateLedgerStatus {
+  PENDING
+  RELEASED
+  VOIDED
+}
+
+// One row per paid Stripe invoice on a referred org's subscription. Sits in
+// PENDING for a 30-day maturation window (see releaseDate) before the
+// monthly affiliate-payout cron sweeps it into a Stripe Connect transfer.
+model AffiliateLedgerEntry {
+  id              String                @id @default(cuid())
+  referralId      String
+  amountCents     Int
+  sourceInvoiceId String // Stripe invoice id — idempotency key against double-processing the same invoice
+  status          AffiliateLedgerStatus @default(PENDING)
+  releaseDate     DateTime
+
+  createdAt DateTime @default(now())
+
+  referral AffiliateReferral @relation(fields: [referralId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceInvoiceId])
+  @@index([referralId, status])
 }
 
 // Feed Post Model - Activity feed posts
