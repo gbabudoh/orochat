@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import UsersTable from '@/components/admin/UsersTable';
 import Pagination from '@/components/admin/Pagination';
 import { PAGE_SIZE, parsePage, parseDir } from '@/lib/admin/pagination';
+import { getAdminSession } from '@/lib/auth.admin';
 
 const SORT_FIELD: Record<string, keyof Prisma.UserOrderByWithRelationInput> = {
   name: 'name',
@@ -20,6 +21,8 @@ export default async function AdminUsersPage({
   const page = parsePage(pageParam);
   const sortDir = parseDir(dir);
   const sortField = sort && SORT_FIELD[sort] ? SORT_FIELD[sort] : null;
+  const session = await getAdminSession();
+  const canTerminate = session?.user.role === 'SUPER_ADMIN';
 
   const where: Prisma.UserWhereInput | undefined = q
     ? { OR: [{ name: { contains: q, mode: 'insensitive' } }, { email: { contains: q, mode: 'insensitive' } }] }
@@ -63,7 +66,7 @@ export default async function AdminUsersPage({
         />
       </form>
 
-      <UsersTable users={users} currentSort={sort} currentDir={dir} searchParams={searchParamsObj} />
+      <UsersTable users={users} currentSort={sort} currentDir={dir} searchParams={searchParamsObj} canTerminate={canTerminate} />
       <Pagination page={page} totalPages={totalPages} searchParams={searchParamsObj} />
     </div>
   );

@@ -26,9 +26,10 @@ interface Props {
   currentSort?: string;
   currentDir?: string;
   searchParams: Record<string, string | undefined>;
+  canTerminate: boolean;
 }
 
-export default function UsersTable({ users, currentSort, currentDir, searchParams }: Props) {
+export default function UsersTable({ users, currentSort, currentDir, searchParams, canTerminate }: Props) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isBulkLoading, setIsBulkLoading] = useState(false);
@@ -139,7 +140,12 @@ export default function UsersTable({ users, currentSort, currentDir, searchParam
                 )}
               </td>
               <td className="px-4 py-3">
-                <UserRowActions userId={user.id} isPaused={user.isPaused} />
+                <UserRowActions
+                  userId={user.id}
+                  userName={user.name}
+                  isPaused={user.isPaused}
+                  canTerminate={canTerminate}
+                />
               </td>
             </tr>
           ))}

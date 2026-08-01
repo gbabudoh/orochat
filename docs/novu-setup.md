@@ -27,7 +27,7 @@ The `<Inbox />` component from `@novu/nextjs` is used to render the in-app notif
 
 ## Workflows
 
-You have **5 active workflows** triggered from the codebase. Each must be configured in the [Novu Dashboard](https://dashboard.novu.co) → Workflows → \[workflow name\] → In-App Step → In-App Editor.
+You have **6 active workflows** triggered from the codebase. Each must be configured in the [Novu Dashboard](https://dashboard.novu.co) → Workflows → \[workflow name\] → In-App Step → In-App Editor.
 
 > **Important:** Do not use a Bridge URL. All workflows are dashboard-defined and triggered via the Novu API from the server. Leave the Bridge URL field empty in Settings.
 
@@ -156,6 +156,31 @@ Triggered when a user sends a message in a collab conversation.
 | Subject      | `You have a new message`                 |
 | Body         | `Someone sent you a message`             |
 | Redirect URL | `/collab/{{payload.conversationId}}`     |
+
+---
+
+### 6. `admin-notice`
+
+Triggered when an admin sends a direct message to a user from `/admin/users`.
+
+**Trigger location:** `features/admin/user-actions.ts`
+
+**Payload sent:**
+```ts
+{
+  type: 'warning' | 'info' | 'changes',
+  subject: string,
+  message: string
+}
+```
+
+**In-App Editor:**
+
+| Field        | Value                     |
+|--------------|---------------------------|
+| Subject      | `{{payload.subject}}`     |
+| Body         | `{{payload.message}}`     |
+| Redirect URL | `/settings/profile`       |
 
 ---
 

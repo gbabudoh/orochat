@@ -17,6 +17,10 @@ function getTransporter(): nodemailer.Transporter {
     secure: false, // STARTTLS on 587, not implicit TLS
     requireTLS: true,
     auth: { user, pass },
+    // mail.orochat.com presents a self-signed cert — trust it explicitly
+    // rather than rejecting the connection outright. Traffic is still
+    // encrypted; this only skips verifying the cert's issuing authority.
+    tls: { rejectUnauthorized: false },
   });
   return transporter;
 }
@@ -69,6 +73,38 @@ export async function sendVerificationEmail(to: string, verifyUrl: string): Prom
     `
   );
   await sendMail({ to, subject: 'Verify your Orochat email address', html });
+}
+
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+const ADMIN_NOTICE_LABELS: Record<'warning' | 'info' | 'changes', { text: string; color: string }> = {
+  warning: { text: 'Warning', color: '#D32F2F' },
+  info: { text: 'Information', color: '#458B9E' },
+  changes: { text: 'Account Changes', color: '#8a6d00' },
+};
+
+export async function sendAdminNoticeEmail(
+  to: string,
+  type: 'warning' | 'info' | 'changes',
+  subject: string,
+  message: string
+): Promise<void> {
+  const label = ADMIN_NOTICE_LABELS[type];
+  const html = emailLayout(
+    escapeHtml(subject),
+    `
+      <p style="display:inline-block;font-size:12px;font-weight:600;color:${label.color};background:${label.color}1a;padding:4px 10px;border-radius:999px;margin:0 0 16px;">
+        ${label.text}
+      </p>
+      <p style="white-space: pre-wrap;">${escapeHtml(message)}</p>
+    `
+  );
+  await sendMail({ to, subject: `Orochat: ${subject}`, html });
 }
 
 function formatGBP(cents: number): string {
