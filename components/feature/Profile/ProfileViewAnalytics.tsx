@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Eye, Globe, TrendingUp } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import UserAvatar from '@/components/ui/UserAvatar';
+import HelpTooltip from '@/components/ui/HelpTooltip';
 import { getCountryName, getFlagImageUrl } from '@/lib/constants/countries';
 import type { ProfileViewStats } from '@/lib/profileViews';
 
@@ -33,14 +34,25 @@ export default function ProfileViewAnalytics({ stats }: { stats: ProfileViewStat
             <Eye className="w-10 h-10 text-[#458B9E]/20 translate-x-2 -translate-y-2" />
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#458B9E] flex items-center justify-center shadow-md">
-              <Eye className="w-5 h-5 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#458B9E] flex items-center justify-center shadow-md">
+                <Eye className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Total Profile Views</h2>
+                <p className="text-[10px] text-gray-500">Only visible to you</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Total Profile Views</h2>
-              <p className="text-[10px] text-gray-500">Only visible to you</p>
-            </div>
+            <HelpTooltip
+              title="Total Profile Views"
+              description="Private count of all visits logged on your profile."
+              tips={[
+                'Analytics are completely private to your account.',
+                'Tracks authenticated member visits and public guest visits.',
+              ]}
+              align="right"
+            />
           </div>
 
           <div className="flex items-baseline gap-2 mt-5">

@@ -43,7 +43,7 @@ export default function AdminNav({ role }: Props) {
   const navItems = role === 'SUPER_ADMIN' ? [...NAV_ITEMS, SUPER_ADMIN_NAV_ITEM] : NAV_ITEMS;
 
   return (
-    <nav className="w-56 shrink-0 bg-[#1a1f2b] min-h-screen flex flex-col py-6 px-3">
+    <nav className="w-56 shrink-0 bg-[#1a1f2b] h-screen sticky top-0 flex flex-col py-6 px-3 overflow-y-auto z-30">
       <p className="text-white font-bold text-lg px-3 mb-6">Orochat Admin</p>
       <div className="flex-1 space-y-1">
         {navItems.map(({ href, label, icon: Icon }) => {

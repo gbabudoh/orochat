@@ -39,6 +39,11 @@ yarn-error.log*
 # database backups (scripts/backup-db.ts)
 /backups
 
+# one-off local scripts with real account emails/plaintext passwords hardcoded —
+# never commit these; the accounts themselves already live in the database
+/scripts/restore-admin-account.ts
+/scripts/restore-user-accounts.ts
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

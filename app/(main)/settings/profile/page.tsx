@@ -11,6 +11,8 @@ import { updateProfile, getProfile, pauseAccount, reactivateAccount, deleteAccou
 import { User, Upload, X, Plus, Loader2, ShieldAlert, PauseCircle, PlayCircle, Trash2, Mail, Briefcase, GraduationCap, Award, Globe, FileText, Building, MapPin, AtSign } from 'lucide-react';
 import { COUNTRIES, countryCodeToFlag } from '@/lib/constants/countries';
 import Modal from '@/components/ui/Modal';
+import ProfileSettingsHeaderGuide from '@/components/feature/Settings/ProfileSettingsHeaderGuide';
+import HelpTooltip from '@/components/ui/HelpTooltip';
 
 interface WorkHistoryEntry {
   company: string;
@@ -174,14 +176,13 @@ export default function ProfileSettingsPage() {
 
       if (data.success) {
         setAvatar(data.url);
+        setAvatarPreview(data.url);
         setMessage({ type: 'success', text: 'Photo uploaded successfully' });
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to upload photo' });
-        setAvatarPreview('');
       }
     } catch {
       setMessage({ type: 'error', text: 'Failed to upload photo' });
-      setAvatarPreview('');
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -347,10 +348,30 @@ export default function ProfileSettingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto w-full min-w-0">
-      <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-1">Profile Settings</h1>
-      <p className="text-sm sm:text-base text-gray-500 mb-6 leading-relaxed">
-        Customize your public profile, professional credentials, and account settings.
-      </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#333333]">Profile Settings</h1>
+            <HelpTooltip
+              title="Profile Settings Guide"
+              description="Customize public profile identity, credentials, work history, and security settings."
+              tips={[
+                'Upload profile photo (JPG/PNG <2MB).',
+                'Set job title, company, handle (@username), and country flag.',
+                'Add qualifications, work experience entries, and education degrees.',
+                'Manage account safety via Pause Account or Delete Account.',
+              ]}
+            />
+          </div>
+          <p className="text-sm sm:text-base text-gray-500 leading-relaxed">
+            Customize your public profile, professional credentials, and account settings.
+          </p>
+        </div>
+
+        <div className="shrink-0 self-start sm:self-center">
+          <ProfileSettingsHeaderGuide />
+        </div>
+      </div>
 
       <Card padding="none" className="p-4 sm:p-6 lg:p-8 shadow-md border-t-4 border-[#458B9E]">
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -363,7 +384,7 @@ export default function ProfileSettingsPage() {
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 text-center sm:text-left">
               <div className="w-24 h-24 rounded-2xl bg-[#458B9E] flex items-center justify-center overflow-hidden shrink-0 relative shadow-md">
                 {avatarPreview ? (
-                  <Image src={avatarPreview} alt="Profile" fill className="object-cover" />
+                  <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   <User className="w-12 h-12 text-white" />
                 )}

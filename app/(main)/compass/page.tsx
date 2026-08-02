@@ -2,6 +2,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import CommunityCard from '@/components/feature/Compass/CommunityCard';
+import CompassHeaderGuide from '@/components/feature/Compass/CompassHeaderGuide';
+import HelpTooltip from '@/components/ui/HelpTooltip';
 import { Plus, Compass as CompassIcon, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
@@ -28,24 +30,38 @@ export default async function CompassPage() {
   });
 
   return (
-    <div className="max-w-6xl mx-auto w-full min-w-0 px-4 sm:px-6 py-4 sm:py-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div className="max-w-6xl mx-auto w-full min-w-0 px-4 sm:px-6 py-4 sm:py-6 space-y-6">
+      {/* Top Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#333333]">Compass</h1>
-          <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#333333]">Compass Communities</h1>
+            <HelpTooltip
+              title="Compass Communities Guide"
+              description="Discover, join, and lead professional technical circles and interest groups."
+              tips={[
+                'Click Join to become a member of any community.',
+                'Community members gain access to dedicated feeds & rosters.',
+                'Partners can launch custom Compass communities.',
+              ]}
+            />
+          </div>
+          <p className="text-sm text-gray-500 leading-relaxed">
             Discover and join professional communities, interest groups, and technical circles.
           </p>
         </div>
-        {user?.isPartner && (
-          <div className="shrink-0">
+
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+          <CompassHeaderGuide />
+          {user?.isPartner && (
             <Link href="/compass/create">
-              <Button className="rounded-full gap-1.5 whitespace-nowrap px-4">
+              <Button className="rounded-full gap-1.5 whitespace-nowrap px-4 bg-[#458B9E] hover:bg-[#387383]">
                 <Plus className="w-4 h-4 shrink-0" />
-                Create Community
+                <span>Create Community</span>
               </Button>
             </Link>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {communities.length === 0 ? (
@@ -76,5 +92,3 @@ export default async function CompassPage() {
     </div>
   );
 }
-
-

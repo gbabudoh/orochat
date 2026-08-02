@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { HEARTBEAT_INTERVAL_MS } from '@/lib/presence';
 
 function sendOfflineBeacon() {
@@ -17,13 +17,24 @@ export default function PresenceHeartbeat() {
   useEffect(() => {
     if (!session?.user?.id) return;
 
-    const sendHeartbeat = () => {
-      fetch('/api/presence/heartbeat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'online' }),
-        keepalive: true,
-      }).catch(() => {});
+    const sendHeartbeat = async () => {
+      try {
+        const res = await fetch('/api/presence/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'online' }),
+          keepalive: true,
+        });
+        if (res.status === 401) {
+          const data = await res.json().catch(() => null);
+          if (data?.accountDeleted) {
+            clearInterval(interval);
+            signOut({ callbackUrl: '/login' });
+          }
+        }
+      } catch {
+        // network hiccup — next interval tick will retry
+      }
     };
 
     sendHeartbeat();

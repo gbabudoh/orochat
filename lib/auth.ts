@@ -3,7 +3,6 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import { db } from './db';
 import bcrypt from 'bcryptjs';
-import { generateUniqueUsername } from '@/features/auth/actions';
 
 interface ExtendedUser {
   id: string;
@@ -101,6 +100,11 @@ export const authOptions: NextAuthOptions = {
           let dbUser = await db.user.findUnique({ where: { email: user.email } });
 
           if (!dbUser) {
+            // Dynamic import: features/auth/actions.ts transitively pulls in
+            // TensorFlow (via userEmbedding -> embeddings), which is only
+            // needed here on first Google sign-up, not on every authOptions
+            // consumer (i.e. every getServerSession() call in the app).
+            const { generateUniqueUsername } = await import('@/features/auth/actions');
             const username = await generateUniqueUsername(user.name || 'Orochat User', user.email);
             dbUser = await db.user.create({
               data: {

@@ -153,6 +153,11 @@ model Compass {
   sponsorLink      String?
   sponsorExpiresAt DateTime?
 
+  // Admin Moderation Status
+  isSuspended Boolean @default(false)
+  isFlagged   Boolean @default(false)
+  flagReason  String?
+
   // USE embedding of name + description, recomputed on create — used to
   // score ad-campaign relevance (see lib/ai/compassEmbedding.ts)
   embedding Float[] @default([])

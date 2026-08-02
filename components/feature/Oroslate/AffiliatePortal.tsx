@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Copy, Check, Wallet, Clock, TrendingUp } from 'lucide-react';
+import { Copy, Check, Wallet, Clock, TrendingUp, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import { TIER_LIMITS } from '@/lib/oroslate/tiers';
 import type { getAffiliateSummary, getLeaderCompasses } from '@/features/oroslate/affiliate-actions';
@@ -40,11 +41,24 @@ function CopyLinkButton({ url }: { url: string }) {
 
 export default function AffiliatePortal({ currentUserId, compasses, summary, baseUrl }: AffiliatePortalProps) {
   return (
-    <div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-1">Community Leader Portal</h1>
-      <p className="text-sm text-gray-500 mb-6">
-        Earn a recurring revenue share when businesses you refer from your Compass communities upgrade to Oroslate.
-      </p>
+    <div className="space-y-6">
+      {/* Top Back Action */}
+      <div>
+        <Link
+          href="/oroslate"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-[#458B9E] transition-colors bg-white hover:bg-gray-50 border border-gray-200/80 px-3.5 py-1.5 rounded-xl shadow-2xs"
+        >
+          <ArrowLeft className="w-4 h-4 text-[#458B9E]" />
+          <span>Back to Oroslate</span>
+        </Link>
+      </div>
+
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-1">Community Leader Portal</h1>
+        <p className="text-sm text-gray-500">
+          Earn a recurring revenue share when businesses you refer from your Compass communities upgrade to Oroslate.
+        </p>
+      </div>
 
       <div className="grid sm:grid-cols-3 gap-4 mb-8">
         <Card padding="sm">

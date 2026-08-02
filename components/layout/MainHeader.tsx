@@ -133,7 +133,7 @@ export default function MainHeader() {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ status: 'offline' }),
-                      }).catch(() => {});
+                      }).catch(() => { });
                       signOut({ callbackUrl: '/' });
                       setShowUserMenu(false);
                     }}

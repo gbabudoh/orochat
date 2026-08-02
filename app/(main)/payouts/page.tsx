@@ -5,6 +5,8 @@ import { db } from '@/lib/db';
 import { AdminService } from '@/services/admin.service';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import PayoutsHeaderGuide from '@/components/feature/Payouts/PayoutsHeaderGuide';
+import HelpTooltip from '@/components/ui/HelpTooltip';
 import { Settings, Wallet, Clock, CreditCard, CheckCircle2, AlertCircle, Receipt, Video, PieChart } from 'lucide-react';
 
 export default async function PayoutsPage() {
@@ -31,11 +33,28 @@ export default async function PayoutsPage() {
 
   return (
     <div className="max-w-4xl mx-auto w-full min-w-0 px-4 sm:px-6 py-4 sm:py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-1">Payouts</h1>
-        <p className="text-sm sm:text-base text-gray-500 leading-relaxed">
-          Track your partner earnings, pending distributions, and payout history.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#333333]">Payouts & Earnings</h1>
+            <HelpTooltip
+              title="Payouts & Partner Revenue Guide"
+              description="Track Partner ad revenue distribution pools, consultation income, and Stripe payouts."
+              tips={[
+                '65% of platform ad revenue is distributed monthly to qualified Partners.',
+                '70% direct income from paid 1-on-1 video consult sessions.',
+                'Setup Stripe Connect to receive automated bank transfers.',
+              ]}
+            />
+          </div>
+          <p className="text-sm sm:text-base text-gray-500 leading-relaxed">
+            Track your partner earnings, pending distributions, and payout history.
+          </p>
+        </div>
+
+        <div className="shrink-0 self-start sm:self-center">
+          <PayoutsHeaderGuide />
+        </div>
       </div>
 
       {/* 3-Column Stats Summary Grid */}

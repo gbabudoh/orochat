@@ -6,18 +6,19 @@ import PostCard from '@/components/feature/Feed/PostCard';
 import SponsoredPostCard from '@/components/feature/Feed/SponsoredPostCard';
 import GlobalFeedLoadMore from '@/components/feature/Feed/GlobalFeedLoadMore';
 import GlobalFeedFilters from '@/components/feature/Feed/GlobalFeedFilters';
+import GlobalPostComposer from '@/components/feature/Feed/GlobalPostComposer';
+import GlobalHeaderGuide from '@/components/feature/Feed/GlobalHeaderGuide';
 import { getPostMeta } from '@/lib/feed/postMeta';
 import { getPresenceMap } from '@/lib/presence.server';
 import { selectAd } from '@/lib/ads/selectAd';
 import { interleaveSponsored, AD_INTERVAL } from '@/lib/feed/interleaveSponsored';
 import { filterPostsByCategory } from '@/lib/feed/filterByCategory';
-import { Globe } from 'lucide-react';
+import { Globe, Compass, UserPlus } from 'lucide-react';
+import Link from 'next/link';
+import Button from '@/components/ui/Button';
 import { Prisma } from '@prisma/client';
 
 const PAGE_SIZE = 15;
-// When a category filter is active, posts must be fetched in a larger window
-// and filtered in app code (semantic match, not a DB column), so request more
-// than PAGE_SIZE up front to still have enough left after filtering.
 const CATEGORY_CANDIDATE_WINDOW = 200;
 
 export default async function GlobalFeedPage({
@@ -38,7 +39,12 @@ export default async function GlobalFeedPage({
     include: {
       author: {
         select: {
-          id: true, name: true, avatar: true, title: true, username: true, countryCode: true,
+          id: true,
+          name: true,
+          avatar: true,
+          title: true,
+          username: true,
+          countryCode: true,
           ...(category ? { embedding: true } : {}),
         },
       },
@@ -49,18 +55,27 @@ export default async function GlobalFeedPage({
   });
 
   const matchedPosts = category
-    ? (await filterPostsByCategory(posts as Array<typeof posts[number] & { author: { embedding: number[] } }>, category)).slice(0, PAGE_SIZE)
+    ? (
+        await filterPostsByCategory(
+          posts as Array<(typeof posts)[number] & { author: { embedding: number[] } }>,
+          category
+        )
+      ).slice(0, PAGE_SIZE)
     : posts;
-  // Strip the embedding vector before it reaches the client — it's only
-  // needed server-side for the category similarity match above.
+
   const filteredPosts = matchedPosts.map((post) => {
-    const { embedding: _embedding, ...author } = post.author as typeof post.author & { embedding?: number[] };
+    const { embedding: _embedding, ...author } = post.author as typeof post.author & {
+      embedding?: number[];
+    };
     return { ...post, author };
   });
 
   const postIds = filteredPosts.map((p) => p.id);
   const { likedPostIds, commentsByPostId } = await getPostMeta(postIds, session.user.id);
-  const nextCursor = posts.length === (category ? CATEGORY_CANDIDATE_WINDOW : PAGE_SIZE) ? posts[posts.length - 1].id : null;
+  const nextCursor =
+    posts.length === (category ? CATEGORY_CANDIDATE_WINDOW : PAGE_SIZE)
+      ? posts[posts.length - 1].id
+      : null;
 
   const presenceByUserId = await getPresenceMap(filteredPosts.map((p) => p.author.id));
   const postsWithPresence = filteredPosts.map((post) => ({
@@ -73,38 +88,67 @@ export default async function GlobalFeedPage({
 
   return (
     <div className="max-w-3xl mx-auto w-full min-w-0">
-      <div className="mb-6 md:mb-8">
-        <div className="flex items-center gap-2 mb-1 md:mb-2">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#458B9E]/10">
-            <Globe className="w-4 h-4 text-[#458B9E]" />
+      {/* Top Header */}
+      <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1 md:mb-2">
+            <div className="flex items-center justify-center w-8 h-8 rounded-2xl bg-[#458B9E]/10">
+              <Globe className="w-4 h-4 text-[#458B9E]" />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#333333]">Global Activity</h1>
+            <span className="flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live Stream
+            </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#333333]">Global</h1>
-          <span className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-            Live
-          </span>
+          <p className="text-sm sm:text-base text-gray-600">
+            Public activity, professional updates, and discussions from every Oro on the platform.
+          </p>
         </div>
-        <p className="text-sm sm:text-base text-gray-600">
-          Public activity from every Oro on the platform, wherever they are
-        </p>
+
+        <GlobalHeaderGuide />
       </div>
 
+      {/* Global Post Composer */}
+      <GlobalPostComposer
+        user={{
+          id: session.user.id,
+          name: session.user.name,
+          avatar: session.user.avatar,
+        }}
+      />
+
+      {/* Global Feed Filters */}
       <GlobalFeedFilters />
 
+      {/* Feed Posts */}
       {filteredPosts.length === 0 ? (
-        <Card>
-          <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-              <Globe className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-[#333333] mb-2">
-              {country || category ? 'No matching posts' : 'No public posts yet'}
-            </h3>
-            <p className="text-gray-500 max-w-md mx-auto">
-              {country || category
-                ? 'Try a different country or category filter'
-                : 'Posts marked "Public" from anyone on Orochat will show up here'}
-            </p>
+        <Card className="rounded-2xl border border-gray-200/90 p-8 sm:p-12 text-center bg-white">
+          <div className="w-16 h-16 rounded-2xl bg-[#458B9E]/10 flex items-center justify-center mx-auto mb-4 text-[#458B9E]">
+            <Globe className="w-8 h-8" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-1">
+            {country || category ? 'No matching global posts' : 'No public posts yet'}
+          </h3>
+          <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto mb-6 leading-relaxed">
+            {country || category
+              ? 'Try a different country or category filter above.'
+              : 'Be the first to share a public update with the global network!'}
+          </p>
+
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <Link href="/compass">
+              <Button size="sm" variant="secondary" className="rounded-full text-xs px-4 py-2">
+                <Compass className="w-4 h-4 mr-1.5 text-[#458B9E]" />
+                <span>Explore Compass</span>
+              </Button>
+            </Link>
+            <Link href="/oro/discover">
+              <Button size="sm" className="rounded-full text-xs px-4 py-2 bg-[#458B9E]">
+                <UserPlus className="w-4 h-4 mr-1.5" />
+                <span>Discover Oros</span>
+              </Button>
+            </Link>
           </div>
         </Card>
       ) : (
@@ -126,6 +170,7 @@ export default async function GlobalFeedPage({
         </div>
       )}
 
+      {/* Infinite Load More */}
       <GlobalFeedLoadMore
         initialCursor={nextCursor}
         currentUserId={session.user.id}

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { changePassword } from '@/features/auth/actions';
+import SecuritySettingsHeaderGuide from '@/components/feature/Settings/SecuritySettingsHeaderGuide';
+import HelpTooltip from '@/components/ui/HelpTooltip';
 import { Eye, EyeOff, Lock, KeyRound, ShieldCheck, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 export default function SecuritySettingsPage() {
@@ -37,23 +39,53 @@ export default function SecuritySettingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto w-full min-w-0">
-      <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-1">Security Settings</h1>
-      <p className="text-sm sm:text-base text-gray-500 mb-6 leading-relaxed">
-        Manage your password and protect your Orochat account.
-      </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#333333]">Security Settings</h1>
+            <HelpTooltip
+              title="Security Settings Guide"
+              description="Manage account authentication, password updates, and session security."
+              tips={[
+                'Requires current password for verification before changing password.',
+                'New passwords must be at least 8 characters long.',
+                'Use eye toggles to inspect password entries before submitting.',
+              ]}
+            />
+          </div>
+          <p className="text-sm sm:text-base text-gray-500 leading-relaxed">
+            Manage your password and protect your Orochat account.
+          </p>
+        </div>
+
+        <div className="shrink-0 self-start sm:self-center">
+          <SecuritySettingsHeaderGuide />
+        </div>
+      </div>
 
       <div className="grid md:grid-cols-3 gap-6">
         {/* Form Card */}
         <div className="md:col-span-2">
           <Card padding="none" className="p-4 sm:p-6 shadow-md border-t-4 border-[#458B9E]">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-              <div className="w-10 h-10 rounded-xl bg-[#458B9E] flex items-center justify-center shrink-0 shadow-md">
-                <KeyRound className="w-5 h-5 text-white" />
+            <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#458B9E] flex items-center justify-center shrink-0 shadow-md">
+                  <KeyRound className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-gray-900 text-lg">Change Password</h2>
+                  <p className="text-xs text-gray-500">Update your account password regularly to keep it secure.</p>
+                </div>
               </div>
-              <div>
-                <h2 className="font-bold text-gray-900 text-lg">Change Password</h2>
-                <p className="text-xs text-gray-500">Update your account password regularly to keep it secure.</p>
-              </div>
+              <HelpTooltip
+                title="Password Security"
+                description="Encrypted password verification and updates."
+                tips={[
+                  'Must enter correct current password.',
+                  'Minimum length 8 characters.',
+                ]}
+                align="right"
+              />
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">

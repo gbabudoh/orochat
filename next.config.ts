@@ -14,14 +14,34 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
+        protocol: 'http',
+        hostname: 's3.feendesk.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.feendesk.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.googleusercontent.com',
+        pathname: '/**',
+      },
+      {
         protocol: 'https',
         hostname: 'img.feendesk.com',
         pathname: '/**',
       },
-      // Legacy MinIO host — keep until any stored URLs pointing at it are gone.
       {
         protocol: 'http',
         hostname: '149.102.155.247',
+        port: '9000',
+        pathname: '/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
         port: '9000',
         pathname: '/**',
       },
@@ -39,8 +59,6 @@ const withPWA = withPWAInit({
   },
 });
 
-// Safe no-op without SENTRY_ORG/SENTRY_PROJECT set — only enables source map
-// upload (for readable stack traces) once those env vars are configured.
 export default withSentryConfig(withPWA(nextConfig), {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,

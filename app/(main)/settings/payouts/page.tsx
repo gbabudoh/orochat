@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import Card from '@/components/ui/Card';
 import ConnectPayoutsButton from '@/components/settings/ConnectPayoutsButton';
+import PayoutSettingsHeaderGuide from '@/components/feature/Settings/PayoutSettingsHeaderGuide';
+import HelpTooltip from '@/components/ui/HelpTooltip';
 import { CheckCircle2, Clock, ArrowUpRight, Video, TrendingUp, ShieldCheck, CreditCard } from 'lucide-react';
 
 export default async function PayoutsSettingsPage() {
@@ -21,15 +23,34 @@ export default async function PayoutsSettingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto w-full min-w-0">
-      <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-1">Payment Setup</h1>
-      <p className="text-sm sm:text-base text-gray-500 mb-6 leading-relaxed">
-        Connect a Stripe payout account to receive your share of the monthly ad revenue pool and Flash-Consult bookings. Looking for your earnings? Visit the{' '}
-        <Link href="/payouts" className="text-[#458B9E] hover:underline font-semibold inline-flex items-center gap-0.5">
-          <span>Payouts Dashboard</span>
-          <ArrowUpRight className="w-3.5 h-3.5" />
-        </Link>
-        .
-      </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#333333]">Payment Setup</h1>
+            <HelpTooltip
+              title="Payment Setup Guide"
+              description="Connect a Stripe payout account to receive partner ad revenue share (65%) and video consult earnings (70%)."
+              tips={[
+                'Click Connect Payout Account to start Stripe onboarding.',
+                'Linked bank accounts or debit cards receive direct deposits.',
+                'Visit Payouts Dashboard to view transaction ledger statements.',
+              ]}
+            />
+          </div>
+          <p className="text-sm sm:text-base text-gray-500 leading-relaxed">
+            Connect a Stripe payout account to receive your share of the monthly ad revenue pool and Flash-Consult bookings. Looking for your earnings? Visit the{' '}
+            <Link href="/payouts" className="text-[#458B9E] hover:underline font-semibold inline-flex items-center gap-0.5">
+              <span>Payouts Dashboard</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </Link>
+            .
+          </p>
+        </div>
+
+        <div className="shrink-0 self-start sm:self-center">
+          <PayoutSettingsHeaderGuide />
+        </div>
+      </div>
 
       <div className="space-y-6">
         {/* Main Status Card */}

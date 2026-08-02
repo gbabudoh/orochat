@@ -145,11 +145,9 @@ export default function PostCard({ post, isLiked, comments, index = 0, currentUs
             </p>
 
             {post.imageUrl && (
-              <Image
+              <img
                 src={post.imageUrl}
                 alt="Post image"
-                width={800}
-                height={450}
                 className="w-full rounded-xl mb-3 sm:mb-4 max-h-96 object-cover"
               />
             )}

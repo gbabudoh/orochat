@@ -8,92 +8,128 @@ async function generateUniqueUsername(name: string, email: string) {
     .replace(/[^a-zA-Z0-9_]/g, '')
     .slice(0, 16) || 'User';
 
-  const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  let candidate = `${base}${randomSuffix}`;
+  let candidate = base.toLowerCase();
+  let counter = 1;
 
   while (await prisma.user.findUnique({ where: { username: candidate } })) {
-    const nextSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    candidate = `${base}${nextSuffix}`;
+    candidate = `${base.toLowerCase()}${counter}`;
+    counter++;
   }
   return candidate;
 }
 
+const SEED_ACCOUNTS = [
+  {
+    email: 'godwin@egobas.com',
+    passwordRaw: 'F1r3work$2026',
+    name: 'Godwin Babudoh',
+    title: 'Lead Architect & Founder',
+    company: 'Egobas Solutions',
+    location: 'Lagos, Nigeria',
+    bio: 'Passionate about engineering clean, secure systems.',
+    isPartner: true,
+    currentTES: 3.3,
+  },
+  {
+    email: 'godwinbabs@egobas.com',
+    passwordRaw: 'password101',
+    name: 'Godwin Babs',
+    title: 'Senior Developer',
+    company: 'Egobas Solutions',
+    location: 'Lagos, Nigeria',
+    bio: 'Focused on React, Node.js, and high performance databases.',
+    isPartner: true,
+    currentTES: 2.0,
+  },
+  {
+    email: 'gbabudoh@gmail.com',
+    passwordRaw: 'password101',
+    name: 'Godwin Babudoh',
+    title: 'Software Engineer',
+    company: 'Orochat',
+    location: 'Lagos, Nigeria',
+    bio: 'Building verified professional networks.',
+    isPartner: false,
+    currentTES: 0.0,
+  },
+  {
+    email: 'ruthderi80@gmail.com',
+    passwordRaw: 'password101',
+    name: 'Wuese Ruth Deri',
+    title: 'Product Designer',
+    company: 'Orochat',
+    location: 'Abuja, Nigeria',
+    bio: 'Designing intuitive user interfaces.',
+    isPartner: false,
+    currentTES: 0.0,
+  },
+  {
+    email: 'godwinbabs@hotmail.com',
+    passwordRaw: 'password101',
+    name: 'Amaebi James Babudoh',
+    title: 'Engineering Manager',
+    company: 'Egobas',
+    location: 'London, UK',
+    bio: 'Scaling teams and infrastructure.',
+    isPartner: false,
+    currentTES: 1.0,
+  },
+  {
+    email: 'kolaelebe@aol.com',
+    passwordRaw: 'password101',
+    name: 'Kola Elebe',
+    title: 'Full Stack Engineer',
+    company: 'Orochat',
+    location: 'Lagos, Nigeria',
+    bio: 'Full stack web development & systems.',
+    isPartner: false,
+    currentTES: 1.0,
+  },
+];
+
 async function main() {
-  console.log('Seeding database...');
+  console.log('Seeding database with verified accounts...');
 
-  // Create user-specified accounts if not already present
-  const godwinPassword = await bcrypt.hash('password101', 10);
+  for (const acc of SEED_ACCOUNTS) {
+    const existing = await prisma.user.findUnique({ where: { email: acc.email } });
+    const hashedPassword = await bcrypt.hash(acc.passwordRaw, 10);
 
-  let godwin = await prisma.user.findUnique({ where: { email: 'godwin@egobas.com' } });
-  if (!godwin) {
-    const username = await generateUniqueUsername('Godwin', 'godwin@egobas.com');
-    godwin = await prisma.user.create({
-      data: {
-        email: 'godwin@egobas.com',
-        password: godwinPassword,
-        name: 'Godwin',
-        username,
-        title: 'Lead Architect',
-        company: 'Egobas',
-        location: 'Lagos, Nigeria',
-        bio: 'Passionate about engineering clean, secure systems.',
-        avatar: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23458B9E"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4 0-7 2-7 6v1h14v-1c0-4-3-6-7-6z"/></svg>',
-        isPartner: true,
-      },
-    });
-    console.log('Created godwin@egobas.com seed user');
-  } else {
-    const username = godwin.username || await generateUniqueUsername('Godwin', 'godwin@egobas.com');
-    const avatar = godwin.avatar && godwin.avatar.startsWith('http')
-      ? godwin.avatar
-      : 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23458B9E"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4 0-7 2-7 6v1h14v-1c0-4-3-6-7-6z"/></svg>';
-    godwin = await prisma.user.update({
-      where: { email: 'godwin@egobas.com' },
-      data: {
-        name: 'Godwin',
-        avatar,
-        username,
-        isPartner: true,
-      }
-    });
-    console.log('Updated godwin@egobas.com seed user with handle:', godwin.username);
+    if (existing) {
+      const username = existing.username || (await generateUniqueUsername(acc.name, acc.email));
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          name: acc.name,
+          username,
+          password: hashedPassword,
+          emailVerified: existing.emailVerified ?? new Date(),
+          isPartner: acc.isPartner,
+          currentTES: acc.currentTES,
+        },
+      });
+      console.log(`Updated ${acc.email}`);
+    } else {
+      const username = await generateUniqueUsername(acc.name, acc.email);
+      await prisma.user.create({
+        data: {
+          email: acc.email,
+          password: hashedPassword,
+          emailVerified: new Date(),
+          name: acc.name,
+          username,
+          title: acc.title,
+          company: acc.company,
+          location: acc.location,
+          bio: acc.bio,
+          isPartner: acc.isPartner,
+          currentTES: acc.currentTES,
+        },
+      });
+      console.log(`Created ${acc.email}`);
+    }
   }
 
-  let godwinbabs = await prisma.user.findUnique({ where: { email: 'godwinbabs@egobas.com' } });
-  if (!godwinbabs) {
-    const username = await generateUniqueUsername('Godwin Babs', 'godwinbabs@egobas.com');
-    godwinbabs = await prisma.user.create({
-      data: {
-        email: 'godwinbabs@egobas.com',
-        password: godwinPassword,
-        name: 'Godwin Babs',
-        username,
-        title: 'Senior Developer',
-        company: 'Egobas Solutions',
-        location: 'Lagos, Nigeria',
-        bio: 'Focused on React, Node.js, and high performance databases.',
-        avatar: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%235BA3B8"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4 0-7 2-7 6v1h14v-1c0-4-3-6-7-6z"/></svg>',
-        isPartner: true,
-      },
-    });
-    console.log('Created godwinbabs@egobas.com seed user');
-  } else {
-    const username = godwinbabs.username || await generateUniqueUsername('Godwin Babs', 'godwinbabs@egobas.com');
-    const avatar = godwinbabs.avatar && godwinbabs.avatar.startsWith('http')
-      ? godwinbabs.avatar
-      : 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%235BA3B8"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4 0-7 2-7 6v1h14v-1c0-4-3-6-7-6z"/></svg>';
-    godwinbabs = await prisma.user.update({
-      where: { email: 'godwinbabs@egobas.com' },
-      data: {
-        name: 'Godwin Babs',
-        avatar,
-        username,
-        isPartner: true,
-      }
-    });
-    console.log('Updated godwinbabs@egobas.com seed user with handle:', godwinbabs.username);
-  }
-  console.log('Seeding completed!');
+  console.log('Seeding completed successfully!');
 }
 
 main()
@@ -104,4 +140,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

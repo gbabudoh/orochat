@@ -10,6 +10,8 @@ import Link from 'next/link';
 import { COUNTRIES, countryCodeToFlag, getCountryName, getFlagImageUrl } from '@/lib/constants/countries';
 import { PROFESSIONAL_CATEGORIES } from '@/lib/constants/categories';
 import UserAvatar from '@/components/ui/UserAvatar';
+import ExploreHeaderGuide from '@/components/feature/Explore/ExploreHeaderGuide';
+import HelpTooltip from '@/components/ui/HelpTooltip';
 import dynamic from 'next/dynamic';
 
 const MapExplore = dynamic(
@@ -190,13 +192,30 @@ export default function ExplorePage() {
         )}
 
         {/* Header */}
-        <div className="text-center mb-8 sm:mb-10">
-          <h1 className="text-2xl sm:text-4xl font-bold text-[#333333] mb-2 sm:mb-3">
-            Explore Professionals
-          </h1>
-          <p className="text-xs sm:text-base text-gray-500 max-w-2xl mx-auto leading-relaxed">
-            Discover and connect with professionals across industries. Search by name, company, or browse by category.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 sm:mb-10 text-center sm:text-left">
+          <div>
+            <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+              <h1 className="text-2xl sm:text-4xl font-bold text-[#333333]">
+                Explore Professionals
+              </h1>
+              <HelpTooltip
+                title="Explore Discovery Guide"
+                description="Search and connect with verified professionals across industries worldwide."
+                tips={[
+                  'Search by name, company, or job title across the network.',
+                  'Filter by 240+ countries or browse by 22 industry categories.',
+                  'Toggle between List View and Map View to locate global talent.',
+                ]}
+              />
+            </div>
+            <p className="text-xs sm:text-base text-gray-500 max-w-2xl leading-relaxed">
+              Discover and connect with professionals across industries. Search by name, company, or browse by category.
+            </p>
+          </div>
+
+          <div className="shrink-0 self-center sm:self-auto">
+            <ExploreHeaderGuide />
+          </div>
         </div>
 
         {/* Search Bar */}

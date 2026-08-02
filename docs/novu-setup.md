@@ -105,7 +105,7 @@ Triggered when a user sends a connection request.
 |--------------|----------------------------------------------------|
 | Subject      | `{{payload.senderName}} sent you a connection request` |
 | Body         | `You have a new connection request waiting`        |
-| Redirect URL | `/connections`                                     |
+| Redirect URL | `/oro`                                              |
 
 ---
 
@@ -130,7 +130,7 @@ Triggered when a user accepts a connection request.
 |--------------|--------------------------------------------------------|
 | Subject      | `{{payload.userName}} accepted your connection request` |
 | Body         | `You are now connected with {{payload.userName}}`      |
-| Redirect URL | `/connections`                                         |
+| Redirect URL | `/oro`                                                  |
 
 ---
 

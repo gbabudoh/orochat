@@ -6,6 +6,8 @@ import { Building2, Kanban, MessageSquare, Users2, Wallet } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import OrganizationCard from '@/components/feature/Oroslate/OrganizationCard';
 import NewOrganizationModal from '@/components/feature/Oroslate/NewOrganizationModal';
+import OroslateHeaderGuide from '@/components/feature/Oroslate/OroslateHeaderGuide';
+import HelpTooltip from '@/components/ui/HelpTooltip';
 import type { getOrganizationsForUser } from '@/features/oroslate/actions';
 
 interface OrganizationListProps {
@@ -22,12 +24,24 @@ export default function OrganizationList({ currentUserId, organizations, referra
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Oroslate</h1>
-          <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Oroslate</h1>
+            <HelpTooltip
+              title="Oroslate Corporate Suite Guide"
+              description="Enterprise organization management, paid team Slates, and affiliate earnings."
+              tips={[
+                'Click New Organization to establish a corporate workspace with a 14-day Pro trial.',
+                'Convert chat threads into org-owned project Slates with Kanban boards.',
+                'Manage team seat licenses and external Oro collaborators.',
+              ]}
+            />
+          </div>
+          <p className="text-sm text-gray-500 leading-relaxed">
             Turn your Orochat connections into paid team workspaces
           </p>
         </div>
-        <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
+        <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-center">
+          <OroslateHeaderGuide />
           <Link
             href="/oroslate/affiliate"
             className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-700 hover:text-[#458B9E] bg-gray-100/80 hover:bg-gray-100 rounded-lg ring-1 ring-gray-200/70 transition-all"

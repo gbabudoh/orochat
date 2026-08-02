@@ -1,8 +1,5 @@
 import * as Minio from 'minio';
 
-// S3_ENDPOINT is a full URL (e.g. https://s3.feendesk.com) rather than a bare
-// host, so pull the hostname/port/protocol Minio.Client actually wants out of
-// it — tolerating a bare host:port value too, in case it's ever set that way.
 function parseS3Endpoint() {
   const raw = process.env.S3_ENDPOINT || 'http://localhost:9000';
   const withProtocol = /^https?:\/\//i.test(raw)
@@ -28,16 +25,12 @@ const minioClient = new Minio.Client({
   pathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
 });
 
-/**
- * Ensures the bucket exists, creating it if it doesn't.
- */
 export async function ensureBucket() {
   const exists = await minioClient.bucketExists(bucketName);
   if (!exists) {
     await minioClient.makeBucket(bucketName, region);
   }
 
-  // Always ensure the bucket policy is set for public read access to objects
   const policy = {
     Version: '2012-10-17',
     Statement: [
@@ -58,28 +51,40 @@ export async function ensureBucket() {
 }
 
 /**
- * Uploads a file to S3-compatible storage.
+ * Uploads a file to S3 storage with automatic 3.5s timeout & Base64 fallback
+ * to prevent upload hanging when S3 endpoint is unreachable.
  */
 export async function uploadFile(
   file: Buffer,
   fileName: string,
   contentType: string
 ): Promise<string> {
-  await ensureBucket();
+  const uploadPromise = (async () => {
+    await ensureBucket();
 
-  const objectName = `${Date.now()}-${fileName}`;
+    const objectName = `${Date.now()}-${fileName}`;
 
-  await minioClient.putObject(bucketName, objectName, file, file.length, {
-    'Content-Type': contentType,
-  });
+    await minioClient.putObject(bucketName, objectName, file, file.length, {
+      'Content-Type': contentType,
+    });
 
-  const baseUrl = (process.env.S3_ENDPOINT || 'http://localhost:9000').replace(/\/+$/, '');
-  return `${baseUrl}/${bucketName}/${encodeURIComponent(objectName)}`;
+    const baseUrl = (process.env.S3_ENDPOINT || 'http://localhost:9000').replace(/\/+$/, '');
+    return `${baseUrl}/${bucketName}/${encodeURIComponent(objectName)}`;
+  })();
+
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Storage connection timeout')), 3500)
+  );
+
+  try {
+    return await Promise.race([uploadPromise, timeoutPromise]);
+  } catch (error) {
+    console.warn('S3 cloud storage unreachable or timed out, falling back to data URL:', error);
+    const base64 = file.toString('base64');
+    return `data:${contentType};base64,${base64}`;
+  }
 }
 
-/**
- * Deletes a file from S3-compatible storage.
- */
 export async function deleteFile(objectName: string) {
   try {
     await minioClient.removeObject(bucketName, objectName);

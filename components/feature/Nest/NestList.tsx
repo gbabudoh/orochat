@@ -5,6 +5,8 @@ import NestCard from '@/components/feature/Nest/NestCard';
 import NewNestButton from '@/components/feature/Nest/NewNestButton';
 import { getNests, archiveNest, unarchiveNest, deleteNest } from '@/features/nest/actions';
 import { FolderGit2, FolderArchive, Kanban, FileText, Video } from 'lucide-react';
+import NestHeaderGuide from '@/components/feature/Nest/NestHeaderGuide';
+import HelpTooltip from '@/components/ui/HelpTooltip';
 
 type NestListItem = Awaited<ReturnType<typeof getNests>>[number];
 
@@ -49,12 +51,24 @@ export default function NestList({ currentUserId, initialNests }: NestListProps)
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#333333]">OroNest</h1>
-          <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#333333]">OroNest</h1>
+            <HelpTooltip
+              title="OroNest Workspace Guide"
+              description="Dedicated project hubs uniting Kanban task boards, shared notes, and team video calls."
+              tips={[
+                'Click + New OroNest to create a collaborative workspace.',
+                'Manage project deliverables with Kanban task columns.',
+                'Collaborate on rich-text specs with Tiptap notes.',
+              ]}
+            />
+          </div>
+          <p className="text-sm text-gray-500 leading-relaxed">
             Project workspaces for you and your Oros
           </p>
         </div>
-        <div className="shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          <NestHeaderGuide />
           <NewNestButton currentUserId={currentUserId} />
         </div>
       </div>
