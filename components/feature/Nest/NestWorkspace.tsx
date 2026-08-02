@@ -114,7 +114,7 @@ export default function NestWorkspace({ nestId, nestName, ownerId, conversationI
 
       {activeTab === 'board' && <TaskBoard nestId={nestId} currentUserId={currentUserId} members={members} />}
       {activeTab === 'notes' && <NotesEditor nestId={nestId} currentUserId={currentUserId} />}
-      {activeTab === 'chat' && <ChatRoom conversationId={conversationId} currentUserId={currentUserId} slateId={nestId} />}
+      {activeTab === 'chat' && <ChatRoom conversationId={conversationId} currentUserId={currentUserId} />}
     </div>
   );
 }

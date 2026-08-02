@@ -13,7 +13,6 @@
     "seed:stripe-prices": "tsx scripts/seed-stripe-prices.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.115.0",
     "@ducanh2912/next-pwa": "^10.2.9",
     "@livekit/components-react": "^2.9.21",
     "@livekit/components-styles": "^1.2.0",

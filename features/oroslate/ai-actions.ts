@@ -1,66 +1,6 @@
 'use server';
 
-import { z } from 'zod';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { db } from '@/lib/db';
-import { getAnthropicClient, ORO_AI_MODEL } from '@/lib/ai/anthropic';
-
-const ChannelSummarySchema = z.object({
-  summary_text: z.string(),
-  decisions_made: z.array(z.string()),
-  action_items: z.array(z.object({ assignee: z.string(), task: z.string() })),
-});
-
-/**
- * "Catch Up" — summarizes the last 50 messages of a chat into a short
- * overview, decisions made, and action items a member can turn into Slate
- * tasks. Restricted to members of the conversation, same as reading its
- * messages via the Collab feature.
- */
-export async function generateChannelSummary(conversationId: string, userId: string) {
-  try {
-    const participant = await db.conversationParticipant.findUnique({
-      where: { conversationId_userId: { conversationId, userId } },
-    });
-    if (!participant) return { error: 'Not a participant of this chat' };
-
-    const messages = await db.message.findMany({
-      where: { conversationId },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      include: { sender: { select: { name: true } } },
-    });
-    if (messages.length === 0) return { error: 'No recent messages to summarize' };
-
-    const transcript = messages
-      .reverse()
-      .map((m) => `${m.sender.name}: ${m.content}`)
-      .join('\n');
-
-    const response = await getAnthropicClient().messages.parse({
-      model: ORO_AI_MODEL,
-      max_tokens: 2048,
-      output_config: { effort: 'low', format: zodOutputFormat(ChannelSummarySchema) },
-      messages: [
-        {
-          role: 'user',
-          content: `You are an AI collaboration assistant inside Orochat. Summarize the following chat transcript into a short factual overview, any concrete decisions that were made, and any action items with who owns them. Only use information present in the transcript — never invent names, decisions, or tasks.\n\nTranscript:\n${transcript}`,
-        },
-      ],
-    });
-
-    if (!response.parsed_output) return { error: 'Failed to generate summary' };
-    return { success: true, summary: response.parsed_output };
-  } catch (error) {
-    const err = error as Error;
-    return { error: err.message || 'Failed to generate summary' };
-  }
-}
-
-const WarmIntroSchema = z.object({
-  draft_text: z.string(),
-  common_ground_used: z.array(z.string()),
-});
 
 const TONE_INSTRUCTIONS = {
   professional: 'Professional and courteous',
@@ -70,10 +10,38 @@ const TONE_INSTRUCTIONS = {
 
 export type WarmIntroTone = keyof typeof TONE_INSTRUCTIONS;
 
+const MAX_LENGTH = 300;
+
+function roleClause(person: { title: string | null; company: string | null }): string {
+  if (person.title && person.company) return `, ${person.title} at ${person.company}`;
+  if (person.title) return `, ${person.title}`;
+  if (person.company) return ` at ${person.company}`;
+  return '';
+}
+
+function formatList(items: string[]): string {
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
+}
+
+function groundClause(
+  sharedCompassNames: string[],
+  recipient: { title: string | null; company: string | null }
+): string {
+  if (sharedCompassNames.length > 0) {
+    return `We're both part of ${formatList(sharedCompassNames)} on Orochat.`;
+  }
+  if (recipient.title) {
+    return `I noticed you're ${recipient.title}${recipient.company ? ` at ${recipient.company}` : ''} and wanted to reach out.`;
+  }
+  return "I wanted to reach out and connect.";
+}
+
 /**
  * Drafts a short connection-request note from one Oro to another, grounded
  * only in real shared context (mutual Compass communities, titles) fetched
- * from the DB — the model is explicitly told not to fabricate common ground.
+ * from the DB. Template-based — no LLM call.
  */
 export async function generateWarmIntro(senderId: string, recipientId: string, tone: WarmIntroTone) {
   try {
@@ -100,26 +68,25 @@ export async function generateWarmIntro(senderId: string, recipientId: string, t
       .filter((c) => c.count === 2)
       .map((c) => c.name);
 
-    const response = await getAnthropicClient().messages.parse({
-      model: ORO_AI_MODEL,
-      max_tokens: 1024,
-      output_config: { effort: 'low', format: zodOutputFormat(WarmIntroSchema) },
-      messages: [
-        {
-          role: 'user',
-          content: `Draft a short (under 300 characters) connection-request note from ${sender.name} to ${recipient.name} on Orochat, a professional network for verified Oros.
+    const ground = groundClause(sharedCompassNames, recipient);
+    const intro = `Hi ${recipient.name}, I'm ${sender.name}${roleClause(sender)}.`;
 
-Sender: ${sender.title ?? 'no title given'}${sender.company ? ` at ${sender.company}` : ''}. ${sender.bio ?? ''}
-Recipient: ${recipient.title ?? 'no title given'}${recipient.company ? ` at ${recipient.company}` : ''}. ${recipient.bio ?? ''}
-Shared Compass communities: ${sharedCompassNames.join(', ') || 'none found'}
+    let body: string;
+    if (tone === 'casual') {
+      body = `${intro} ${ground} Would love to connect!`;
+    } else if (tone === 'pitch') {
+      body = `${intro} ${ground} I think there could be a great opportunity for us to collaborate — would you be open to a quick chat?`;
+    } else {
+      body = `${intro} ${ground} I'd like to connect and learn more about your work.`;
+    }
 
-Tone: ${TONE_INSTRUCTIONS[tone]}. Only reference common ground that's actually listed above — never invent shared communities, skills, or interests that weren't provided. If there is no real common ground, write a warm note based on the recipient's role instead.`,
-        },
-      ],
-    });
-
-    if (!response.parsed_output) return { error: 'Failed to draft a warm intro' };
-    return { success: true, draft: response.parsed_output };
+    return {
+      success: true,
+      draft: {
+        draft_text: body.slice(0, MAX_LENGTH),
+        common_ground_used: sharedCompassNames,
+      },
+    };
   } catch (error) {
     const err = error as Error;
     return { error: err.message || 'Failed to draft a warm intro' };
