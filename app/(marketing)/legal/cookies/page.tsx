@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import type { Metadata } from 'next';
 
@@ -10,6 +11,14 @@ export const metadata: Metadata = {
 export default function CookiesPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <Link
+        href="/"
+        className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-[#458B9E] transition-colors mb-5 group"
+      >
+        <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+        Back to Home
+      </Link>
+
       <Card padding="lg">
         <h1 className="text-4xl font-bold text-[#333333] mb-6">Cookie Policy</h1>
         <div className="prose prose-lg max-w-none text-gray-600">
