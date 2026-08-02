@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
+import { useCookieConsent } from '@/components/consent/CookieConsentProvider';
 
 const MATOMO_URL = '//matomo.feendesk.com/';
 const MATOMO_SITE_ID = '4';
@@ -40,6 +41,12 @@ function MatomoRouteTracker() {
 }
 
 export default function MatomoAnalytics() {
+  const { consent } = useCookieConsent();
+
+  // The Matomo <Script> is never rendered — so never injected/loaded — until
+  // analytics consent is explicitly granted.
+  if (!consent?.analytics) return null;
+
   return (
     <>
       <Script id="matomo-analytics" strategy="afterInteractive">

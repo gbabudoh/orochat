@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import type { Metadata } from 'next';
 
@@ -34,6 +35,13 @@ export default function PrivacyPage() {
           <p className="mb-4">
             We implement appropriate technical and organizational measures to protect your personal
             information against unauthorized access, alteration, disclosure, or destruction.
+          </p>
+
+          <h2 className="text-2xl font-semibold text-[#333333] mt-8 mb-4">Cookies</h2>
+          <p className="mb-4">
+            We use cookies for essential site functionality and, only with your consent, for analytics.
+            See our <Link href="/legal/cookies" className="text-[#458B9E] hover:underline">Cookie Policy</Link> for
+            full details and how to change your preference at any time.
           </p>
 
           <h2 className="text-2xl font-semibold text-[#333333] mt-8 mb-4">Contact Us</h2>

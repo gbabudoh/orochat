@@ -1,11 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { formatRelativeTime, formatMessagePreview } from '@/lib/utils/formatters';
-import { MessageSquare, Users, Search, X, UserPlus, Compass } from 'lucide-react';
+import {
+  MessageSquare,
+  Users,
+  Search,
+  X,
+  UserPlus,
+  Compass,
+  Video,
+  Phone,
+  Loader2,
+  Building,
+} from 'lucide-react';
 import UserAvatar from '@/components/ui/UserAvatar';
 import Button from '@/components/ui/Button';
+import { getOrCreateDirectConversation } from '@/features/collab/actions';
 
 interface Member {
   id: string;
@@ -29,20 +42,104 @@ interface Conversation {
   unreadCount: number;
 }
 
-interface CollabThreadListProps {
-  conversations: Conversation[];
+interface SearchedOro {
+  id: string;
+  name: string;
+  username: string | null;
+  avatar: string | null;
+  title: string | null;
+  company: string | null;
+  presence: 'online' | 'offline';
+  isConnected: boolean;
+  existingConversationId: string | null;
 }
 
-export default function CollabThreadList({ conversations }: CollabThreadListProps) {
+interface CollabThreadListProps {
+  conversations: Conversation[];
+  currentUserId: string;
+}
+
+export default function CollabThreadList({ conversations, currentUserId }: CollabThreadListProps) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [tabFilter, setTabFilter] = useState<'all' | 'direct' | 'group'>('all');
+  const [searchedOros, setSearchedOros] = useState<SearchedOro[]>([]);
+  const [isSearchingOros, setIsSearchingOros] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  // Perform live server search for Oros when typing query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchedOros([]);
+      setIsSearchingOros(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingOros(true);
+      try {
+        const response = await fetch(`/api/collab/search-oros?q=${encodeURIComponent(searchQuery.trim())}`);
+        const data = await response.json();
+        if (data.success) {
+          setSearchedOros(data.oros || []);
+        }
+      } catch (error) {
+        console.error('Failed to search Oros:', error);
+      } finally {
+        setIsSearchingOros(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleStartChat = async (oro: SearchedOro) => {
+    if (oro.existingConversationId) {
+      router.push(`/collab/${oro.existingConversationId}`);
+      return;
+    }
+
+    setActionLoadingId(`${oro.id}-chat`);
+    try {
+      // Find or create conversation
+      const res = await getOrCreateDirectConversation(currentUserId, oro.id);
+      if (res.success && res.conversationId) {
+        router.push(`/collab/${res.conversationId}`);
+      } else {
+        alert(res.error || 'Unable to start chat thread');
+      }
+    } catch {
+      alert('Failed to initiate conversation');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleStartCall = async (oro: SearchedOro, callType: 'video' | 'voice') => {
+    setActionLoadingId(`${oro.id}-${callType}`);
+    try {
+      if (oro.existingConversationId) {
+        router.push(`/collab/${oro.existingConversationId}?autoCall=${callType}`);
+        return;
+      }
+
+      const res = await getOrCreateDirectConversation(currentUserId, oro.id);
+      if (res.success && res.conversationId) {
+        router.push(`/collab/${res.conversationId}?autoCall=${callType}`);
+      } else {
+        alert(res.error || 'Unable to start call');
+      }
+    } catch {
+      alert('Failed to initiate call');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   const filteredConversations = conversations.filter((c) => {
-    // Tab filter
     if (tabFilter === 'direct' && c.isGroup) return false;
     if (tabFilter === 'group' && !c.isGroup) return false;
 
-    // Search filter
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase().trim();
     const groupName = c.name?.toLowerCase() || '';
@@ -55,68 +152,184 @@ export default function CollabThreadList({ conversations }: CollabThreadListProp
   const groupCount = conversations.filter((c) => c.isGroup).length;
 
   return (
-    <div className="space-y-4">
-      {/* Controls Bar: Search & Filter Tabs (rendered when conversations exist or search is active) */}
-      {conversations.length > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
-          {/* Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+    <div className="space-y-5">
+      {/* Search & Controls Header Bar */}
+      <div className="bg-gradient-to-r from-gray-50 via-white to-gray-50 p-4 rounded-2xl border border-gray-200/90 shadow-2xs space-y-3">
+        <div className="relative flex items-center w-full">
+          <Search className="w-4 h-4 text-[#458B9E] absolute left-3.5 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search active chats or find Oros by name, title, or company..."
+            className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 text-xs sm:text-sm transition-all outline-none bg-white text-gray-900 placeholder:text-gray-400 font-medium"
+          />
+          {searchQuery && (
             <button
               type="button"
-              onClick={() => setTabFilter('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                tabFilter === 'all'
-                  ? 'bg-[#458B9E] text-white shadow-xs'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
             >
-              All Chats ({conversations.length})
+              <X className="w-4 h-4" />
             </button>
-            <button
-              type="button"
-              onClick={() => setTabFilter('direct')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                tabFilter === 'direct'
-                  ? 'bg-[#458B9E] text-white shadow-xs'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Direct 1-on-1 ({directCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => setTabFilter('group')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                tabFilter === 'group'
-                  ? 'bg-purple-600 text-white shadow-xs'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Group Threads ({groupCount})
-            </button>
-          </div>
+          )}
+        </div>
 
-          {/* Search Box */}
-          <div className="relative flex items-center min-w-[240px]">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search conversations by name…"
-              className="w-full pl-9 pr-8 py-1.5 rounded-xl border border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 text-xs transition-all outline-none"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <button
+            type="button"
+            onClick={() => setTabFilter('all')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              tabFilter === 'all'
+                ? 'bg-[#458B9E] text-white shadow-2xs'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            All Chats ({conversations.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setTabFilter('direct')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              tabFilter === 'direct'
+                ? 'bg-[#458B9E] text-white shadow-2xs'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Direct 1-on-1 ({directCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setTabFilter('group')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              tabFilter === 'group'
+                ? 'bg-purple-600 text-white shadow-2xs'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Group Threads ({groupCount})
+          </button>
+        </div>
+      </div>
+
+      {/* Searched Oros Directory Section (shown when user types in search box) */}
+      {searchQuery.trim() !== '' && (
+        <div className="bg-gray-50/70 border border-gray-200/90 rounded-2xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+              <UserPlus className="w-4 h-4 text-[#458B9E]" />
+              <span>Oros Network Directory ({searchedOros.length})</span>
+            </h3>
+            {isSearchingOros && (
+              <span className="text-xs text-gray-400 flex items-center gap-1">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#458B9E]" /> Searching...
+              </span>
             )}
           </div>
+
+          {searchedOros.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {searchedOros.map((oro) => (
+                <div
+                  key={oro.id}
+                  className="p-3.5 bg-white rounded-xl border border-gray-200/80 shadow-2xs flex flex-col justify-between gap-3 hover:border-[#458B9E]/50 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <UserAvatar
+                      userId={oro.id}
+                      name={oro.name}
+                      avatarUrl={oro.avatar}
+                      size="md"
+                      presence={oro.presence}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="font-bold text-gray-900 truncate text-sm">{oro.name}</h4>
+                        {oro.isConnected && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">
+                            Oro
+                          </span>
+                        )}
+                      </div>
+                      {oro.title && <p className="text-xs text-gray-500 truncate">{oro.title}</p>}
+                      {oro.company && (
+                        <p className="text-[11px] text-gray-400 truncate flex items-center gap-1 mt-0.5">
+                          <Building className="w-3 h-3 text-gray-400 shrink-0" />
+                          <span>{oro.company}</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Dock: Chat | Video Call | Voice Call */}
+                  <div className="flex items-center gap-1.5 pt-2 border-t border-gray-100">
+                    {/* Chat Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleStartChat(oro)}
+                      disabled={actionLoadingId === `${oro.id}-chat`}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold bg-[#458B9E]/10 text-[#458B9E] hover:bg-[#458B9E] hover:text-white transition-all cursor-pointer border border-[#458B9E]/20"
+                    >
+                      {actionLoadingId === `${oro.id}-chat` ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <MessageSquare className="w-3.5 h-3.5" />
+                      )}
+                      <span>Chat</span>
+                    </button>
+
+                    {/* Video Call Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleStartCall(oro, 'video')}
+                      disabled={actionLoadingId === `${oro.id}-video`}
+                      className="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer border border-emerald-200/80"
+                      title="Start 1-on-1 Video Call"
+                    >
+                      {actionLoadingId === `${oro.id}-video` ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Video className="w-3.5 h-3.5" />
+                      )}
+                      <span className="hidden sm:inline">Video Call</span>
+                    </button>
+
+                    {/* Voice Call Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleStartCall(oro, 'voice')}
+                      disabled={actionLoadingId === `${oro.id}-voice`}
+                      className="inline-flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white transition-all cursor-pointer border border-purple-200/80"
+                      title="Start Voice Call"
+                    >
+                      {actionLoadingId === `${oro.id}-voice` ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Phone className="w-3.5 h-3.5" />
+                      )}
+                      <span className="hidden sm:inline">Voice Call</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            !isSearchingOros && (
+              <p className="text-xs text-gray-500 italic py-2 text-center">
+                No matching Oros found in directory for &quot;{searchQuery}&quot;.
+              </p>
+            )
+          )}
         </div>
+      )}
+
+      {/* Conversations List Header */}
+      {searchQuery.trim() !== '' && (
+        <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5 pt-1">
+          <MessageSquare className="w-4 h-4 text-[#458B9E]" />
+          <span>Active Conversation Threads ({filteredConversations.length})</span>
+        </h3>
       )}
 
       {/* Conversations List */}
@@ -196,12 +409,12 @@ export default function CollabThreadList({ conversations }: CollabThreadListProp
 
           <div className="max-w-sm space-y-1">
             <h3 className="text-base font-bold text-gray-900">
-              {conversations.length === 0 ? 'No conversations yet' : 'No matching chats found'}
+              {conversations.length === 0 ? 'No conversations yet' : 'No matching active chats'}
             </h3>
             <p className="text-xs text-gray-500 leading-relaxed">
               {conversations.length === 0
-                ? 'Start connecting with verified Oros or create a team group thread to begin messaging.'
-                : 'Try clearing your search query or switching filter tabs.'}
+                ? 'Start typing an Oro name in the search box above to chat, video call, or voice call!'
+                : 'Try checking the Oros Network Directory results above or clear your search query.'}
             </p>
           </div>
 

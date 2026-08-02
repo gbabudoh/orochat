@@ -8,6 +8,10 @@ import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 import MatomoAnalytics from "@/components/analytics/MatomoAnalytics";
 import ClarityAnalytics from "@/components/analytics/ClarityAnalytics";
 import PwaZoomPrevention from "@/components/layout/PwaZoomPrevention";
+import { CookieConsentProvider } from "@/components/consent/CookieConsentProvider";
+import CookieBanner from "@/components/consent/CookieBanner";
+import CookiePreferencesModal from "@/components/consent/CookiePreferencesModal";
+import CookieSettingsButton from "@/components/consent/CookieSettingsButton";
 
 
 const geistSans = Geist({
@@ -119,14 +123,19 @@ export default function RootLayout({
       >
         <PwaZoomPrevention />
         <Toaster richColors position="top-right" />
-        <QueryProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </QueryProvider>
-        <GoogleAnalytics />
-        <MatomoAnalytics />
-        <ClarityAnalytics />
+        <CookieConsentProvider>
+          <QueryProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </QueryProvider>
+          <GoogleAnalytics />
+          <MatomoAnalytics />
+          <ClarityAnalytics />
+          <CookieBanner />
+          <CookiePreferencesModal />
+          <CookieSettingsButton />
+        </CookieConsentProvider>
       </body>
     </html>
   );

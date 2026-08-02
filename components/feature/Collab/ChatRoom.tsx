@@ -17,6 +17,7 @@ import { Send, UserPlus, Users, Video, PhoneOff, FileText, ChevronDown, History,
 import { ChatMessage, AgreementData, AGREEMENT_MESSAGE_PREFIX } from '@/types/chat';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { LiveKitRoom, VideoConference } from '@livekit/components-react';
 import '@livekit/components-styles';
 
@@ -81,9 +82,20 @@ export default function ChatRoom({ conversationId, currentUserId, showConvertToS
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const [liveKitToken, setLiveKitToken] = useState<string | null>(null);
   const [liveKitUrl, setLiveKitUrl] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const autoCallParam = searchParams.get('autoCall');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const knownIds = useRef<Set<string>>(new Set());
   const hasFiredCutoff = useRef(false);
+  const hasFiredAutoCall = useRef(false);
+
+  // Auto-trigger call when autoCall query param is present
+  useEffect(() => {
+    if (autoCallParam && !isLoading && !hasFiredAutoCall.current) {
+      hasFiredAutoCall.current = true;
+      startVideoCall();
+    }
+  }, [autoCallParam, isLoading]);
 
   useEffect(() => {
     let active = true;
@@ -241,10 +253,13 @@ export default function ChatRoom({ conversationId, currentUserId, showConvertToS
         setLiveKitToken(data.token);
         setLiveKitUrl(data.wsUrl);
       } else {
-        console.error('Failed to get LiveKit token:', data.error);
+        alert(data.error || 'LiveKit server token could not be generated.');
+        endVideoCall();
       }
     } catch (err) {
       console.error('Failed to fetch LiveKit token:', err);
+      alert('Unable to connect to video call server. Please check your network connection.');
+      endVideoCall();
     }
   };
 
@@ -252,7 +267,9 @@ export default function ChatRoom({ conversationId, currentUserId, showConvertToS
     setIsDurationMenuOpen(false);
     const result = await startCall(conversationId, currentUserId, durationSeconds);
     if (!('success' in result) || !result.success) {
-      console.error('Failed to start call:', 'error' in result ? result.error : undefined);
+      const errorMsg = 'error' in result ? result.error : 'Failed to start call session';
+      alert(errorMsg);
+      console.error('Failed to start call:', errorMsg);
       return;
     }
     const message = await getMessages(conversationId, currentUserId);

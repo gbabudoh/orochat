@@ -46,7 +46,7 @@ export default async function CollabPage() {
 
       {/* Conversations Container */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200/90 p-2 sm:p-6">
-        <CollabThreadList conversations={conversations} />
+        <CollabThreadList conversations={conversations} currentUserId={session.user.id} />
       </div>
     </div>
   );
