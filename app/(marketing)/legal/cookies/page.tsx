@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import Card from '@/components/ui/Card';
+import ManageCookiePreferencesButton from '@/components/consent/ManageCookiePreferencesButton';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -25,9 +26,13 @@ export default function CookiesPage() {
           <p className="mb-4">Last updated: {new Date().toLocaleDateString()}</p>
           <p className="mb-6">
             This Cookie Policy explains what cookies Orochat uses, why, and how you can control them. You
-            can change your choice at any time using the cookie icon in the bottom-left corner of the
-            screen, or by clicking &ldquo;Manage Preferences&rdquo; on the cookie banner.
+            can change your choice at any time from this page, or by clicking &ldquo;Manage
+            Preferences&rdquo; on the cookie banner when it first appears.
           </p>
+
+          <div className="mb-2">
+            <ManageCookiePreferencesButton />
+          </div>
 
           <h2 className="text-2xl font-semibold text-[#333333] mt-8 mb-4">What are cookies?</h2>
           <p className="mb-4">

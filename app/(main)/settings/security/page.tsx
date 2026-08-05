@@ -6,7 +6,8 @@ import Button from '@/components/ui/Button';
 import { changePassword } from '@/features/auth/actions';
 import SecuritySettingsHeaderGuide from '@/components/feature/Settings/SecuritySettingsHeaderGuide';
 import HelpTooltip from '@/components/ui/HelpTooltip';
-import { Eye, EyeOff, Lock, KeyRound, ShieldCheck, CheckCircle2, ShieldAlert } from 'lucide-react';
+import ManageCookiePreferencesButton from '@/components/consent/ManageCookiePreferencesButton';
+import { Eye, EyeOff, Lock, KeyRound, ShieldCheck, CheckCircle2, ShieldAlert, Cookie } from 'lucide-react';
 
 export default function SecuritySettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -217,6 +218,18 @@ export default function SecuritySettingsPage() {
                 <span>Never share your password with anyone</span>
               </li>
             </ul>
+          </Card>
+
+          {/* Privacy & Cookies */}
+          <Card padding="none" className="p-4 sm:p-5 border border-gray-200 mt-6">
+            <div className="flex items-center gap-2.5 mb-3 text-[#458B9E]">
+              <Cookie className="w-5 h-5" />
+              <h3 className="font-bold text-gray-900 text-base">Privacy &amp; Cookies</h3>
+            </div>
+            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed mb-4">
+              Review or change which optional analytics cookies Orochat is allowed to set on your device.
+            </p>
+            <ManageCookiePreferencesButton />
           </Card>
         </div>
       </div>

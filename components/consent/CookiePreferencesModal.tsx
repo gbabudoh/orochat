@@ -65,8 +65,8 @@ export default function CookiePreferencesModal() {
   return (
     <Modal isOpen={isPreferencesOpen} onClose={closePreferences} title="Manage Cookie Preferences" size="md">
       <p className="text-sm text-gray-500 mb-2 leading-relaxed">
-        Choose which cookies Orochat can use. You can change this anytime from the cookie icon in the
-        corner of the screen.
+        Choose which cookies Orochat can use. You can change this anytime from the Cookie Policy page or
+        your Security settings.
       </p>
 
       <div className="mt-2">

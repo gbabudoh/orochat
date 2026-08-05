@@ -11,7 +11,6 @@ import PwaZoomPrevention from "@/components/layout/PwaZoomPrevention";
 import { CookieConsentProvider } from "@/components/consent/CookieConsentProvider";
 import CookieBanner from "@/components/consent/CookieBanner";
 import CookiePreferencesModal from "@/components/consent/CookiePreferencesModal";
-import CookieSettingsButton from "@/components/consent/CookieSettingsButton";
 
 
 const geistSans = Geist({
@@ -134,7 +133,6 @@ export default function RootLayout({
           <ClarityAnalytics />
           <CookieBanner />
           <CookiePreferencesModal />
-          <CookieSettingsButton />
         </CookieConsentProvider>
       </body>
     </html>
