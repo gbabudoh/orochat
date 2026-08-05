@@ -34,7 +34,7 @@ export default function OrgDashboard({ currentUserId, organization, slates }: Or
         className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-[#458B9E] transition-colors mb-5 group"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-        All Organizations
+        All Organisations
       </Link>
 
       {/* Header Section */}
@@ -98,7 +98,7 @@ export default function OrgDashboard({ currentUserId, organization, slates }: Or
 
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2.5">Create your first Slate</h2>
           <p className="text-sm text-gray-500 max-w-md mx-auto mb-8 leading-relaxed">
-            A Slate is a dedicated project workspace — task board, notes, and team chat — for this organization.
+            A Slate is a dedicated project workspace — task board, notes, and team chat — for this organisation.
           </p>
 
           <Button size="lg" onClick={() => setIsModalOpen(true)} className="shadow-md shadow-[#458B9E]/20">

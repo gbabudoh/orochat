@@ -24,7 +24,7 @@ export default function NewOrganizationModal({ isOpen, onClose, currentUserId, r
   const handleCreate = async () => {
     setError('');
     if (!name.trim()) {
-      setError('Organization name is required');
+      setError('Organisation name is required');
       return;
     }
 
@@ -36,7 +36,7 @@ export default function NewOrganizationModal({ isOpen, onClose, currentUserId, r
         onClose();
         router.push(`/oroslate/org/${result.organizationId}`);
       } else {
-        setError(result.error || 'Failed to create organization');
+        setError(result.error || 'Failed to create organisation');
       }
     } finally {
       setIsSubmitting(false);
@@ -44,15 +44,15 @@ export default function NewOrganizationModal({ isOpen, onClose, currentUserId, r
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Create an Oroslate Organization">
+    <Modal isOpen={isOpen} onClose={onClose} title="Create an Oroslate Organisation">
       <Input
-        label="Organization name"
+        label="Organisation name"
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="e.g., Apex Design Ltd"
       />
       <p className="text-xs text-gray-500 mt-2">
-        Your organization starts on a 14-day free Pro Slate trial — no card required. You can create Slates,
+        Your organisation starts on a 14-day free Pro Slate trial — no card required. You can create Slates,
         invite your team, and upgrade any time before the trial ends.
       </p>
 
@@ -63,7 +63,7 @@ export default function NewOrganizationModal({ isOpen, onClose, currentUserId, r
           Cancel
         </Button>
         <Button type="button" onClick={handleCreate} isLoading={isSubmitting}>
-          Create Organization
+          Create Organisation
         </Button>
       </div>
     </Modal>

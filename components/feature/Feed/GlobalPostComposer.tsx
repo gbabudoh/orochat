@@ -55,10 +55,10 @@ export default function GlobalPostComposer({ user }: Props) {
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200/90 p-4 sm:p-5 shadow-sm mb-6 space-y-3">
-      <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-        <div className="flex items-center gap-2">
-          <Globe className="w-4 h-4 text-[#458B9E]" />
-          <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-gray-100">
+        <div className="flex items-center gap-2 min-w-0">
+          <Globe className="w-4 h-4 text-[#458B9E] shrink-0" />
+          <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider truncate">
             Share Global Update
           </h3>
           <HelpTooltip
@@ -71,8 +71,8 @@ export default function GlobalPostComposer({ user }: Props) {
             ]}
           />
         </div>
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 whitespace-nowrap shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
           <span>Public to All Oros</span>
         </span>
       </div>

@@ -59,19 +59,21 @@ export default function MyOrosClient({ connections, presenceByUserId }: Props) {
       <div className="bg-white rounded-2xl border border-gray-200/80 p-4 shadow-sm space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between gap-4">
         {/* Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          <HelpTooltip
-            title="Connection Directory Filters"
-            description="Filter verified connections by real-time presence or bookable consultation availability."
-            tips={[
-              'Click Online Now to find connections currently active for instant messaging.',
-              'Click Bookable Consults to view Oros offering paid video sessions.',
-              'Use the search box to find connections by name, company, or title.',
-            ]}
-          />
+          <div className="shrink-0">
+            <HelpTooltip
+              title="Connection Directory Filters"
+              description="Filter verified connections by real-time presence or bookable consultation availability."
+              tips={[
+                'Click Online Now to find connections currently active for instant messaging.',
+                'Click Bookable Consults to view Oros offering paid video sessions.',
+                'Use the search box to find connections by name, company, or title.',
+              ]}
+            />
+          </div>
           <button
             type="button"
             onClick={() => setFilterTab('all')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               filterTab === 'all'
                 ? 'bg-[#458B9E] text-white shadow-sm'
                 : 'text-gray-600 hover:bg-gray-100'
@@ -82,7 +84,7 @@ export default function MyOrosClient({ connections, presenceByUserId }: Props) {
           <button
             type="button"
             onClick={() => setFilterTab('online')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               filterTab === 'online'
                 ? 'bg-emerald-600 text-white shadow-sm'
                 : 'text-gray-600 hover:bg-gray-100'
@@ -93,7 +95,7 @@ export default function MyOrosClient({ connections, presenceByUserId }: Props) {
           <button
             type="button"
             onClick={() => setFilterTab('consults')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               filterTab === 'consults'
                 ? 'bg-purple-600 text-white shadow-sm'
                 : 'text-gray-600 hover:bg-gray-100'

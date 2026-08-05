@@ -30,11 +30,11 @@ export default function ProfileViewAnalytics({ stats }: { stats: ProfileViewStat
       <div className="lg:col-span-5 space-y-6">
         {/* Total Views Card */}
         <Card padding="none" className="p-5 relative overflow-hidden border-t-4 border-[#458B9E] rounded-2xl shadow-md bg-gradient-to-br from-white via-gray-50/30 to-white">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-[#458B9E]/5 rounded-bl-full flex items-center justify-center pointer-events-none">
-            <Eye className="w-10 h-10 text-[#458B9E]/20 translate-x-2 -translate-y-2" />
+          <div className="absolute -top-3 -right-3 w-16 h-16 bg-[#458B9E]/5 rounded-full flex items-center justify-center pointer-events-none">
+            <Eye className="w-7 h-7 text-[#458B9E]/20 translate-x-1 -translate-y-1" />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[#458B9E] flex items-center justify-center shadow-md">
                 <Eye className="w-5 h-5 text-white" />

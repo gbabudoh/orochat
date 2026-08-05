@@ -72,9 +72,9 @@ export default async function ConsultsSettingsPage() {
                   <AlertCircle className="w-5 h-5 text-amber-600" />
                 </div>
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-bold text-amber-950 text-base sm:text-lg">Payout Account Setup Required</h3>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-200/80 text-amber-900 uppercase tracking-wider">
+                    <span className="inline-flex items-center justify-center shrink-0 whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-200/80 text-amber-900 uppercase tracking-wider">
                       Action Needed
                     </span>
                   </div>

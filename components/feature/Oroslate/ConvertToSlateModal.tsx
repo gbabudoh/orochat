@@ -48,7 +48,7 @@ export default function ConvertToSlateModal({
   const handleConvert = async () => {
     setError('');
     if (!organizationId) {
-      setError('Choose an organization first');
+      setError('Choose an organisation first');
       return;
     }
     if (!name.trim()) {
@@ -73,20 +73,20 @@ export default function ConvertToSlateModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Convert this chat into an Oroslate Project" size="sm">
       {isLoading ? (
-        <p className="text-sm text-gray-500 py-4 text-center">Loading your organizations…</p>
+        <p className="text-sm text-gray-500 py-4 text-center">Loading your organisations…</p>
       ) : organizations.length === 0 ? (
         <div className="text-center py-4">
           <p className="text-sm text-gray-500 mb-4">
-            You need an Oroslate organization before converting a chat into a project workspace.
+            You need an Oroslate organisation before converting a chat into a project workspace.
           </p>
           <Link href="/oroslate" onClick={onClose}>
-            <Button type="button">Create an Organization</Button>
+            <Button type="button">Create an Organisation</Button>
           </Link>
         </div>
       ) : (
         <>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-[#333333] mb-1.5">Organization</label>
+            <label className="block text-sm font-medium text-[#333333] mb-1.5">Organisation</label>
             <select
               value={organizationId}
               onChange={(e) => setOrganizationId(e.target.value)}

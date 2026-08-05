@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { HelpCircle, Info, Sparkles } from 'lucide-react';
 
 interface Props {
@@ -10,15 +10,48 @@ interface Props {
   align?: 'left' | 'right' | 'center';
 }
 
+const POPOVER_WIDTH_MOBILE = 288; // w-72
+const POPOVER_WIDTH_DESKTOP = 320; // sm:w-80
+const VIEWPORT_MARGIN = 16;
+
 export default function HelpTooltip({ title, description, tips, align = 'left' }: Props) {
   const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
-  const alignClass =
-    align === 'right'
-      ? 'right-0'
-      : align === 'center'
-        ? 'left-1/2 -translate-x-1/2'
-        : 'left-0';
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updatePosition = () => {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+
+      const rect = trigger.getBoundingClientRect();
+      const width = window.innerWidth >= 640 ? POPOVER_WIDTH_DESKTOP : POPOVER_WIDTH_MOBILE;
+
+      let left =
+        align === 'right'
+          ? rect.right - width
+          : align === 'center'
+            ? rect.left + rect.width / 2 - width / 2
+            : rect.left;
+
+      // Clamp so the popover always stays fully on-screen, regardless of
+      // where the trigger sits (e.g. after a long heading).
+      const maxLeft = window.innerWidth - width - VIEWPORT_MARGIN;
+      left = Math.min(Math.max(left, VIEWPORT_MARGIN), Math.max(maxLeft, VIEWPORT_MARGIN));
+
+      setCoords({ top: rect.bottom + 8, left });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen, align]);
 
   return (
     <div
@@ -27,19 +60,21 @@ export default function HelpTooltip({ title, description, tips, align = 'left' }
       onMouseLeave={() => setIsOpen(false)}
     >
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-semibold text-[#458B9E] bg-[#458B9E]/10 hover:bg-[#458B9E]/20 transition-all cursor-pointer border border-[#458B9E]/20"
+        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-semibold text-[#458B9E] bg-[#458B9E]/10 hover:bg-[#458B9E]/20 transition-all cursor-pointer border border-[#458B9E]/20 outline-none focus-visible:ring-2 focus-visible:ring-[#458B9E]/40"
         title="Hover or tap for usage instructions"
       >
         <HelpCircle className="w-3 h-3 text-[#458B9E]" />
         <span>Guide</span>
       </button>
 
-      {/* Pop-over Card */}
-      {isOpen && (
+      {/* Pop-over Card — fixed + measured so it always stays within the viewport */}
+      {isOpen && coords && (
         <div
-          className={`absolute top-full mt-2 w-72 sm:w-80 bg-white rounded-2xl border border-gray-200 p-4 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150 ${alignClass}`}
+          style={{ top: coords.top, left: coords.left }}
+          className="fixed w-72 sm:w-80 bg-white rounded-2xl border border-gray-200 p-4 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150"
         >
           <div className="flex items-start gap-2.5 mb-2">
             <div className="p-1.5 rounded-lg bg-[#458B9E]/10 text-[#458B9E] shrink-0 mt-0.5">

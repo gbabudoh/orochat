@@ -74,7 +74,7 @@ export default function UpgradePlans({
       <div className="text-center mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-2">Choose your Oroslate plan</h1>
         <p className="text-sm text-gray-500 max-w-xl mx-auto">
-          A dedicated workspace, real-time team chat, and project boards — priced per organization plus seats.
+          A dedicated workspace, real-time team chat, and project boards — priced per organisation plus seats.
         </p>
 
         {hasPaidSubscription && (

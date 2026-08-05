@@ -28,9 +28,9 @@ export default function OrganizationList({ currentUserId, organizations, referra
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Oroslate</h1>
             <HelpTooltip
               title="Oroslate Corporate Suite Guide"
-              description="Enterprise organization management, paid team Slates, and affiliate earnings."
+              description="Enterprise organisation management, paid team Slates, and affiliate earnings."
               tips={[
-                'Click New Organization to establish a corporate workspace with a 14-day Pro trial.',
+                'Click New Organisation to establish a corporate workspace with a 14-day Pro trial.',
                 'Convert chat threads into org-owned project Slates with Kanban boards.',
                 'Manage team seat licenses and external Oro collaborators.',
               ]}
@@ -40,7 +40,7 @@ export default function OrganizationList({ currentUserId, organizations, referra
             Turn your Orochat connections into paid team workspaces
           </p>
         </div>
-        <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-center">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 sm:self-center">
           <OroslateHeaderGuide />
           <Link
             href="/oroslate/affiliate"
@@ -51,7 +51,7 @@ export default function OrganizationList({ currentUserId, organizations, referra
           </Link>
           <Button onClick={() => setIsModalOpen(true)}>
             <Building2 className="w-4 h-4 mr-1.5" />
-            New Organization
+            New Organisation
           </Button>
         </div>
       </div>
@@ -83,10 +83,11 @@ export default function OrganizationList({ currentUserId, organizations, referra
             </div>
           </div>
 
-          <div className="inline-block">
+          <div className="flex justify-center">
             <Button size="lg" onClick={() => setIsModalOpen(true)}>
               <Building2 className="w-4 h-4 mr-1.5" />
-              Create Your First Organization
+              <span className="sm:hidden">Create Organisation</span>
+              <span className="hidden sm:inline">Create Your First Organisation</span>
             </Button>
           </div>
         </div>

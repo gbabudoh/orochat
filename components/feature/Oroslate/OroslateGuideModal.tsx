@@ -20,13 +20,13 @@ const GUIDE_SECTIONS = [
   {
     icon: Building2,
     color: 'bg-blue-50 text-blue-600 border-blue-200',
-    title: '1. Corporate Organizations & Paid Workspaces',
+    title: '1. Corporate Organisations & Paid Workspaces',
     description:
       'Oroslate enables businesses to create org-owned paid workspaces with centralized billing and member management.',
     tips: [
-      'Click "+ New Organization" to establish a business entity.',
-      'Every new organization starts with a 14-day free Pro trial — no card required.',
-      'Organization owners have full control over billing and workspace security.',
+      'Click "+ New Organisation" to establish a business entity.',
+      'Every new organisation starts with a 14-day free Pro trial — no card required.',
+      'Organisation owners have full control over billing and workspace security.',
     ],
   },
   {
@@ -38,7 +38,7 @@ const GUIDE_SECTIONS = [
     tips: [
       'Convert 1-on-1 chats into paid org Slates with one click.',
       'Assign task owners, manage project milestones, and maintain centralized assets.',
-      'Slates remain preserved and owned by the organization.',
+      'Slates remain preserved and owned by the organisation.',
     ],
   },
   {
@@ -75,7 +75,7 @@ export default function OroslateGuideModal({ isOpen, onClose }: Props) {
           <div>
             <h4 className="font-bold text-gray-900 text-sm">Oroslate Business & Corporate Suite</h4>
             <p className="mt-0.5 text-gray-600 leading-relaxed">
-              This guide details enterprise organization setup, org-owned project Slates, seat management, and affiliate revenue streams for business leaders.
+              This guide details enterprise organisation setup, org-owned project Slates, seat management, and affiliate revenue streams for business leaders.
             </p>
           </div>
         </div>

@@ -104,17 +104,17 @@ export default function AffiliatePortal({ currentUserId, compasses, summary, bas
         </div>
       )}
 
-      <h2 className="text-lg font-semibold text-[#333333] mb-3">Referred organizations</h2>
+      <h2 className="text-lg font-semibold text-[#333333] mb-3">Referred organisations</h2>
       {summary.referredOrganizations.length === 0 ? (
         <Card padding="sm" className="mb-8">
-          <p className="text-sm text-gray-500">No organizations referred yet — share a link above to get started.</p>
+          <p className="text-sm text-gray-500">No organisations referred yet — share a link above to get started.</p>
         </Card>
       ) : (
         <div className="overflow-x-auto mb-8 rounded-xl border border-gray-200">
           <table className="w-full text-sm">
             <thead className="bg-[#F0F3F7] text-left text-xs font-semibold text-gray-500 uppercase">
               <tr>
-                <th className="px-4 py-2.5">Organization</th>
+                <th className="px-4 py-2.5">Organisation</th>
                 <th className="px-4 py-2.5">Tier</th>
                 <th className="px-4 py-2.5">Seats</th>
                 <th className="px-4 py-2.5">Status</th>
@@ -145,7 +145,7 @@ export default function AffiliatePortal({ currentUserId, compasses, summary, bas
             <thead className="bg-[#F0F3F7] text-left text-xs font-semibold text-gray-500 uppercase">
               <tr>
                 <th className="px-4 py-2.5">Date</th>
-                <th className="px-4 py-2.5">Organization</th>
+                <th className="px-4 py-2.5">Organisation</th>
                 <th className="px-4 py-2.5">Amount</th>
                 <th className="px-4 py-2.5">Status</th>
               </tr>
