@@ -8,11 +8,10 @@ import AddParticipantsModal from '@/components/feature/Collab/AddParticipantsMod
 import NewAgreementModal from '@/components/feature/Collab/NewAgreementModal';
 import CallHistoryModal from '@/components/feature/Collab/CallHistoryModal';
 import BookingBanner from '@/components/feature/Collab/BookingBanner';
-import ConvertToSlateModal from '@/components/feature/Oroslate/ConvertToSlateModal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import UserAvatar from '@/components/ui/UserAvatar';
-import { Send, UserPlus, Users, Video, PhoneOff, FileText, ChevronDown, History, ArrowLeft, Sparkles } from 'lucide-react';
+import { Send, UserPlus, Users, Video, PhoneOff, FileText, ChevronDown, History, ArrowLeft } from 'lucide-react';
 import { ChatMessage, AgreementData, AGREEMENT_MESSAGE_PREFIX } from '@/types/chat';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -52,10 +51,9 @@ const PRESENCE_LABEL: Record<'online' | 'offline', string> = {
 interface ChatRoomProps {
   conversationId: string;
   currentUserId: string;
-  showConvertToSlate?: boolean;
 }
 
-export default function ChatRoom({ conversationId, currentUserId, showConvertToSlate = false }: ChatRoomProps) {
+export default function ChatRoom({ conversationId, currentUserId }: ChatRoomProps) {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [agreementsById, setAgreementsById] = useState<Record<string, AgreementData>>({});
@@ -68,7 +66,6 @@ export default function ChatRoom({ conversationId, currentUserId, showConvertToS
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAgreementOpen, setIsAgreementOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [isConvertOpen, setIsConvertOpen] = useState(false);
   const [isDurationMenuOpen, setIsDurationMenuOpen] = useState(false);
   const [durationMenuPos, setDurationMenuPos] = useState<{ top: number; left: number } | null>(null);
   const callButtonRef = useRef<HTMLDivElement>(null);
@@ -461,18 +458,6 @@ export default function ChatRoom({ conversationId, currentUserId, showConvertToS
               <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
               <span><span className="sm:hidden">Add</span><span className="hidden sm:inline">Add people</span></span>
             </Button>
-            {showConvertToSlate && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsConvertOpen(true)}
-                className="text-[#458B9E] hover:text-[#3a7585] hover:bg-white shrink-0 whitespace-nowrap px-2! py-1! sm:px-3! sm:py-1.5! text-xs"
-              >
-                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
-                <span><span className="sm:hidden">Slate</span><span className="hidden sm:inline">Convert to Slate</span></span>
-              </Button>
-            )}
           </div>
         </div>
 
@@ -636,17 +621,6 @@ export default function ChatRoom({ conversationId, currentUserId, showConvertToS
         conversationId={conversationId}
         currentUserId={currentUserId}
       />
-
-      {showConvertToSlate && (
-        <ConvertToSlateModal
-          isOpen={isConvertOpen}
-          onClose={() => setIsConvertOpen(false)}
-          currentUserId={currentUserId}
-          conversationId={conversationId}
-          defaultName={headerTitle}
-        />
-      )}
-
     </div>
   );
 }

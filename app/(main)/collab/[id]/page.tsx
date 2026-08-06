@@ -18,14 +18,7 @@ export default async function CollabConversationPage({ params }: { params: Promi
   });
 
   if (existingParticipant) {
-    const existingNest = await db.nest.findUnique({ where: { conversationId: id }, select: { id: true } });
-    return (
-      <ChatRoom
-        conversationId={id}
-        currentUserId={session.user.id}
-        showConvertToSlate={!existingNest}
-      />
-    );
+    return <ChatRoom conversationId={id} currentUserId={session.user.id} />;
   }
 
   const conversationExists = await db.conversation.findUnique({ where: { id } });

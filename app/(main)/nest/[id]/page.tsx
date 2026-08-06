@@ -1,4 +1,5 @@
 import { getServerSession } from 'next-auth';
+import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { getNest } from '@/features/nest/actions';
 import NestWorkspace from '@/components/feature/Nest/NestWorkspace';
@@ -21,6 +22,13 @@ export default async function NestDetailPage({ params }: { params: Promise<{ id:
         </Card>
       </div>
     );
+  }
+
+  // An Oroslate Slate is a Nest with organizationId set — it must only be
+  // reached through /oroslate, where trial/subscription locking actually
+  // applies. Serving it here would silently bypass that paywall.
+  if (result.nest.organizationId) {
+    redirect(`/oroslate/slate/${id}`);
   }
 
   return (
