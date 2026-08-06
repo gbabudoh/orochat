@@ -25,7 +25,7 @@ export default async function SlatePage({ params }: { params: Promise<{ slateId:
     );
   }
 
-  const { nest, organization } = result;
+  const { nest, organization, channels } = result;
   const subscription = organization.subscription;
   const isTrialing = subscription?.status === 'TRIALING';
   const isLocked = isTrialing && subscription?.trialEndsAt ? new Date(subscription.trialEndsAt) < new Date() : false;
@@ -65,6 +65,7 @@ export default async function SlatePage({ params }: { params: Promise<{ slateId:
           expiresAt={nest.expiresAt}
           backHref={`/oroslate/org/${organization.id}`}
           backLabel={organization.name}
+          channels={channels}
         />
       )}
     </div>

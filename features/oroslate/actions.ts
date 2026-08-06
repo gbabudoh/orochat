@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { createNest, getNest } from '@/features/nest/actions';
 import { TIER_LIMITS, TRIAL_DURATION_DAYS } from '@/lib/oroslate/tiers';
+import { embedText, cosineSimilarity } from '@/lib/ai/embeddings';
 import type { SlateTier } from '@prisma/client';
 
 const MEMBER_SELECT = {
@@ -121,6 +122,31 @@ export async function getOrganization(organizationId: string, userId: string) {
   }
 }
 
+/**
+ * Public company-page data — intentionally no assertOrgMember gate, and only
+ * presentation-safe fields (no Slate names/content, no billing/subscription
+ * data). Members are included because their individual profiles are already
+ * public at /oro/[id]; nothing new is exposed by listing them here.
+ */
+export async function getOrganizationPublic(slug: string) {
+  const organization = await db.organization.findUnique({
+    where: { slug },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      logo: true,
+      description: true,
+      industry: true,
+      website: true,
+      members: { select: { user: { select: MEMBER_SELECT } } },
+      _count: { select: { slates: true } },
+    },
+  });
+  if (!organization) return { error: 'Organization not found' };
+  return { success: true, organization };
+}
+
 export async function getSlatesForOrganization(organizationId: string, userId: string) {
   await assertOrgMember(organizationId, userId);
 
@@ -145,13 +171,19 @@ export async function getSlate(slateId: string, userId: string) {
   }
   if (!nestResult.nest.organizationId) return { error: 'This workspace is not an Oroslate Slate' };
 
-  const organization = await db.organization.findUnique({
-    where: { id: nestResult.nest.organizationId },
-    include: { subscription: true },
-  });
+  const [organization, channels] = await Promise.all([
+    db.organization.findUnique({
+      where: { id: nestResult.nest.organizationId },
+      include: { subscription: true },
+    }),
+    db.channel.findMany({
+      where: { nestId: slateId, archived: false },
+      orderBy: { createdAt: 'asc' },
+    }),
+  ]);
   if (!organization) return { error: 'Organization not found' };
 
-  return { success: true, nest: nestResult.nest, organization };
+  return { success: true, nest: nestResult.nest, organization, channels };
 }
 
 async function assertSlateCapacity(organizationId: string) {
@@ -165,6 +197,60 @@ async function assertSlateCapacity(organizationId: string) {
   const limits = TIER_LIMITS[tier];
   if (org.slates.length >= limits.maxBoards) {
     throw new Error(`Your ${limits.label} plan allows up to ${limits.maxBoards} active Slates. Upgrade to add more.`);
+  }
+}
+
+async function assertChannelCapacity(nestId: string, organizationId: string) {
+  const [org, channelCount] = await Promise.all([
+    db.organization.findUnique({ where: { id: organizationId }, include: { subscription: true } }),
+    db.channel.count({ where: { nestId, archived: false } }),
+  ]);
+  if (!org) throw new Error('Organization not found');
+
+  const tier: SlateTier = org.subscription?.tier ?? 'STARTER';
+  const limits = TIER_LIMITS[tier];
+  // +1 accounts for the always-present "General" channel created alongside the Slate itself.
+  if (channelCount + 1 >= limits.maxChannels) {
+    throw new Error(`Your ${limits.label} plan allows up to ${limits.maxChannels} channels. Upgrade to add more.`);
+  }
+}
+
+/**
+ * Adds a new chat channel to an existing Slate. Channels are Oroslate-only —
+ * the free Nest feature has no concept of them. Every current Slate member
+ * is added as a participant of the channel's backing conversation up front;
+ * addNestMembers() fans new members out to it afterward.
+ */
+export async function createChannel(nestId: string, actingUserId: string, name: string) {
+  if (!name.trim()) return { error: 'Channel name is required' };
+
+  try {
+    const nest = await db.nest.findUnique({ where: { id: nestId }, include: { members: true } });
+    if (!nest) return { error: 'Slate not found' };
+    if (!nest.organizationId) return { error: 'Channels are only available on Oroslate Slates' };
+    if (!nest.members.some((m) => m.userId === actingUserId)) return { error: 'Not a member of this Slate' };
+
+    await assertChannelCapacity(nestId, nest.organizationId);
+
+    const channel = await db.$transaction(async (tx) => {
+      const conversation = await tx.conversation.create({
+        data: {
+          isGroup: true,
+          name: name.trim(),
+          participants: { create: nest.members.map((m) => ({ userId: m.userId })) },
+        },
+      });
+
+      return tx.channel.create({
+        data: { nestId, name: name.trim(), conversationId: conversation.id },
+      });
+    });
+
+    revalidatePath(`/oroslate/slate/${nestId}`);
+    return { success: true, channel };
+  } catch (error) {
+    const err = error as Error;
+    return { error: err.message || 'Failed to create channel' };
   }
 }
 
@@ -190,7 +276,10 @@ export async function createSlate(
       return { error: nestResult.error ?? 'Failed to create Slate' };
     }
 
-    await db.nest.update({ where: { id: nestResult.nestId }, data: { organizationId } });
+    const nest = await db.nest.update({ where: { id: nestResult.nestId }, data: { organizationId } });
+    await db.channel.create({
+      data: { nestId: nest.id, name: 'General', conversationId: nest.conversationId },
+    });
 
     revalidatePath('/oroslate');
     return { success: true, slateId: nestResult.nestId };
@@ -234,6 +323,9 @@ export async function convertConversationToSlate(
         organizationId,
         members: { create: participants.map((p) => ({ userId: p.userId })) },
       },
+    });
+    await db.channel.create({
+      data: { nestId: nest.id, name: 'General', conversationId: nest.conversationId },
     });
 
     revalidatePath('/oroslate');
@@ -290,5 +382,122 @@ export async function inviteToOrganization(
   } catch (error) {
     const err = error as Error;
     return { error: err.message || 'Failed to invite member' };
+  }
+}
+
+/** Admin-only: edits the public company-page fields. */
+export async function updateOrganizationProfile(
+  organizationId: string,
+  actingUserId: string,
+  input: { description?: string; industry?: string; website?: string }
+) {
+  try {
+    await assertOrgAdmin(organizationId, actingUserId);
+
+    await db.organization.update({
+      where: { id: organizationId },
+      data: {
+        description: input.description?.trim() || null,
+        industry: input.industry?.trim() || null,
+        website: input.website?.trim() || null,
+      },
+    });
+
+    revalidatePath('/oroslate');
+    return { success: true };
+  } catch (error) {
+    const err = error as Error;
+    return { error: err.message || 'Failed to update organisation profile' };
+  }
+}
+
+const TALENT_MIN_SIMILARITY = 0.4;
+const TALENT_CANDIDATE_LIMIT = 250;
+
+const TALENT_SELECT = {
+  id: true,
+  name: true,
+  avatar: true,
+  title: true,
+  company: true,
+  location: true,
+  bio: true,
+  verifiedOrosCount: true,
+  currentTES: true,
+  embedding: true,
+} as const;
+
+/**
+ * Talent search for an Organization — same hybrid keyword+embedding scoring
+ * as /api/explore/search (reusing the same local, non-LLM embedding model),
+ * scoped to verified Oros not already in this org.
+ */
+export async function searchTalentForOrg(organizationId: string, actingUserId: string, query: string) {
+  try {
+    await assertOrgMember(organizationId, actingUserId);
+
+    const org = await db.organization.findUnique({
+      where: { id: organizationId },
+      include: { members: { select: { userId: true } } },
+    });
+    if (!org) return { error: 'Organization not found' };
+    const existingMemberIds = org.members.map((m) => m.userId);
+
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return { success: true, results: [] };
+
+    const where = {
+      isPaused: false,
+      id: { notIn: existingMemberIds },
+    };
+
+    const [keywordCandidates, generalCandidates] = await Promise.all([
+      db.user.findMany({
+        where: {
+          ...where,
+          OR: [
+            { name: { contains: trimmedQuery, mode: 'insensitive' as const } },
+            { title: { contains: trimmedQuery, mode: 'insensitive' as const } },
+            { company: { contains: trimmedQuery, mode: 'insensitive' as const } },
+            { bio: { contains: trimmedQuery, mode: 'insensitive' as const } },
+            { location: { contains: trimmedQuery, mode: 'insensitive' as const } },
+          ],
+        },
+        select: TALENT_SELECT,
+        take: TALENT_CANDIDATE_LIMIT,
+      }),
+      db.user.findMany({
+        where,
+        select: TALENT_SELECT,
+        take: TALENT_CANDIDATE_LIMIT,
+        orderBy: [{ isPartner: 'desc' }, { currentTES: 'desc' }, { verifiedOrosCount: 'desc' }],
+      }),
+    ]);
+
+    const candidatesMap = new Map<string, (typeof keywordCandidates)[number]>();
+    generalCandidates.forEach((u) => candidatesMap.set(u.id, u));
+    keywordCandidates.forEach((u) => candidatesMap.set(u.id, u));
+
+    const queryVector = await embedText(trimmedQuery);
+    const lowerQuery = trimmedQuery.toLowerCase();
+
+    const results = Array.from(candidatesMap.values())
+      .map((user) => {
+        const exactMatch = [user.name, user.title, user.company, user.bio, user.location].some((field) =>
+          field?.toLowerCase().includes(lowerQuery)
+        );
+        const score = exactMatch ? 1.0 : user.embedding.length ? cosineSimilarity(queryVector, user.embedding) : 0;
+        const { embedding: _embedding, ...rest } = user;
+        return { user: rest, score };
+      })
+      .filter(({ score }) => score >= TALENT_MIN_SIMILARITY)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20)
+      .map(({ user }) => user);
+
+    return { success: true, results };
+  } catch (error) {
+    const err = error as Error;
+    return { error: err.message || 'Failed to search talent' };
   }
 }

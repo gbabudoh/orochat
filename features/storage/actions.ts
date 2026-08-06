@@ -16,8 +16,8 @@ export async function uploadImage(formData: FormData) {
     const fileName = file.name;
     const contentType = file.type;
 
-    const url = await uploadFile(buffer, fileName, contentType);
-    
+    const { url } = await uploadFile(buffer, fileName, contentType);
+
     return { success: true, url };
   } catch (error) {
     console.error('Upload error:', error);

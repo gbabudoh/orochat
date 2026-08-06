@@ -27,6 +27,7 @@ export default function NewTaskModal({ isOpen, onClose, nestId, currentUserId, m
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
+  const [startDate, setStartDate] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -36,6 +37,7 @@ export default function NewTaskModal({ isOpen, onClose, nestId, currentUserId, m
     setTitle('');
     setDescription('');
     setAssigneeId('');
+    setStartDate('');
     setDueDate('');
     setError('');
   }, [isOpen]);
@@ -53,6 +55,7 @@ export default function NewTaskModal({ isOpen, onClose, nestId, currentUserId, m
         title,
         description: description || undefined,
         assigneeId: assigneeId || undefined,
+        startDate: startDate || undefined,
         dueDate: dueDate || undefined,
       });
       if (result.success && result.task) {
@@ -85,7 +88,7 @@ export default function NewTaskModal({ isOpen, onClose, nestId, currentUserId, m
         />
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4 mt-4">
+      <div className="grid sm:grid-cols-3 gap-4 mt-4">
         <div>
           <label className="block text-sm font-medium text-[#333333] mb-1.5">Assignee</label>
           <select
@@ -99,6 +102,12 @@ export default function NewTaskModal({ isOpen, onClose, nestId, currentUserId, m
             ))}
           </select>
         </div>
+        <Input
+          label="Start date (optional)"
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+        />
         <Input
           label="Due date"
           type="date"

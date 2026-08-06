@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { FolderKanban, ListChecks, StickyNote, MessageSquare, ArchiveRestore, ArrowLeft } from 'lucide-react';
+import { FolderKanban, ListChecks, StickyNote, MessageSquare, Paperclip, ArchiveRestore, ArrowLeft } from 'lucide-react';
 import TaskBoard from '@/components/feature/Nest/TaskBoard';
 import NotesEditor from '@/components/feature/Nest/NotesEditor';
+import FileList from '@/components/feature/Nest/FileList';
 import ChatRoom from '@/components/feature/Collab/ChatRoom';
+import ChannelSwitcher from '@/components/feature/Nest/ChannelSwitcher';
+import NewChannelModal from '@/components/feature/Nest/NewChannelModal';
 import Button from '@/components/ui/Button';
 import { unarchiveNest } from '@/features/nest/actions';
 import { useRouter } from 'next/navigation';
@@ -15,6 +18,12 @@ interface Member {
   name: string;
   avatar: string | null;
   title: string | null;
+}
+
+interface Channel {
+  id: string;
+  name: string;
+  conversationId: string;
 }
 
 interface NestWorkspaceProps {
@@ -28,22 +37,32 @@ interface NestWorkspaceProps {
   expiresAt: Date | string | null;
   backHref?: string;
   backLabel?: string;
+  /** Oroslate Slates only — a free Nest never passes this, so it keeps today's single-chat layout. */
+  channels?: Channel[];
 }
 
-type Tab = 'board' | 'notes' | 'chat';
+type Tab = 'board' | 'notes' | 'files' | 'chat';
 
 const TABS: { id: Tab; label: string; icon: typeof ListChecks }[] = [
   { id: 'board', label: 'Board', icon: ListChecks },
   { id: 'notes', label: 'Notes', icon: StickyNote },
+  { id: 'files', label: 'Files', icon: Paperclip },
   { id: 'chat', label: 'Chat', icon: MessageSquare },
 ];
 
-export default function NestWorkspace({ nestId, nestName, ownerId, conversationId, members, currentUserId, archived, expiresAt, backHref = '/nest', backLabel = 'Back to OroNest' }: NestWorkspaceProps) {
+export default function NestWorkspace({ nestId, nestName, ownerId, conversationId, members, currentUserId, archived, expiresAt, backHref = '/nest', backLabel = 'Back to OroNest', channels }: NestWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<Tab>('board');
   const [isArchived, setIsArchived] = useState(archived);
   const [isUnarchiving, setIsUnarchiving] = useState(false);
+  const [channelList, setChannelList] = useState(channels ?? []);
+  const [activeChannelId, setActiveChannelId] = useState(channelList[0]?.id);
+  const [isNewChannelOpen, setIsNewChannelOpen] = useState(false);
   const router = useRouter();
   const isOwner = ownerId === currentUserId;
+
+  const activeConversationId = channels
+    ? (channelList.find((c) => c.id === activeChannelId)?.conversationId ?? conversationId)
+    : conversationId;
 
   const handleUnarchive = async () => {
     setIsUnarchiving(true);
@@ -114,7 +133,37 @@ export default function NestWorkspace({ nestId, nestName, ownerId, conversationI
 
       {activeTab === 'board' && <TaskBoard nestId={nestId} currentUserId={currentUserId} members={members} />}
       {activeTab === 'notes' && <NotesEditor nestId={nestId} currentUserId={currentUserId} />}
-      {activeTab === 'chat' && <ChatRoom conversationId={conversationId} currentUserId={currentUserId} />}
+      {activeTab === 'files' && <FileList nestId={nestId} currentUserId={currentUserId} nestOwnerId={ownerId} />}
+      {activeTab === 'chat' && (
+        channels ? (
+          <div className="flex flex-col sm:flex-row sm:gap-4">
+            <ChannelSwitcher
+              channels={channelList}
+              activeChannelId={activeChannelId ?? channelList[0]?.id}
+              onSelect={setActiveChannelId}
+              onNewChannel={() => setIsNewChannelOpen(true)}
+            />
+            <div className="flex-1 min-w-0">
+              <ChatRoom key={activeConversationId} conversationId={activeConversationId} currentUserId={currentUserId} />
+            </div>
+          </div>
+        ) : (
+          <ChatRoom conversationId={activeConversationId} currentUserId={currentUserId} />
+        )
+      )}
+
+      {channels && (
+        <NewChannelModal
+          isOpen={isNewChannelOpen}
+          onClose={() => setIsNewChannelOpen(false)}
+          nestId={nestId}
+          currentUserId={currentUserId}
+          onCreated={(channel) => {
+            setChannelList((prev) => [...prev, channel]);
+            setActiveChannelId(channel.id);
+          }}
+        />
+      )}
     </div>
   );
 }

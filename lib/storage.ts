@@ -52,13 +52,15 @@ export async function ensureBucket() {
 
 /**
  * Uploads a file to S3 storage with automatic 3.5s timeout & Base64 fallback
- * to prevent upload hanging when S3 endpoint is unreachable.
+ * to prevent upload hanging when S3 endpoint is unreachable. `objectName` is
+ * null in the fallback case (a data: URL isn't a stored object, so there's
+ * nothing for deleteFile() to remove later).
  */
 export async function uploadFile(
   file: Buffer,
   fileName: string,
   contentType: string
-): Promise<string> {
+): Promise<{ url: string; objectName: string | null }> {
   const uploadPromise = (async () => {
     await ensureBucket();
 
@@ -69,7 +71,7 @@ export async function uploadFile(
     });
 
     const baseUrl = (process.env.S3_ENDPOINT || 'http://localhost:9000').replace(/\/+$/, '');
-    return `${baseUrl}/${bucketName}/${encodeURIComponent(objectName)}`;
+    return { url: `${baseUrl}/${bucketName}/${encodeURIComponent(objectName)}`, objectName };
   })();
 
   const timeoutPromise = new Promise<never>((_, reject) =>
@@ -81,7 +83,7 @@ export async function uploadFile(
   } catch (error) {
     console.warn('S3 cloud storage unreachable or timed out, falling back to data URL:', error);
     const base64 = file.toString('base64');
-    return `data:${contentType};base64,${base64}`;
+    return { url: `data:${contentType};base64,${base64}`, objectName: null };
   }
 }
 

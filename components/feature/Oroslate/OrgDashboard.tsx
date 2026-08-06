@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 import SlateCard from '@/components/feature/Oroslate/SlateCard';
 import NewSlateModal from '@/components/feature/Oroslate/NewSlateModal';
 import TrialBanner from '@/components/feature/Oroslate/TrialBanner';
+import OrgProfileCard from '@/components/feature/Oroslate/OrgProfileCard';
 import { TIER_LIMITS } from '@/lib/oroslate/tiers';
 import type { getOrganization, getSlatesForOrganization } from '@/features/oroslate/actions';
 
@@ -25,6 +26,7 @@ export default function OrgDashboard({ currentUserId, organization, slates }: Or
   const tier = subscription?.tier ?? 'STARTER';
   const isTrialing = subscription?.status === 'TRIALING';
   const seatCount = organization.members.filter((m) => !m.isExternalOro).length;
+  const isAdmin = organization.members.find((m) => m.user.id === currentUserId)?.role === 'ADMIN';
 
   return (
     <div className="max-w-6xl mx-auto w-full min-w-0 px-4 sm:px-6 py-5 sm:py-8">
@@ -63,7 +65,13 @@ export default function OrgDashboard({ currentUserId, organization, slates }: Or
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-center">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-center">
+          <Link href={`/oroslate/org/${organization.id}/talent`}>
+            <Button variant="secondary" size="sm">
+              <Users2 className="w-4 h-4 mr-1.5 text-[#458B9E]" />
+              Find Talent
+            </Button>
+          </Link>
           <Link href={`/oroslate/org/${organization.id}/upgrade`}>
             <Button variant={isTrialing ? 'accent' : 'secondary'} size="sm">
               <Sparkles className={`w-4 h-4 mr-1.5 ${isTrialing ? '' : 'text-[#458B9E]'}`} />
@@ -83,6 +91,18 @@ export default function OrgDashboard({ currentUserId, organization, slates }: Or
       {subscription?.trialEndsAt && isTrialing && (
         <TrialBanner organizationId={organization.id} trialEndsAt={subscription.trialEndsAt} />
       )}
+
+      <div className="mb-6">
+        <OrgProfileCard
+          organizationId={organization.id}
+          slug={organization.slug}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+          description={organization.description}
+          industry={organization.industry}
+          website={organization.website}
+        />
+      </div>
 
       {/* Main Content / Empty State */}
       {slates.length === 0 ? (

@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { uploadFile } from '@/lib/storage';
 
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB — documents/zips, not just images
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,30 +19,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'File must be an image' }, { status: 400 });
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: 'File size must be less than 25MB' }, { status: 400 });
     }
 
-    // Validate file size (2MB max)
-    if (file.size > 2 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File size must be less than 2MB' }, { status: 400 });
-    }
-
-    // Upload to MinIO instead of Base64
     const buffer = Buffer.from(await file.arrayBuffer());
-    const { url } = await uploadFile(buffer, file.name, file.type);
+    const { url, objectName } = await uploadFile(buffer, file.name, file.type);
 
     return NextResponse.json({
       success: true,
-      url: url,
-      filename: file.name
+      url,
+      objectName,
+      fileName: file.name,
+      contentType: file.type || 'application/octet-stream',
+      size: file.size,
     });
   } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json(
-      { error: 'Failed to upload avatar to cloud storage' },
-      { status: 500 }
-    );
+    console.error('Nest file upload error:', error);
+    return NextResponse.json({ error: 'Failed to upload file to cloud storage' }, { status: 500 });
   }
 }
