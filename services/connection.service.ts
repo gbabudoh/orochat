@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { TESService } from './tes.service';
-import { cosineSimilarity } from '@/lib/ai/embeddings';
+import { cosineSimilarity } from '@/lib/ai/cosineSimilarity';
 
 /**
  * Connection Service

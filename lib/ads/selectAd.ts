@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { cosineSimilarity } from '@/lib/ai/embeddings';
+import { cosineSimilarity } from '@/lib/ai/cosineSimilarity';
 
 export type AdPlacementContext = { surface: 'GLOBAL' } | { surface: 'COMPASS'; compassId: string };
 
