@@ -10,7 +10,7 @@ export default async function NestPage() {
   const nests = await getNests(session.user.id);
 
   return (
-    <div className="max-w-6xl mx-auto w-full min-w-0 px-4 sm:px-6 py-4 sm:py-6">
+    <div className="max-w-6xl mx-auto w-full min-w-0 px-2 sm:px-6 py-3 sm:py-6">
       <NestList currentUserId={session.user.id} initialNests={nests} />
     </div>
   );

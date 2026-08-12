@@ -73,47 +73,58 @@ export default function TaskBoard({ nestId, currentUserId, members }: TaskBoardP
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4 gap-2">
-        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="bg-slate-100/90 p-1 rounded-xl border border-slate-200/60 shadow-2xs inline-flex items-center gap-1">
           <button
             type="button"
             onClick={() => setView('kanban')}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
-              view === 'kanban' ? 'bg-white text-[#458B9E] shadow-xs' : 'text-gray-500 hover:text-gray-700'
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none ${
+              view === 'kanban'
+                ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
             }`}
           >
-            <ListChecks className="w-3.5 h-3.5" />
-            Board
+            <ListChecks className={`w-3.5 h-3.5 ${view === 'kanban' ? 'text-[#458B9E]' : 'text-slate-500'}`} />
+            <span>Board</span>
           </button>
           <button
             type="button"
             onClick={() => setView('timeline')}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
-              view === 'timeline' ? 'bg-white text-[#458B9E] shadow-xs' : 'text-gray-500 hover:text-gray-700'
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none ${
+              view === 'timeline'
+                ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
             }`}
           >
-            <GanttChart className="w-3.5 h-3.5" />
-            Timeline
+            <GanttChart className={`w-3.5 h-3.5 ${view === 'timeline' ? 'text-[#458B9E]' : 'text-slate-500'}`} />
+            <span>Timeline</span>
           </button>
         </div>
-        <Button size="sm" onClick={() => setIsNewTaskOpen(true)}>
-          <Plus className="w-4 h-4 mr-1.5" />
-          Add Task
-        </Button>
+
+        <button
+          type="button"
+          onClick={() => setIsNewTaskOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#458B9E] hover:bg-[#397484] shadow-xs transition-all cursor-pointer shrink-0 active:scale-[0.98]"
+        >
+          <Plus className="w-4 h-4 text-white/90 shrink-0" />
+          <span>Add Task</span>
+        </button>
       </div>
 
       {view === 'kanban' ? (
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {COLUMNS.map((col) => {
             const columnTasks = tasks.filter((t) => t.status === col.status);
             return (
-              <div key={col.status} className="bg-gray-50 rounded-xl p-3">
+              <div key={col.status} className="bg-slate-50/80 rounded-2xl p-3 border border-slate-200/80 shadow-2xs">
                 <div className="flex items-center justify-between mb-3 px-1">
-                  <h3 className="text-sm font-semibold text-[#333333]">{col.label}</h3>
-                  <span className="text-xs text-gray-400">{columnTasks.length}</span>
+                  <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">{col.label}</h3>
+                  <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-md bg-slate-200/80 text-slate-700">
+                    {columnTasks.length}
+                  </span>
                 </div>
-                <div className="space-y-2 min-h-[60px]">
+                <div className="space-y-2 min-h-[80px]">
                   {columnTasks.map((task) => (
                     <TaskCard
                       key={task.id}
@@ -124,7 +135,9 @@ export default function TaskBoard({ nestId, currentUserId, members }: TaskBoardP
                     />
                   ))}
                   {columnTasks.length === 0 && (
-                    <p className="text-xs text-gray-400 text-center py-4">No tasks</p>
+                    <p className="text-xs text-slate-400 font-medium text-center py-6 border border-dashed border-slate-200 rounded-xl bg-white/50">
+                      No tasks
+                    </p>
                   )}
                 </div>
               </div>

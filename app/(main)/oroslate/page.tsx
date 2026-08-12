@@ -11,7 +11,7 @@ export default async function OroslatePage({ searchParams }: { searchParams: Pro
   const organizations = await getOrganizationsForUser(session.user.id);
 
   return (
-    <div className="max-w-6xl mx-auto w-full min-w-0 px-4 sm:px-6 py-5 sm:py-8">
+    <div className="max-w-6xl mx-auto w-full min-w-0 px-2.5 sm:px-6 py-4 sm:py-8">
       <OrganizationList currentUserId={session.user.id} organizations={organizations} referralRef={ref} />
     </div>
   );

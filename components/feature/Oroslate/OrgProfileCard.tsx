@@ -54,27 +54,29 @@ export default function OrgProfileCard({
   };
 
   return (
-    <Card padding="sm" className="border border-gray-200/80">
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 text-[#458B9E]">
-          <Building2 className="w-4 h-4" />
-          <h3 className="font-bold text-gray-900 text-sm">Company Page</h3>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-[#458B9E]/10 border border-[#458B9E]/20 text-[#458B9E] flex items-center justify-center shrink-0">
+            <Building2 className="w-4 h-4" />
+          </div>
+          <h3 className="font-extrabold text-slate-900 text-sm tracking-tight">Company Page</h3>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href={`/org/${slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[#458B9E] hover:underline"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#458B9E] hover:text-[#397484] bg-[#458B9E]/10 hover:bg-[#458B9E]/15 border border-[#458B9E]/20 transition-all active:scale-[0.98]"
           >
-            View Public Page
-            <ExternalLink className="w-3 h-3" />
+            <span>View Public Page</span>
+            <ExternalLink className="w-3.5 h-3.5" />
           </Link>
           {isAdmin && !isEditing && (
             <button
               type="button"
               onClick={() => setIsEditing(true)}
-              className="p-1.5 text-gray-400 hover:text-[#458B9E] hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all cursor-pointer active:scale-[0.98]"
               aria-label="Edit company page"
             >
               <Pencil className="w-3.5 h-3.5" />
@@ -84,14 +86,14 @@ export default function OrgProfileCard({
       </div>
 
       {isEditing ? (
-        <div className="space-y-3">
+        <div className="space-y-3 pt-1">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Industry</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Industry</label>
             <input
               value={industryInput}
               onChange={(e) => setIndustryInput(e.target.value)}
               placeholder="e.g., Software Development"
-              className="w-full px-3 py-2 text-sm rounded-lg border-2 border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 outline-none transition-all"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 outline-none transition-all"
             />
           </div>
           <Input
@@ -101,16 +103,16 @@ export default function OrgProfileCard({
             placeholder="e.g., example.com"
           />
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">About</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">About</label>
             <textarea
               value={descriptionInput}
               onChange={(e) => setDescriptionInput(e.target.value)}
               placeholder="What does your company do?"
-              className="w-full px-3 py-2 text-sm rounded-lg border-2 border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 outline-none transition-all min-h-[80px]"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 outline-none transition-all min-h-[80px]"
             />
           </div>
-          {error && <p className="text-xs text-red-500">{error}</p>}
-          <div className="flex justify-end gap-2">
+          {error && <p className="text-xs text-red-500 font-semibold">{error}</p>}
+          <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="ghost" size="sm" onClick={() => setIsEditing(false)}>
               Cancel
             </Button>
@@ -120,17 +122,28 @@ export default function OrgProfileCard({
           </div>
         </div>
       ) : (
-        <div className="text-sm text-gray-600">
-          {industry && <p className="font-medium text-gray-800 mb-1">{industry}</p>}
+        <div className="text-xs sm:text-sm text-slate-600 font-medium">
+          {industry && <p className="font-bold text-slate-800 mb-1">{industry}</p>}
           {description ? (
-            <p className="leading-relaxed line-clamp-3">{description}</p>
+            <p className="leading-relaxed line-clamp-3 text-slate-600 font-medium">{description}</p>
           ) : (
-            <p className="text-gray-400 italic">
-              {isAdmin ? 'Add a description so your public company page isn’t empty.' : 'No description yet.'}
-            </p>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60 text-slate-500 text-xs font-medium flex items-center justify-between gap-2">
+              <span>
+                {isAdmin ? 'Add a description so your public company page isn’t empty.' : 'No description yet.'}
+              </span>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="text-xs font-bold text-[#458B9E] hover:underline cursor-pointer shrink-0"
+                >
+                  + Add Description
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}
-    </Card>
+    </div>
   );
 }

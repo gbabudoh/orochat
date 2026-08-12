@@ -10,10 +10,14 @@ export default function NewGroupButton({ currentUserId }: { currentUserId: strin
 
   return (
     <>
-      <Button size="sm" variant="ghost" onClick={() => setIsOpen(true)}>
-        <Users className="w-4 h-4 mr-1.5" />
-        New Group
-      </Button>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#458B9E] hover:bg-[#397484] shadow-xs transition-all cursor-pointer shrink-0 active:scale-[0.98]"
+      >
+        <Users className="w-3.5 h-3.5 text-white/90" />
+        <span>New Group</span>
+      </button>
       <NewGroupModal isOpen={isOpen} onClose={() => setIsOpen(false)} currentUserId={currentUserId} />
     </>
   );

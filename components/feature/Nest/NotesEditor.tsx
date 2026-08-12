@@ -68,13 +68,31 @@ export default function NotesEditor({ nestId, currentUserId }: NotesEditorProps)
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
-        <Button size="sm" onClick={() => setHasDraft(true)} disabled={hasDraft} className="ml-auto">
-          <Plus className="w-4 h-4 mr-1.5" />
-          Add Note
-        </Button>
+      {/* Header Bar */}
+      <div className="flex items-center justify-between gap-3 pb-1">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Shared Notes</h2>
+          <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-md bg-slate-200/80 text-slate-700">
+            {notes.length}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setHasDraft(true)}
+          disabled={hasDraft}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#458B9E] hover:bg-[#397484] shadow-xs transition-all cursor-pointer disabled:opacity-50 shrink-0 active:scale-[0.98]"
+        >
+          <Plus className="w-4 h-4 text-white/90 shrink-0" />
+          <span>Add Note</span>
+        </button>
       </div>
+
+      {deleteError && (
+        <div className="p-3 rounded-xl bg-red-50 text-red-700 border border-red-200/80 text-xs font-semibold">
+          {deleteError}
+        </div>
+      )}
 
       {hasDraft && (
         <NoteEntry
@@ -86,19 +104,23 @@ export default function NotesEditor({ nestId, currentUserId }: NotesEditorProps)
       )}
 
       {notes.length === 0 && !hasDraft ? (
-        <p className="text-center text-gray-500 py-12">No notes yet — click &quot;Add Note&quot; to start one.</p>
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-8 sm:p-12 text-center my-2 shadow-2xs">
+          <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-sm mx-auto">
+            No notes yet — click &quot;Add Note&quot; to collaborate on shared docs.
+          </p>
+        </div>
       ) : (
-        notes.map((note, index) => (
-          <div key={note.id}>
+        <div className="space-y-3">
+          {notes.map((note) => (
             <NoteEntry
+              key={note.id}
               note={note}
               startInEditMode={false}
               onSave={(content) => handleSaveExisting(note.id as string, content)}
               onDelete={() => handleDelete(note.id as string)}
             />
-            {index < notes.length - 1 && <hr className="my-4 border-gray-200" />}
-          </div>
-        ))
+          ))}
+        </div>
       )}
     </div>
   );

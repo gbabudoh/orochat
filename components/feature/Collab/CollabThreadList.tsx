@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { formatRelativeTime, formatMessagePreview } from '@/lib/utils/formatters';
+import { formatRelativeTime, formatCompactDate, formatMessagePreview } from '@/lib/utils/formatters';
 import {
   MessageSquare,
   Users,
@@ -153,62 +153,92 @@ export default function CollabThreadList({ conversations, currentUserId }: Colla
 
   return (
     <div className="space-y-5">
-      {/* Search & Controls Header Bar */}
-      <div className="bg-gradient-to-r from-gray-50 via-white to-gray-50 p-4 rounded-2xl border border-gray-200/90 shadow-2xs space-y-3">
+      {/* Search & Filter Controls Header Area */}
+      <div className="space-y-3">
+        {/* Search Input Box */}
         <div className="relative flex items-center w-full">
-          <Search className="w-4 h-4 text-[#458B9E] absolute left-3.5 pointer-events-none" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search active chats or find Oros by name, title, or company..."
-            className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-gray-200 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 text-xs sm:text-sm transition-all outline-none bg-white text-gray-900 placeholder:text-gray-400 font-medium"
+            placeholder="Search chats or find Oros by name, title, or company..."
+            className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-slate-200/90 focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 text-xs sm:text-sm transition-all outline-none bg-slate-50/60 focus:bg-white text-slate-900 placeholder:text-slate-400 font-medium shadow-2xs truncate"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+              className="absolute right-3 p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200/60 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+        {/* Enterprise Segmented Filter Tabs */}
+        <div className="bg-slate-100/90 p-1.5 rounded-xl flex items-center gap-1.5 overflow-x-auto scrollbar-none snap-x border border-slate-200/60 max-w-full">
           <button
             type="button"
             onClick={() => setTabFilter('all')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap inline-flex items-center gap-2 shrink-0 snap-start select-none ${
               tabFilter === 'all'
-                ? 'bg-[#458B9E] text-white shadow-2xs'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
             }`}
           >
-            All Chats ({conversations.length})
+            <span>All Chats</span>
+            <span
+              className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md min-w-[18px] text-center transition-colors ${
+                tabFilter === 'all'
+                  ? 'bg-[#458B9E]/15 text-[#458B9E]'
+                  : 'bg-slate-200 text-slate-600'
+              }`}
+            >
+              {conversations.length}
+            </span>
           </button>
+
           <button
             type="button"
             onClick={() => setTabFilter('direct')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap inline-flex items-center gap-2 shrink-0 snap-start select-none ${
               tabFilter === 'direct'
-                ? 'bg-[#458B9E] text-white shadow-2xs'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
             }`}
           >
-            Direct 1-on-1 ({directCount})
+            <span>Direct 1-on-1</span>
+            <span
+              className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md min-w-[18px] text-center transition-colors ${
+                tabFilter === 'direct'
+                  ? 'bg-[#458B9E]/15 text-[#458B9E]'
+                  : 'bg-slate-200 text-slate-600'
+              }`}
+            >
+              {directCount}
+            </span>
           </button>
+
           <button
             type="button"
             onClick={() => setTabFilter('group')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap inline-flex items-center gap-2 shrink-0 snap-start select-none ${
               tabFilter === 'group'
-                ? 'bg-purple-600 text-white shadow-2xs'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-white text-purple-950 shadow-xs border border-purple-200/80 font-bold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
             }`}
           >
-            Group Threads ({groupCount})
+            <span>Group Threads</span>
+            <span
+              className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md min-w-[18px] text-center transition-colors ${
+                tabFilter === 'group'
+                  ? 'bg-purple-100 text-purple-700'
+                  : 'bg-slate-200 text-slate-600'
+              }`}
+            >
+              {groupCount}
+            </span>
           </button>
         </div>
       </div>
@@ -334,7 +364,7 @@ export default function CollabThreadList({ conversations, currentUserId }: Colla
 
       {/* Conversations List */}
       {filteredConversations.length > 0 ? (
-        <div className="divide-y divide-gray-100">
+        <div className="space-y-1">
           {filteredConversations.map((conversation) => {
             const title = conversation.isGroup
               ? conversation.name || conversation.otherParticipants.map((m) => m.name).join(', ')
@@ -347,10 +377,10 @@ export default function CollabThreadList({ conversations, currentUserId }: Colla
               <Link
                 key={conversation.conversationId}
                 href={`/collab/${conversation.conversationId}`}
-                className="flex items-center gap-3.5 py-3.5 px-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition-colors group"
+                className="flex items-center gap-3.5 py-3 px-3.5 rounded-2xl hover:bg-slate-50 active:bg-slate-100/80 transition-all group border border-transparent hover:border-slate-200/60"
               >
                 {conversation.isGroup ? (
-                  <div className="w-11 h-11 rounded-2xl bg-purple-50 border border-purple-200 text-purple-700 flex items-center justify-center shrink-0 font-bold">
+                  <div className="w-11 h-11 rounded-2xl bg-purple-50/90 border border-purple-200/80 text-purple-700 flex items-center justify-center shrink-0 font-bold shadow-2xs">
                     <Users className="w-5 h-5" />
                   </div>
                 ) : (
@@ -364,25 +394,25 @@ export default function CollabThreadList({ conversations, currentUserId }: Colla
                 )}
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline justify-between gap-2 mb-0.5">
-                    <h3 className="font-bold text-gray-900 group-hover:text-[#458B9E] transition-colors truncate text-sm sm:text-base">
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <h3 className="font-bold text-slate-900 group-hover:text-[#458B9E] transition-colors truncate text-sm sm:text-[15px]">
                       {title}
                     </h3>
-                    <span className="text-xs text-gray-400 shrink-0 font-medium">
-                      {formatRelativeTime(
+                    <span className="text-[10px] sm:text-xs text-slate-500 shrink-0 font-semibold tracking-tight bg-slate-100/90 px-2 py-0.5 rounded-md whitespace-nowrap">
+                      {formatCompactDate(
                         conversation.latestMessage?.createdAt ?? conversation.createdAt
                       )}
                     </span>
                   </div>
 
                   {subtitle && (
-                    <p className="text-xs text-gray-500 truncate mb-1">{subtitle}</p>
+                    <p className="text-xs text-slate-500 truncate mb-0.5 font-medium">{subtitle}</p>
                   )}
 
                   {conversation.latestMessage && (
-                    <p className="text-xs text-gray-600 truncate leading-snug">
+                    <p className="text-xs text-slate-600 truncate leading-snug">
                       {conversation.isGroup && (
-                        <span className="font-semibold text-gray-800">
+                        <span className="font-semibold text-slate-800">
                           {conversation.latestMessage.sender.name}:{' '}
                         </span>
                       )}
@@ -392,7 +422,7 @@ export default function CollabThreadList({ conversations, currentUserId }: Colla
                 </div>
 
                 {conversation.unreadCount > 0 && (
-                  <div className="bg-[#458B9E] text-white text-xs font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center shrink-0 shadow-xs">
+                  <div className="bg-[#458B9E] text-white text-[11px] font-extrabold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center shrink-0 shadow-2xs">
                     {conversation.unreadCount > 9 ? '9+' : conversation.unreadCount}
                   </div>
                 )}

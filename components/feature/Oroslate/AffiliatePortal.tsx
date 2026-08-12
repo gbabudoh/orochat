@@ -31,10 +31,10 @@ function CopyLinkButton({ url }: { url: string }) {
     <button
       type="button"
       onClick={handleCopy}
-      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-[#458B9E]/10 text-[#458B9E] hover:bg-[#458B9E]/20 transition-colors shrink-0"
+      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-xl bg-[#458B9E] text-white hover:bg-[#397484] shadow-2xs transition-all shrink-0 cursor-pointer active:scale-[0.98]"
     >
-      {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-      {copied ? 'Copied' : 'Copy referral link'}
+      {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5 text-white/90" />}
+      <span>{copied ? 'Copied' : 'Copy referral link'}</span>
     </button>
   );
 }
@@ -42,127 +42,180 @@ function CopyLinkButton({ url }: { url: string }) {
 export default function AffiliatePortal({ currentUserId, compasses, summary, baseUrl }: AffiliatePortalProps) {
   return (
     <div className="space-y-6">
-      {/* Top Back Action */}
-      <div>
-        <Link
-          href="/oroslate"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-[#458B9E] transition-colors bg-white hover:bg-gray-50 border border-gray-200/80 px-3.5 py-1.5 rounded-xl shadow-2xs"
-        >
-          <ArrowLeft className="w-4 h-4 text-[#458B9E]" />
-          <span>Back to Oroslate</span>
-        </Link>
-      </div>
+      {/* Top Header Navigation */}
+      <div className="space-y-4">
+        <div>
+          <Link
+            href="/oroslate"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all shrink-0 active:scale-[0.98]"
+          >
+            <ArrowLeft className="w-4 h-4 text-[#458B9E]" />
+            <span>Back to Oroslate</span>
+          </Link>
+        </div>
 
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-1">Community Leader Portal</h1>
-        <p className="text-sm text-gray-500">
-          Earn a recurring revenue share when businesses you refer from your Compass communities upgrade to Oroslate.
-        </p>
-      </div>
-
-      <div className="grid sm:grid-cols-3 gap-4 mb-8">
-        <Card padding="sm">
-          <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 mb-1.5">
-            <Clock className="w-3.5 h-3.5" />
-            Pending Maturation
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#458B9E]/10 border border-[#458B9E]/20 shadow-2xs">
+              <Wallet className="w-5 h-5 text-[#458B9E]" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+              Community Leader Portal
+            </h1>
           </div>
-          <p className="text-2xl font-bold text-[#333333]">{formatGBP(summary.pendingMaturationCents)}</p>
-          <p className="text-xs text-gray-400 mt-0.5">Unlocks after a 30-day hold</p>
-        </Card>
-        <Card padding="sm">
-          <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 mb-1.5">
-            <Wallet className="w-3.5 h-3.5" />
-            Ready for Next Payout
-          </div>
-          <p className="text-2xl font-bold text-[#333333]">{formatGBP(summary.readyForPayoutCents)}</p>
-          <p className="text-xs text-gray-400 mt-0.5">Paid automatically on the 15th</p>
-        </Card>
-        <Card padding="sm">
-          <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 mb-1.5">
-            <TrendingUp className="w-3.5 h-3.5" />
-            Total Paid Out
-          </div>
-          <p className="text-2xl font-bold text-[#333333]">{formatGBP(summary.totalPaidCents)}</p>
-        </Card>
-      </div>
-
-      <h2 className="text-lg font-semibold text-[#333333] mb-3">Your referral links</h2>
-      {compasses.length === 0 ? (
-        <Card padding="sm" className="mb-8">
-          <p className="text-sm text-gray-500">
-            You need to create or moderate a Compass community to generate a referral link.
+          <p className="text-xs sm:text-sm text-slate-500 font-medium">
+            Earn a recurring revenue share when businesses you refer from your Compass communities upgrade to Oroslate.
           </p>
-        </Card>
-      ) : (
-        <div className="space-y-2 mb-8">
-          {compasses.map((compass) => (
-            <Card key={compass.id} padding="sm" className="flex items-center justify-between gap-3">
-              <span className="text-sm font-medium text-[#333333] truncate">{compass.name}</span>
-              <CopyLinkButton url={`${baseUrl}/oroslate?ref=${compass.id}_${currentUserId}`} />
-            </Card>
-          ))}
         </div>
-      )}
+      </div>
 
-      <h2 className="text-lg font-semibold text-[#333333] mb-3">Referred organisations</h2>
-      {summary.referredOrganizations.length === 0 ? (
-        <Card padding="sm" className="mb-8">
-          <p className="text-sm text-gray-500">No organisations referred yet — share a link above to get started.</p>
-        </Card>
-      ) : (
-        <div className="overflow-x-auto mb-8 rounded-xl border border-gray-200">
-          <table className="w-full text-sm">
-            <thead className="bg-[#F0F3F7] text-left text-xs font-semibold text-gray-500 uppercase">
-              <tr>
-                <th className="px-4 py-2.5">Organisation</th>
-                <th className="px-4 py-2.5">Tier</th>
-                <th className="px-4 py-2.5">Seats</th>
-                <th className="px-4 py-2.5">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
-              {summary.referredOrganizations.map((org) => (
-                <tr key={org.organizationId}>
-                  <td className="px-4 py-2.5 font-medium text-[#333333]">{org.organizationName}</td>
-                  <td className="px-4 py-2.5 text-gray-600">{TIER_LIMITS[org.tier].label}</td>
-                  <td className="px-4 py-2.5 text-gray-600">{org.seatCount}</td>
-                  <td className="px-4 py-2.5 text-gray-600">{org.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Executive Financial Dashboard Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Maturation</span>
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              {formatGBP(summary.pendingMaturationCents)}
+            </p>
+            <span className="text-[11px] text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded-md inline-block mt-1 border border-amber-200/60">
+              Unlocks after a 30-day hold
+            </span>
+          </div>
         </div>
-      )}
 
-      <h2 className="text-lg font-semibold text-[#333333] mb-3">Payout ledger</h2>
-      {summary.ledgerEntries.length === 0 ? (
-        <Card padding="sm">
-          <p className="text-sm text-gray-500">Payout history will appear here once a referred org pays its first invoice.</p>
-        </Card>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200">
-          <table className="w-full text-sm">
-            <thead className="bg-[#F0F3F7] text-left text-xs font-semibold text-gray-500 uppercase">
-              <tr>
-                <th className="px-4 py-2.5">Date</th>
-                <th className="px-4 py-2.5">Organisation</th>
-                <th className="px-4 py-2.5">Amount</th>
-                <th className="px-4 py-2.5">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
-              {summary.ledgerEntries.map((entry) => (
-                <tr key={entry.id}>
-                  <td className="px-4 py-2.5 text-gray-600">{new Date(entry.createdAt).toLocaleDateString('en-GB')}</td>
-                  <td className="px-4 py-2.5 text-gray-600">{entry.organizationName}</td>
-                  <td className="px-4 py-2.5 font-medium text-[#333333]">{formatGBP(entry.amountCents)}</td>
-                  <td className="px-4 py-2.5 text-gray-600">{entry.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ready for Next Payout</span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 flex items-center justify-center shrink-0">
+              <Wallet className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              {formatGBP(summary.readyForPayoutCents)}
+            </p>
+            <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md inline-block mt-1 border border-emerald-200/60">
+              Paid automatically on the 15th
+            </span>
+          </div>
         </div>
-      )}
+
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Paid Out</span>
+            <div className="w-8 h-8 rounded-xl bg-[#458B9E]/10 border border-[#458B9E]/20 text-[#458B9E] flex items-center justify-center shrink-0">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              {formatGBP(summary.totalPaidCents)}
+            </p>
+            <span className="text-[11px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-md inline-block mt-1 border border-slate-200/60">
+              Lifetime earnings
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Your Referral Links */}
+      <div className="space-y-3">
+        <h2 className="text-base font-extrabold text-slate-900 tracking-tight">Your referral links</h2>
+        {compasses.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs">
+            <p className="text-xs sm:text-sm text-slate-500 font-medium">
+              You need to create or moderate a Compass community to generate a referral link.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {compasses.map((compass) => (
+              <div
+                key={compass.id}
+                className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs flex items-center justify-between gap-3"
+              >
+                <span className="text-xs sm:text-sm font-bold text-slate-900 truncate">{compass.name}</span>
+                <CopyLinkButton url={`${baseUrl}/oroslate?ref=${compass.id}_${currentUserId}`} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Referred Organisations */}
+      <div className="space-y-3">
+        <h2 className="text-base font-extrabold text-slate-900 tracking-tight">Referred organisations</h2>
+        {summary.referredOrganizations.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs">
+            <p className="text-xs sm:text-sm text-slate-500 font-medium">
+              No organisations referred yet — share a link above to get started.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-2xl border border-slate-200/80 shadow-2xs bg-white">
+            <table className="w-full text-xs sm:text-sm">
+              <thead className="bg-slate-50 text-left text-xs font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200/80">
+                <tr>
+                  <th className="px-4 py-3">Organisation</th>
+                  <th className="px-4 py-3">Tier</th>
+                  <th className="px-4 py-3">Seats</th>
+                  <th className="px-4 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {summary.referredOrganizations.map((org) => (
+                  <tr key={org.organizationId} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="px-4 py-3 font-bold text-slate-900">{org.organizationName}</td>
+                    <td className="px-4 py-3 font-semibold text-slate-600">{TIER_LIMITS[org.tier].label}</td>
+                    <td className="px-4 py-3 font-semibold text-slate-600">{org.seatCount}</td>
+                    <td className="px-4 py-3 font-semibold text-slate-600">{org.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Payout Ledger */}
+      <div className="space-y-3">
+        <h2 className="text-base font-extrabold text-slate-900 tracking-tight">Payout ledger</h2>
+        {summary.ledgerEntries.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs">
+            <p className="text-xs sm:text-sm text-slate-500 font-medium">
+              Payout history will appear here once a referred org pays its first invoice.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-2xl border border-slate-200/80 shadow-2xs bg-white">
+            <table className="w-full text-xs sm:text-sm">
+              <thead className="bg-slate-50 text-left text-xs font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200/80">
+                <tr>
+                  <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3">Organisation</th>
+                  <th className="px-4 py-3">Amount</th>
+                  <th className="px-4 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {summary.ledgerEntries.map((entry) => (
+                  <tr key={entry.id} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="px-4 py-3 text-slate-600">{new Date(entry.createdAt).toLocaleDateString('en-GB')}</td>
+                    <td className="px-4 py-3 font-semibold text-slate-800">{entry.organizationName}</td>
+                    <td className="px-4 py-3 font-bold text-slate-900">{formatGBP(entry.amountCents)}</td>
+                    <td className="px-4 py-3 font-semibold text-slate-600">{entry.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

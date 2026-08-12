@@ -32,15 +32,11 @@ export default async function SlatePage({ params }: { params: Promise<{ slateId:
   const tier = subscription?.tier ?? 'STARTER';
 
   return (
-    <div className="max-w-6xl mx-auto w-full min-w-0 px-4 sm:px-6 py-4 sm:py-6">
-      <div className="flex items-center justify-end mb-2">
-        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#458B9E]/10 text-[#458B9E]">
-          {isTrialing ? 'Pro Trial' : TIER_LIMITS[tier].label}
-        </span>
-      </div>
-
+    <div className="max-w-6xl mx-auto w-full min-w-0 px-2.5 sm:px-6 py-4 sm:py-6">
       {subscription?.trialEndsAt && isTrialing && (
-        <TrialBanner organizationId={organization.id} trialEndsAt={subscription.trialEndsAt} />
+        <div className="mb-4">
+          <TrialBanner organizationId={organization.id} trialEndsAt={subscription.trialEndsAt} />
+        </div>
       )}
 
       {isLocked ? (
@@ -65,6 +61,7 @@ export default async function SlatePage({ params }: { params: Promise<{ slateId:
           expiresAt={nest.expiresAt}
           backHref={`/oroslate/org/${organization.id}`}
           backLabel={organization.name}
+          statusBadge={isTrialing ? 'Pro Trial' : TIER_LIMITS[tier].label}
           channels={channels}
         />
       )}

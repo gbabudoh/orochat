@@ -5,7 +5,6 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Bold, Italic, Heading1, Heading2, List, ListOrdered, Pencil, Check, Trash2 } from 'lucide-react';
 import { formatPostDateTime } from '@/lib/utils/formatters';
-import Button from '@/components/ui/Button';
 
 export interface NoteEntryData {
   id: string | null; // null = unsaved draft
@@ -74,62 +73,84 @@ export default function NoteEntry({ note, startInEditMode, onSave, onDelete, onC
       type="button"
       onClick={onClick}
       aria-label={label}
-      className={`p-2 rounded-lg transition-colors ${isActive ? 'bg-[#458B9E] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+      className={`p-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer select-none ${
+        isActive
+          ? 'bg-[#458B9E] text-white shadow-2xs'
+          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+      }`}
     >
       {icon}
     </button>
   );
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200">
-      <div className={`flex gap-2 p-2 border-b border-gray-200 ${isEditing ? 'flex-col sm:flex-row sm:items-center sm:justify-between' : 'items-center justify-between'}`}>
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden transition-all hover:border-slate-300">
+      <div
+        className={`flex gap-2 px-4 py-2.5 bg-slate-50/80 border-b border-slate-200/80 ${
+          isEditing ? 'flex-col sm:flex-row sm:items-center sm:justify-between' : 'items-center justify-between'
+        }`}
+      >
         {isEditing ? (
           <div className="flex items-center gap-1 flex-wrap">
-            {toolbarButton('Bold', <Bold className="w-4 h-4" />, editor.isActive('bold'), () => editor.chain().focus().toggleBold().run())}
-            {toolbarButton('Italic', <Italic className="w-4 h-4" />, editor.isActive('italic'), () => editor.chain().focus().toggleItalic().run())}
-            {toolbarButton('Heading 1', <Heading1 className="w-4 h-4" />, editor.isActive('heading', { level: 1 }), () => editor.chain().focus().toggleHeading({ level: 1 }).run())}
-            {toolbarButton('Heading 2', <Heading2 className="w-4 h-4" />, editor.isActive('heading', { level: 2 }), () => editor.chain().focus().toggleHeading({ level: 2 }).run())}
-            {toolbarButton('Bullet list', <List className="w-4 h-4" />, editor.isActive('bulletList'), () => editor.chain().focus().toggleBulletList().run())}
-            {toolbarButton('Numbered list', <ListOrdered className="w-4 h-4" />, editor.isActive('orderedList'), () => editor.chain().focus().toggleOrderedList().run())}
+            {toolbarButton('Bold', <Bold className="w-3.5 h-3.5" />, editor.isActive('bold'), () => editor.chain().focus().toggleBold().run())}
+            {toolbarButton('Italic', <Italic className="w-3.5 h-3.5" />, editor.isActive('italic'), () => editor.chain().focus().toggleItalic().run())}
+            {toolbarButton('Heading 1', <Heading1 className="w-3.5 h-3.5" />, editor.isActive('heading', { level: 1 }), () => editor.chain().focus().toggleHeading({ level: 1 }).run())}
+            {toolbarButton('Heading 2', <Heading2 className="w-3.5 h-3.5" />, editor.isActive('heading', { level: 2 }), () => editor.chain().focus().toggleHeading({ level: 2 }).run())}
+            {toolbarButton('Bullet list', <List className="w-3.5 h-3.5" />, editor.isActive('bulletList'), () => editor.chain().focus().toggleBulletList().run())}
+            {toolbarButton('Numbered list', <ListOrdered className="w-3.5 h-3.5" />, editor.isActive('orderedList'), () => editor.chain().focus().toggleOrderedList().run())}
           </div>
         ) : (
-          <span className="text-xs text-gray-500 pl-2">
-            {note.updatedByName && note.updatedAt
-              ? `Last updated by ${note.updatedByName} — ${formatPostDateTime(note.updatedAt)}`
-              : ''}
-          </span>
+          <div className="flex items-center gap-2 min-w-0 pr-2">
+            {note.updatedByName && (
+              <span className="text-xs font-bold text-slate-800 truncate">{note.updatedByName}</span>
+            )}
+            {note.updatedByName && note.updatedAt && <span className="text-slate-300">•</span>}
+            {note.updatedAt && (
+              <span className="text-xs text-slate-500 font-semibold shrink-0">
+                {formatPostDateTime(note.updatedAt)}
+              </span>
+            )}
+          </div>
         )}
 
         <div className={`flex items-center gap-1.5 ${isEditing ? 'self-end sm:self-auto shrink-0' : ''}`}>
           {isEditing ? (
             <>
-              <Button
-                size="sm"
-                variant="ghost"
+              <button
+                type="button"
                 onClick={!note.id && onCancelDraft ? onCancelDraft : handleCancelEdit}
-                className="whitespace-nowrap"
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 shadow-2xs transition-all cursor-pointer whitespace-nowrap active:scale-[0.98]"
               >
                 Cancel
-              </Button>
-              <Button size="sm" onClick={handleSave} isLoading={isSaving} className="whitespace-nowrap">
-                <Check className="w-4 h-4 mr-1.5" />
-                Save
-              </Button>
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isSaving}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-[#458B9E] hover:bg-[#397484] shadow-xs transition-all cursor-pointer whitespace-nowrap active:scale-[0.98] disabled:opacity-50"
+              >
+                <Check className="w-3.5 h-3.5 text-white/90" />
+                <span>Save</span>
+              </button>
             </>
           ) : (
             <>
-              <Button size="sm" variant="ghost" onClick={handleEdit}>
-                <Pencil className="w-4 h-4 mr-1.5" />
-                Edit
-              </Button>
+              <button
+                type="button"
+                onClick={handleEdit}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold text-slate-700 hover:text-[#458B9E] bg-white hover:bg-slate-50 border border-slate-200/90 shadow-2xs transition-all cursor-pointer active:scale-[0.98]"
+              >
+                <Pencil className="w-3.5 h-3.5 text-slate-500" />
+                <span>Edit</span>
+              </button>
               {onDelete && (
                 <button
                   type="button"
                   onClick={onDelete}
-                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all cursor-pointer active:scale-[0.98]"
                   aria-label="Delete note"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               )}
             </>
@@ -137,11 +158,11 @@ export default function NoteEntry({ note, startInEditMode, onSave, onDelete, onC
         </div>
       </div>
       {saveError && (
-        <p className="text-xs text-red-500 px-4 pt-2">{saveError}</p>
+        <p className="text-xs text-red-500 font-semibold px-4 pt-2">{saveError}</p>
       )}
       <EditorContent
         editor={editor}
-        className="nest-notes-content px-4 py-3 min-h-[120px] text-sm text-[#333333] [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[100px]"
+        className="nest-notes-content px-4 py-3.5 min-h-[100px] text-xs sm:text-sm text-slate-800 font-medium [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[80px]"
       />
     </div>
   );

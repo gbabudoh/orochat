@@ -72,14 +72,21 @@ export default async function OroProfilePage({
     backLabel = '← Back to My Oros';
   }
 
-  // Always fetch fresh data from database
-  const user = await db.user.findUnique({
-    where: { id },
-  });
-
-  const postsCount = await db.user.findUnique({ where: { id } })
-    ? await db.feedPost.count({ where: { authorId: id } })
-    : 0;
+  // Fetch user profile, post count, and connection status in parallel
+  const [user, postsCount, connection] = await Promise.all([
+    db.user.findUnique({ where: { id } }),
+    db.feedPost.count({ where: { authorId: id } }),
+    session?.user?.id
+      ? db.connection.findFirst({
+          where: {
+            OR: [
+              { senderId: session.user.id, receiverId: id },
+              { senderId: id, receiverId: session.user.id },
+            ],
+          },
+        })
+      : Promise.resolve(null),
+  ]);
 
   if (!user) {
     return (
@@ -94,7 +101,7 @@ export default async function OroProfilePage({
     );
   }
 
-  // Parse qualifications and work history
+  // Parse qualifications, work history, and education
   let qualifications: string[] = [];
   let workHistory: Array<{
     company: string;
@@ -134,29 +141,13 @@ export default async function OroProfilePage({
     }
   } catch {}
 
-  // Check connection status (only if authenticated)
-  let connection = null;
-  let isOwnProfile = false;
-  let isConnected = false;
-  let hasPendingRequest = false;
+  const isOwnProfile = session?.user?.id === id;
+  const isConnected = connection?.status === 'ACCEPTED';
+  const hasPendingRequest = connection?.status === 'PENDING';
 
-  if (session?.user?.id) {
-    connection = await db.connection.findFirst({
-      where: {
-        OR: [
-          { senderId: session.user.id, receiverId: id },
-          { senderId: id, receiverId: session.user.id },
-        ],
-      },
-    });
-
-    isOwnProfile = session.user.id === id;
-    isConnected = connection?.status === 'ACCEPTED';
-    hasPendingRequest = connection?.status === 'PENDING';
-  }
-
+  // Log profile view asynchronously without blocking page rendering
   if (!isOwnProfile) {
-    await logProfileView(id, session?.user?.id ?? null);
+    logProfileView(id, session?.user?.id ?? null).catch(() => {});
   }
 
   // Geo-aware structured data: country-level coordinates so search/AI

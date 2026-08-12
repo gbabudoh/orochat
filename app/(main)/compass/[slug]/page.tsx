@@ -137,48 +137,53 @@ export default async function CompassCommunityPage({ params }: { params: Promise
   );
 
   return (
-    <div className="max-w-4xl mx-auto w-full min-w-0">
-      <Link
-        href="/compass"
-        className="flex sm:hidden items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#458B9E] mb-3"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Compass
-      </Link>
+    <div className="max-w-4xl mx-auto w-full min-w-0 px-2.5 sm:px-6 py-4 sm:py-6 space-y-4">
+      <div>
+        <Link
+          href="/compass"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all shrink-0 active:scale-[0.98]"
+        >
+          <ArrowLeft className="w-4 h-4 text-[#458B9E]" />
+          <span>Back to Compass</span>
+        </Link>
+      </div>
 
-      <Card padding="none" className="p-4 sm:p-6 lg:p-8 mb-6 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4 sm:p-6 lg:p-8 mb-6 overflow-hidden">
         {community.image && (
-          <div className="relative w-full h-40 -mx-4 -mt-4 mb-4 sm:-mx-6 sm:-mt-6 lg:-mx-8 lg:-mt-8">
+          <div className="relative w-full h-44 sm:h-52 -mx-4 -mt-4 mb-5 sm:-mx-6 sm:-mt-6 lg:-mx-8 lg:-mt-8">
             <Image src={community.image} alt={community.name} fill className="object-cover" />
           </div>
         )}
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#333333] mb-2 leading-tight">{community.name}</h1>
-        <p className="text-sm sm:text-base text-gray-600 mb-4 leading-relaxed">{community.description}</p>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 mb-2 leading-tight tracking-tight">
+          {community.name}
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-600 font-medium mb-4 leading-relaxed">{community.description}</p>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500 mb-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-slate-500 font-medium mb-4">
           <div className="flex items-center gap-2">
             <UserAvatar userId={community.creator.id} name={community.creator.name} avatarUrl={community.creator.avatar} size="sm" />
             <span>
-              Created by <span className="font-medium text-[#333333]">{community.creator.name}</span>
+              Created by <span className="font-bold text-slate-800">{community.creator.name}</span>
             </span>
           </div>
-          <span className="hidden sm:inline text-gray-300">•</span>
-          <span className="flex items-center gap-1 text-gray-400 whitespace-nowrap">
+          <span className="hidden sm:inline text-slate-300">•</span>
+          <span className="flex items-center gap-1 text-slate-400 whitespace-nowrap">
             <Calendar className="w-3.5 h-3.5" />
             {formatDate(community.createdAt)}
           </span>
         </div>
 
-        <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-500">
-          <div className="flex items-center gap-1.5">
-            <Users className="w-4 h-4 text-[#458B9E]" />
+        <div className="flex items-center gap-3 sm:gap-4 text-xs font-semibold text-slate-600">
+          <div className="inline-flex items-center gap-1.5 bg-slate-100/90 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200/60 font-bold">
+            <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" />
             <span>{community._count.memberships} members</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <MessageSquare className="w-4 h-4 text-[#458B9E]" />
+          <div className="inline-flex items-center gap-1.5 bg-slate-100/90 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200/60 font-bold">
+            <MessageSquare className="w-3.5 h-3.5 text-slate-500 shrink-0" />
             <span>{community._count.posts} posts</span>
           </div>
         </div>
+
         <div className="mt-6 flex items-center gap-3">
           {!isMember && <CommunityActions compassId={community.id} isMember={false} />}
           {isMember && (
@@ -189,7 +194,7 @@ export default async function CompassCommunityPage({ params }: { params: Promise
             />
           )}
         </div>
-      </Card>
+      </div>
 
       {isMember ? (
         <CommunityTabs

@@ -113,81 +113,116 @@ export default function FileList({ nestId, currentUserId, nestOwnerId }: FileLis
   };
 
   if (isLoading) {
-    return <p className="text-sm text-gray-500 py-8 text-center">Loading files…</p>;
+    return <p className="text-xs text-slate-400 font-medium py-12 text-center animate-pulse">Loading files…</p>;
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-500">{files.length} file{files.length === 1 ? '' : 's'}</p>
+    <div className="space-y-4">
+      {/* Header Bar */}
+      <div className="flex items-center justify-between gap-3 pb-1">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Shared Files</h2>
+          <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-md bg-slate-200/80 text-slate-700">
+            {files.length}
+          </span>
+        </div>
+
         <input ref={fileInputRef} type="file" onChange={handleFileChange} className="hidden" id="nest-file-upload" />
-        <Button type="button" size="sm" isLoading={isUploading} onClick={() => fileInputRef.current?.click()}>
-          <Upload className="w-4 h-4 mr-1.5" />
-          Upload File
-        </Button>
+        <button
+          type="button"
+          disabled={isUploading}
+          onClick={() => fileInputRef.current?.click()}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#458B9E] hover:bg-[#397484] shadow-xs transition-all cursor-pointer disabled:opacity-50 shrink-0 active:scale-[0.98]"
+        >
+          {isUploading ? (
+            <>
+              <Loader2 className="w-4 h-4 text-white/90 animate-spin shrink-0" />
+              <span>Uploading…</span>
+            </>
+          ) : (
+            <>
+              <Upload className="w-4 h-4 text-white/90 shrink-0" />
+              <span>Upload File</span>
+            </>
+          )}
+        </button>
       </div>
 
-      {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
+      {error && (
+        <div className="p-3 rounded-xl bg-red-50 text-red-700 border border-red-200/80 text-xs font-semibold">
+          {error}
+        </div>
+      )}
 
       {files.length === 0 ? (
-        <div className="text-center py-12 border border-dashed border-gray-200 rounded-xl">
-          <FileIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">No files shared yet</p>
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-8 sm:p-12 text-center my-2 shadow-2xs">
+          <div className="w-12 h-12 rounded-xl bg-[#458B9E]/10 border border-[#458B9E]/20 text-[#458B9E] flex items-center justify-center mx-auto mb-3">
+            <FileIcon className="w-6 h-6 text-[#458B9E]" />
+          </div>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-sm mx-auto">
+            No files shared yet — click &quot;Upload File&quot; to share documents.
+          </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {files.map((file) => {
             const canDelete = file.uploadedById === currentUserId || nestOwnerId === currentUserId;
             const Icon = file.contentType.startsWith('image/') ? ImageIcon : FileIcon;
             return (
               <div
                 key={file.id}
-                className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors"
+                className="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs hover:shadow-xs transition-all hover:border-slate-300 flex items-center gap-3"
               >
-                <div className="w-9 h-9 rounded-lg bg-[#458B9E]/10 flex items-center justify-center shrink-0">
-                  <Icon className="w-4 h-4 text-[#458B9E]" />
+                <div className="w-10 h-10 rounded-xl bg-[#458B9E]/10 border border-[#458B9E]/20 text-[#458B9E] flex items-center justify-center shrink-0">
+                  <Icon className="w-5 h-5 text-[#458B9E]" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{file.fileName}</p>
-                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                    <UserAvatar userId={file.uploadedBy.id} name={file.uploadedBy.name} avatarUrl={file.uploadedBy.avatar} size="sm" />
-                    <span className="truncate">{file.uploadedBy.name}</span>
-                    <span>·</span>
+
+                <div className="flex-1 min-w-0 space-y-1">
+                  <p className="text-xs sm:text-sm font-extrabold text-slate-900 truncate tracking-tight">
+                    {file.fileName}
+                  </p>
+                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 flex-wrap">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <UserAvatar
+                        userId={file.uploadedBy.id}
+                        name={file.uploadedBy.name}
+                        avatarUrl={file.uploadedBy.avatar}
+                        size="sm"
+                      />
+                      <span className="truncate font-bold text-slate-700">{file.uploadedBy.name}</span>
+                    </div>
+                    <span className="text-slate-300">•</span>
                     <span className="shrink-0">{formatFileSize(file.size)}</span>
-                    <span>·</span>
+                    <span className="text-slate-300">•</span>
                     <span className="shrink-0">{formatRelativeTime(file.createdAt)}</span>
                   </div>
                 </div>
-                <a
-                  href={file.url}
-                  download={file.fileName}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 text-gray-400 hover:text-[#458B9E] hover:bg-white rounded-lg transition-colors shrink-0"
-                  aria-label={`Download ${file.fileName}`}
-                >
-                  <Download className="w-4 h-4" />
-                </a>
-                {canDelete && (
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(file.id)}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-white rounded-lg transition-colors shrink-0"
-                    aria-label={`Delete ${file.fileName}`}
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <a
+                    href={file.url}
+                    download={file.fileName}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-xl text-slate-500 hover:text-[#458B9E] hover:bg-[#458B9E]/10 border border-transparent hover:border-[#458B9E]/20 transition-all cursor-pointer active:scale-[0.98]"
+                    aria-label={`Download ${file.fileName}`}
                   >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
+                    <Download className="w-4 h-4" />
+                  </a>
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(file.id)}
+                      className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200/60 transition-all cursor-pointer active:scale-[0.98]"
+                      aria-label={`Delete ${file.fileName}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}
-        </div>
-      )}
-
-      {isUploading && (
-        <div className="flex items-center gap-2 text-xs text-gray-500 mt-3">
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          Uploading…
         </div>
       )}
     </div>

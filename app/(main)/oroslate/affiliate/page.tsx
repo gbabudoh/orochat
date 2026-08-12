@@ -15,7 +15,7 @@ export default async function AffiliatePortalPage() {
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
   return (
-    <div className="max-w-5xl mx-auto w-full min-w-0 px-4 sm:px-6 py-4 sm:py-6">
+    <div className="max-w-5xl mx-auto w-full min-w-0 px-2.5 sm:px-6 py-4 sm:py-6">
       <AffiliatePortal currentUserId={session.user.id} compasses={compasses} summary={summary} baseUrl={baseUrl} />
     </div>
   );

@@ -55,7 +55,7 @@ export default function HelpTooltip({ title, description, tips, align = 'left' }
 
   return (
     <div
-      className="relative inline-flex items-center"
+      className="relative inline-flex items-center shrink-0"
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
     >
@@ -63,10 +63,10 @@ export default function HelpTooltip({ title, description, tips, align = 'left' }
         ref={triggerRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-semibold text-[#458B9E] bg-[#458B9E]/10 hover:bg-[#458B9E]/20 transition-all cursor-pointer border border-[#458B9E]/20 outline-none focus-visible:ring-2 focus-visible:ring-[#458B9E]/40"
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold text-[#458B9E] bg-[#458B9E]/10 hover:bg-[#458B9E]/20 transition-all cursor-pointer border border-[#458B9E]/20 outline-none focus-visible:ring-2 focus-visible:ring-[#458B9E]/40 shrink-0 select-none"
         title="Hover or tap for usage instructions"
       >
-        <HelpCircle className="w-3 h-3 text-[#458B9E]" />
+        <HelpCircle className="w-3 h-3 text-[#458B9E] shrink-0" />
         <span>Guide</span>
       </button>
 

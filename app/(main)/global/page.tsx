@@ -89,19 +89,19 @@ export default async function GlobalFeedPage({
   return (
     <div className="max-w-3xl mx-auto w-full min-w-0">
       {/* Top Header */}
-      <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1 md:mb-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-2xl bg-[#458B9E]/10">
-              <Globe className="w-4 h-4 text-[#458B9E]" />
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#458B9E]/10 border border-[#458B9E]/20 shadow-2xs">
+              <Globe className="w-5 h-5 text-[#458B9E]" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#333333]">Global Activity</h1>
-            <span className="flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Global Activity</h1>
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full shadow-2xs">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Live Stream
             </span>
           </div>
-          <p className="text-sm sm:text-base text-gray-600">
+          <p className="text-xs sm:text-sm text-slate-500 font-medium">
             Public activity, professional updates, and discussions from every Oro on the platform.
           </p>
         </div>
@@ -123,14 +123,14 @@ export default async function GlobalFeedPage({
 
       {/* Feed Posts */}
       {filteredPosts.length === 0 ? (
-        <Card className="rounded-2xl border border-gray-200/90 p-8 sm:p-12 text-center bg-white">
-          <div className="w-16 h-16 rounded-2xl bg-[#458B9E]/10 flex items-center justify-center mx-auto mb-4 text-[#458B9E]">
+        <Card className="rounded-2xl border border-slate-200/80 p-8 sm:p-12 text-center bg-white shadow-xs">
+          <div className="w-16 h-16 rounded-2xl bg-[#458B9E]/10 flex items-center justify-center mx-auto mb-4 text-[#458B9E] border border-[#458B9E]/20">
             <Globe className="w-8 h-8" />
           </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-1">
+          <h3 className="text-lg font-extrabold text-slate-900 mb-1 tracking-tight">
             {country || category ? 'No matching global posts' : 'No public posts yet'}
           </h3>
-          <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto mb-6 leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto mb-6 leading-relaxed font-medium">
             {country || category
               ? 'Try a different country or category filter above.'
               : 'Be the first to share a public update with the global network!'}
@@ -138,13 +138,13 @@ export default async function GlobalFeedPage({
 
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <Link href="/compass">
-              <Button size="sm" variant="secondary" className="rounded-full text-xs px-4 py-2">
+              <Button size="sm" variant="secondary" className="rounded-xl text-xs px-4 py-2 font-semibold shadow-2xs border border-slate-200">
                 <Compass className="w-4 h-4 mr-1.5 text-[#458B9E]" />
                 <span>Explore Compass</span>
               </Button>
             </Link>
             <Link href="/oro/discover">
-              <Button size="sm" className="rounded-full text-xs px-4 py-2 bg-[#458B9E]">
+              <Button size="sm" className="rounded-xl text-xs px-4 py-2 bg-[#458B9E] hover:bg-[#387383] font-semibold text-white shadow-2xs">
                 <UserPlus className="w-4 h-4 mr-1.5" />
                 <span>Discover Oros</span>
               </Button>
