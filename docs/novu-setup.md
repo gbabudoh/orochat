@@ -11,7 +11,7 @@ Ensure the following are set in `.env.local`:
 ```env
 NEXT_PUBLIC_NOVU_APP_IDENTIFIER=your_app_identifier
 NEXT_PUBLIC_NOVU_BACKEND_URL=https://novu.feendesk.com/api
-NEXT_PUBLIC_NOVU_SOCKET_URL=wss://novu.feendesk.com/socket
+NEXT_PUBLIC_NOVU_SOCKET_URL=https://novu.feendesk.com/ws
 NOVU_SECRET_KEY=your_secret_key
 ```
 
@@ -27,7 +27,7 @@ The `<Inbox />` component from `@novu/nextjs` is used to render the in-app notif
 
 ## Workflows
 
-You have **6 active workflows** triggered from the codebase. Each must be configured in the [Novu Dashboard](https://dashboard.novu.co) → Workflows → \[workflow name\] → In-App Step → In-App Editor.
+You have **8 active workflows** triggered from the codebase. Each must be configured in the [Novu Dashboard](https://dashboard.novu.co) → Workflows → \[workflow name\] → In-App Step → In-App Editor.
 
 > **Important:** Do not use a Bridge URL. All workflows are dashboard-defined and triggered via the Novu API from the server. Leave the Bridge URL field empty in Settings.
 
@@ -181,6 +181,58 @@ Triggered when an admin sends a direct message to a user from `/admin/users`.
 | Subject      | `{{payload.subject}}`     |
 | Body         | `{{payload.message}}`     |
 | Redirect URL | `/settings/profile`       |
+
+---
+
+### 7. `dn-received`
+
+Triggered when a user receives a brand-new Direct Note (first message in a thread) from someone they aren't connected to.
+
+**Trigger location:** `features/dn/actions.ts`
+
+**Payload sent:**
+```ts
+{
+  message: `${sender.name} sent you a Direct Note`,
+  senderName: sender.name,
+  type: 'dn_received',
+  threadId: thread.id
+}
+```
+
+**In-App Editor:**
+
+| Field        | Value                                        |
+|--------------|-----------------------------------------------|
+| Subject      | `{{payload.senderName}} sent you a Direct Note` |
+| Body         | `{{payload.message}}`                        |
+| Redirect URL | `/dn/{{payload.threadId}}`                   |
+
+---
+
+### 8. `dn-reply`
+
+Triggered on every subsequent message in an existing Direct Note thread.
+
+**Trigger location:** `features/dn/actions.ts`
+
+**Payload sent:**
+```ts
+{
+  message: `${sender.name} replied to your Direct Note`,
+  senderName: sender.name,
+  type: 'dn_reply',
+  threadId: thread.id
+}
+```
+
+**In-App Editor:**
+
+| Field        | Value                                            |
+|--------------|---------------------------------------------------|
+| Subject      | `{{payload.senderName}} replied to your Direct Note` |
+| Body         | `{{payload.message}}`                            |
+| Redirect URL | `/dn/{{payload.threadId}}`                       |
 
 ---
 
