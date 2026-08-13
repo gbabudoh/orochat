@@ -67,7 +67,7 @@ export default function BookConsultButton({ oroId, customerId, priceCents, topic
 
   return (
     <>
-      <Button type="button" onClick={open}>
+      <Button type="button" onClick={open} size="sm" className="w-full sm:w-auto rounded-xl text-xs sm:text-sm font-semibold shadow-2xs whitespace-nowrap">
         Book a consult
       </Button>
 

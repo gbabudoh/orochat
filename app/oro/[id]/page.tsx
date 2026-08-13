@@ -191,21 +191,19 @@ export default async function OroProfilePage({
       />
       <div className="w-full md:max-w-7xl md:mx-auto px-0 md:px-6 lg:px-8 py-0 md:py-6">
         {/* Top Bar with Actions */}
-        <div className="flex flex-row justify-between items-center mb-4 md:mb-6 px-2.5 md:px-0 py-1 md:py-0">
-          <div>
-            <Link
-              href={backHref}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all shrink-0 active:scale-[0.98]"
-            >
-              <ArrowLeft className="w-4 h-4 text-[#458B9E]" />
-              <span>{backLabel.replace('← ', '')}</span>
-            </Link>
-          </div>
-          <div className="flex items-center space-x-2 sm:space-x-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5 md:mb-6 px-3 md:px-0 py-2 md:py-0">
+          <Link
+            href={backHref}
+            className="group inline-flex w-fit items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-[#458B9E] active:scale-[0.98]"
+          >
+            <ArrowLeft className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:-translate-x-0.5" />
+            <span>{backLabel.replace('← ', '')}</span>
+          </Link>
+          <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end sm:gap-2.5">
             {session && isOwnProfile && (
-              <Link href="/settings/profile">
-                <Button variant="ghost" size="sm" className="rounded-xl border border-slate-200/90 text-xs font-semibold">
-                  <Edit className="w-3.5 h-3.5 mr-1.5" />
+              <Link href="/settings/profile" className="flex-1 sm:flex-initial">
+                <Button variant="ghost" size="sm" className="w-full rounded-xl border border-slate-200/90 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#458B9E] shadow-2xs whitespace-nowrap">
+                  <Edit className="w-4 h-4 mr-1.5" />
                   Edit Profile
                 </Button>
               </Link>
@@ -231,14 +229,14 @@ export default async function OroProfilePage({
               />
             )}
             {!session && (
-              <>
-                <Link href="/login">
-                  <Button variant="ghost" size="sm">Sign In</Button>
+              <div className="flex w-full items-center gap-2 sm:w-auto">
+                <Link href="/login" className="flex-1 sm:flex-initial">
+                  <Button variant="ghost" size="sm" className="w-full rounded-xl border border-slate-200/90 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap">Sign In</Button>
                 </Link>
-                <Link href="/signup">
-                  <Button size="sm">Sign Up</Button>
+                <Link href="/signup" className="flex-1 sm:flex-initial">
+                  <Button size="sm" className="w-full rounded-xl text-xs sm:text-sm font-semibold shadow-2xs whitespace-nowrap">Sign Up</Button>
                 </Link>
-              </>
+              </div>
             )}
           </div>
         </div>
