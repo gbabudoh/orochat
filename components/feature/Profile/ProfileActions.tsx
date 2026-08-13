@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import { sendConnectionRequest } from '@/features/connections/actions';
 import WarmIntroModal from '@/components/feature/Profile/WarmIntroModal';
-import { UserPlus, Check, MessageSquare, Sparkles } from 'lucide-react';
+import DirectNoteComposeModal from '@/components/feature/DN/DirectNoteComposeModal';
+import { UserPlus, Check, MessageSquare, Sparkles, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -14,6 +15,7 @@ interface ProfileActionsProps {
   currentUserId: string | undefined;
   isConnected: boolean;
   hasPendingRequest: boolean;
+  isBlocked?: boolean;
 }
 
 export default function ProfileActions({
@@ -22,11 +24,13 @@ export default function ProfileActions({
   currentUserId,
   isConnected,
   hasPendingRequest: initialPending,
+  isBlocked = false,
 }: ProfileActionsProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [hasPending, setHasPending] = useState(initialPending);
   const [isWarmIntroOpen, setIsWarmIntroOpen] = useState(false);
+  const [isDirectNoteOpen, setIsDirectNoteOpen] = useState(false);
 
   const handleConnect = async () => {
     if (!currentUserId) {
@@ -50,23 +54,60 @@ export default function ProfileActions({
     }
   };
 
+  if (isBlocked) {
+    return null;
+  }
+
+  // Available on every profile regardless of connection status — DN is a
+  // permanently separate, always-on channel alongside Collab, not just a
+  // pre-connection icebreaker.
+  const directNoteButton = currentUserId && (
+    <Button size="sm" variant="ghost" onClick={() => setIsDirectNoteOpen(true)} className="border border-[#458B9E]/30">
+      <Mail className="w-4 h-4 mr-1.5" />
+      Send Direct Note
+    </Button>
+  );
+
+  const directNoteModal = currentUserId && (
+    <DirectNoteComposeModal
+      isOpen={isDirectNoteOpen}
+      onClose={() => setIsDirectNoteOpen(false)}
+      currentUserId={currentUserId}
+      recipientId={userId}
+      recipientName={userName}
+      isConnected={isConnected}
+    />
+  );
+
   if (isConnected) {
     return (
-      <Link href={`/collab/${userId}`}>
-        <Button size="sm">
-          <MessageSquare className="w-4 h-4 mr-2" />
-          Message
-        </Button>
-      </Link>
+      <>
+        <div className="flex items-center gap-2">
+          <Link href={`/collab/${userId}`}>
+            <Button size="sm">
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Message
+            </Button>
+          </Link>
+          {directNoteButton}
+        </div>
+        {directNoteModal}
+      </>
     );
   }
 
   if (hasPending) {
     return (
-      <Button disabled size="sm" variant="ghost" className="bg-gray-100">
-        <Check className="w-4 h-4 mr-2" />
-        Request Pending
-      </Button>
+      <>
+        <div className="flex items-center gap-2">
+          <Button disabled size="sm" variant="ghost" className="bg-gray-100">
+            <Check className="w-4 h-4 mr-2" />
+            Request Pending
+          </Button>
+          {directNoteButton}
+        </div>
+        {directNoteModal}
+      </>
     );
   }
 
@@ -83,6 +124,7 @@ export default function ProfileActions({
             Draft Warm Intro
           </Button>
         )}
+        {directNoteButton}
       </div>
 
       {currentUserId && (
@@ -94,6 +136,8 @@ export default function ProfileActions({
           recipientName={userName}
         />
       )}
+
+      {directNoteModal}
     </>
   );
 }

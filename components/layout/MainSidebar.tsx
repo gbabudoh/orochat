@@ -4,15 +4,17 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, MessageSquare, Compass, Users, TrendingUp, Search, Globe, X, FolderKanban, Settings, Wallet, Eye, Video, Sparkles } from 'lucide-react';
+import { Home, MessageSquare, Compass, Users, TrendingUp, Search, Globe, X, FolderKanban, Settings, Wallet, Eye, Video, Sparkles, Mail } from 'lucide-react';
 import { getPendingRequests } from '@/features/connections/actions';
 import { getUserStats } from '@/features/auth/actions';
+import { getDNUnreadCount } from '@/features/dn/actions';
 
 export default function MainSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [dnUnreadCount, setDnUnreadCount] = useState(0);
   const [stats, setStats] = useState({ verifiedOrosCount: 0, compassMembershipsCount: 0, isPartner: false, postsCount: 0 });
 
   useEffect(() => {
@@ -20,6 +22,9 @@ export default function MainSidebar() {
     let active = true;
     getPendingRequests(session.user.id).then((result) => {
       if (active && result.success) setPendingCount(result.requests?.length || 0);
+    });
+    getDNUnreadCount(session.user.id).then((count) => {
+      if (active) setDnUnreadCount(count || 0);
     });
     getUserStats(session.user.id).then((result) => {
       if (active && result.success) {
@@ -49,6 +54,7 @@ export default function MainSidebar() {
     { href: '/feed', label: 'Feed', icon: Home },
     { href: '/global', label: 'Global', icon: Globe },
     { href: '/collab', label: 'Collab', icon: MessageSquare },
+    { href: '/dn', label: 'Direct Notes', icon: Mail, badge: dnUnreadCount },
     { href: '/nest', label: 'OroNest', icon: FolderKanban },
     { href: '/oroslate', label: 'Oroslate', icon: Sparkles },
     { href: '/compass', label: 'Compass', icon: Compass },

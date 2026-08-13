@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { Prisma } from '@prisma/client';
+import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { embedText, cosineSimilarity } from '@/lib/ai/embeddings';
 import { getCategoryEmbedding } from '@/lib/ai/categoryEmbedding';
+import { checkRateLimit } from '@/lib/rateLimit';
+import { SafetyService } from '@/services/safety.service';
 
 // Below this, a "match" is just noise (unrelated profile that happens to
 // share generic vocabulary with the query/category).
@@ -37,13 +41,62 @@ function stripEmbedding<T extends { embedding: number[] }>(user: T) {
 
 export async function GET(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimit = await checkRateLimit(`search:${ip}`, 60_000, 30);
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: 'Too many search requests. Please slow down.' }, { status: 429 });
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get('q')?.trim() || '';
     const category = searchParams.get('category') || '';
     const country = searchParams.get('country') || '';
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '20', 10) || 20, 1), 50);
 
-    const where: { countryCode?: string; isPaused: boolean } = { isPaused: false };
+    // Route stays usable anonymously — this only adds mutual-block filtering
+    // when a session happens to be present.
+    const session = await getServerSession(authOptions);
+    let excludedIds: string[] = [];
+    if (session?.user?.id) {
+      const blocks = await SafetyService.getBlockedUsers(session.user.id);
+      const blockedByMe = blocks.map((b) => b.blockedId);
+      const blockedMe = await db.block.findMany({ where: { blockedId: session.user.id }, select: { blockerId: true } });
+      excludedIds = [...blockedByMe, ...blockedMe.map((b) => b.blockerId)];
+    }
+
+    const where: { countryCode?: string; isPaused: boolean; id?: { notIn: string[] } } = { isPaused: false };
     if (country) where.countryCode = country.toUpperCase();
+    if (excludedIds.length) where.id = { notIn: excludedIds };
+
+    // Handle-intent short-circuit: an exact @handle (or bare exact username)
+    // match should be THE result, not one candidate among fuzzy/semantic
+    // matches. An explicit "@" prefix additionally unlocks prefix matching.
+    if (query) {
+      const isHandleQuery = query.startsWith('@');
+      const handle = isHandleQuery ? query.slice(1) : query;
+
+      if (handle && /^[a-zA-Z0-9_.]+$/.test(handle)) {
+        const exact = await db.user.findFirst({
+          where: { ...where, username: { equals: handle, mode: 'insensitive' } },
+          select: SELECT_FIELDS,
+        });
+        if (exact) {
+          return NextResponse.json({ success: true, users: [stripEmbedding(exact)] });
+        }
+
+        if (isHandleQuery) {
+          const prefixed = await db.user.findMany({
+            where: { ...where, username: { startsWith: handle, mode: 'insensitive' } },
+            select: SELECT_FIELDS,
+            take: limit,
+            orderBy: [{ isPartner: 'desc' }, { verifiedOrosCount: 'desc' }],
+          });
+          if (prefixed.length) {
+            return NextResponse.json({ success: true, users: prefixed.map(stripEmbedding) });
+          }
+        }
+      }
+    }
 
     if (!query && !category) {
       const users = await db.user.findMany({
@@ -54,7 +107,7 @@ export async function GET(request: NextRequest) {
           { verifiedOrosCount: 'desc' },
           { createdAt: 'desc' },
         ],
-        take: 50,
+        take: limit,
       });
       return NextResponse.json({ success: true, users: users.map(stripEmbedding) });
     }
@@ -137,7 +190,7 @@ export async function GET(request: NextRequest) {
       })
       .filter(({ score }) => score >= MIN_SIMILARITY)
       .sort((a, b) => b.score - a.score)
-      .slice(0, 50)
+      .slice(0, limit)
       .map(({ user }) => stripEmbedding(user));
 
     return NextResponse.json({ success: true, users: scored });

@@ -1,11 +1,16 @@
 'use server';
 
 import { ConnectionService } from '@/services/connection.service';
+import { SafetyService } from '@/services/safety.service';
 import { db } from '@/lib/db';
 import { triggerNotification } from '@/lib/novu';
 
 export async function sendConnectionRequest(senderId: string, receiverId: string, note?: string, usedAiNote = false) {
   try {
+    if (await SafetyService.isBlocked(senderId, receiverId)) {
+      return { error: 'Unable to send a connection request to this user' };
+    }
+
     await ConnectionService.sendConnectionRequest(senderId, receiverId, note, usedAiNote);
 
     // Get sender info for notification

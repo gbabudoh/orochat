@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 import Card from '@/components/ui/Card';
 import Image from 'next/image';
 import Button from '@/components/ui/Button';
-import { User, Building, MapPin, Users, TrendingUp, Award, Briefcase, AtSign, Calendar, Edit, FileText, GraduationCap } from 'lucide-react';
+import { User, Building, MapPin, Users, TrendingUp, Award, Briefcase, AtSign, Calendar, Edit, FileText, GraduationCap, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import ProfileActions from '@/components/feature/Profile/ProfileActions';
 import ProfileAvatar from '@/components/feature/Profile/ProfileAvatar';
@@ -72,8 +72,8 @@ export default async function OroProfilePage({
     backLabel = '← Back to My Oros';
   }
 
-  // Fetch user profile, post count, and connection status in parallel
-  const [user, postsCount, connection] = await Promise.all([
+  // Fetch user profile, post count, connection status, and block status in parallel
+  const [user, postsCount, connection, block] = await Promise.all([
     db.user.findUnique({ where: { id } }),
     db.feedPost.count({ where: { authorId: id } }),
     session?.user?.id
@@ -82,6 +82,16 @@ export default async function OroProfilePage({
             OR: [
               { senderId: session.user.id, receiverId: id },
               { senderId: id, receiverId: session.user.id },
+            ],
+          },
+        })
+      : Promise.resolve(null),
+    session?.user?.id
+      ? db.block.findFirst({
+          where: {
+            OR: [
+              { blockerId: session.user.id, blockedId: id },
+              { blockerId: id, blockedId: session.user.id },
             ],
           },
         })
@@ -144,6 +154,7 @@ export default async function OroProfilePage({
   const isOwnProfile = session?.user?.id === id;
   const isConnected = connection?.status === 'ACCEPTED';
   const hasPendingRequest = connection?.status === 'PENDING';
+  const isBlocked = !!block;
 
   // Log profile view asynchronously without blocking page rendering
   if (!isOwnProfile) {
@@ -180,17 +191,21 @@ export default async function OroProfilePage({
       />
       <div className="w-full md:max-w-7xl md:mx-auto px-0 md:px-6 lg:px-8 py-0 md:py-6">
         {/* Top Bar with Actions */}
-        <div className="flex justify-between items-center mb-4 md:mb-6 px-4 md:px-0 py-3 md:py-0">
-          <div className="flex items-center space-x-4">
-            <Link href={backHref} className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-[#458B9E] hover:text-[#3a7585] transition-colors">
-              {backLabel}
+        <div className="flex flex-row justify-between items-center mb-4 md:mb-6 px-2.5 md:px-0 py-1 md:py-0">
+          <div>
+            <Link
+              href={backHref}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all shrink-0 active:scale-[0.98]"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#458B9E]" />
+              <span>{backLabel.replace('← ', '')}</span>
             </Link>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             {session && isOwnProfile && (
               <Link href="/settings/profile">
-                <Button variant="ghost" size="sm">
-                  <Edit className="w-4 h-4 mr-2" />
+                <Button variant="ghost" size="sm" className="rounded-xl border border-slate-200/90 text-xs font-semibold">
+                  <Edit className="w-3.5 h-3.5 mr-1.5" />
                   Edit Profile
                 </Button>
               </Link>
@@ -202,9 +217,10 @@ export default async function OroProfilePage({
                 currentUserId={session.user.id}
                 isConnected={isConnected}
                 hasPendingRequest={hasPendingRequest}
+                isBlocked={isBlocked}
               />
             )}
-            {session && !isOwnProfile && user.consultEnabled && user.consultPriceCents && user.consultTopic && (
+            {session && !isOwnProfile && !isBlocked && user.consultEnabled && user.consultPriceCents && user.consultTopic && (
               <BookConsultButton
                 oroId={id}
                 customerId={session.user.id}
@@ -228,16 +244,16 @@ export default async function OroProfilePage({
         </div>
 
         {/* Profile Header Card */}
-        <Card padding="none" className="mb-4 md:mb-6 shadow-xl md:border-0 border-0 overflow-hidden md:rounded-2xl rounded-none">
+        <Card padding="none" className="mb-4 md:mb-6 shadow-xs border border-slate-200/80 bg-white overflow-hidden rounded-2xl mx-1 md:mx-0">
           {/* Cover Background */}
-          <div className="h-28 md:h-48 bg-gradient-to-r from-[#458B9E] via-[#5BA3B8] to-[#3a7585] relative">
+          <div className="h-28 md:h-48 bg-gradient-to-r from-[#458B9E] via-[#366f7e] to-[#2a5662] relative">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.15)_0%,transparent_50%)]" />
           </div>
           
           {/* Mobile Layout */}
-          <div className="md:hidden px-4 pb-6">
+          <div className="md:hidden px-3.5 pb-6">
             {/* Avatar */}
-            <div className="flex justify-center -mt-14 mb-4">
+            <div className="flex justify-center -mt-14 mb-3">
               <ProfileAvatar
                 userId={user.id}
                 name={user.name}
@@ -250,43 +266,49 @@ export default async function OroProfilePage({
             {/* Name & Title */}
             <div className="text-center mb-4">
               <div className="flex items-center justify-center gap-2 flex-wrap mb-1">
-                <h1 className="text-2xl font-bold text-gray-900">{user.name}</h1>
+                <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">{user.name}</h1>
                 {user.isPartner && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-gradient-to-r from-[#FFC93C] to-[#FFD700] text-[#333333] text-xs font-bold rounded-full border border-amber-300 shadow-xs">
-                    <Award className="w-3.5 h-3.5 text-[#333333]" />
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-gradient-to-r from-amber-400 to-amber-300 text-amber-950 text-[10px] font-extrabold uppercase tracking-wider rounded-full border border-amber-300 shadow-2xs">
+                    <Award className="w-3 h-3 text-amber-950" />
                     <span>Partner</span>
                   </span>
                 )}
               </div>
-              {user.title && <p className="text-sm text-gray-700 font-medium">{user.title}</p>}
+              {user.title && <p className="text-xs sm:text-sm text-slate-600 font-semibold">{user.title}</p>}
               {user.company && (
-                <div className="flex items-center justify-center text-[#458B9E] font-semibold text-sm mt-2">
-                  <Building className="w-4 h-4 mr-1.5" />
-                  {user.company}
+                <div className="inline-flex items-center justify-center gap-1.5 text-[#458B9E] font-bold text-xs mt-1.5 px-2.5 py-0.5 rounded-lg bg-[#458B9E]/10 border border-[#458B9E]/20">
+                  <Building className="w-3.5 h-3.5 shrink-0" />
+                  <span>{user.company}</span>
                 </div>
               )}
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-2.5 mb-4">
-              <div className="text-center p-3 bg-gradient-to-br from-[#458B9E]/10 via-[#458B9E]/5 to-transparent rounded-xl border border-[#458B9E]/20 shadow-xs">
-                <div className="text-xl font-bold text-[#458B9E]">{user.verifiedOrosCount}</div>
-                <div className="text-xs font-medium text-gray-600">Connections</div>
+            {/* Balanced Mobile Stats Grid */}
+            <div className={`grid gap-2 mb-4 ${
+              (user.isPartner && workHistory.length > 0)
+                ? 'grid-cols-2 sm:grid-cols-4'
+                : (user.isPartner || workHistory.length > 0)
+                ? 'grid-cols-3'
+                : 'grid-cols-2'
+            }`}>
+              <div className="text-center p-2.5 bg-slate-50/80 rounded-xl border border-slate-200/80 shadow-2xs">
+                <div className="text-lg sm:text-xl font-extrabold text-[#458B9E]">{user.verifiedOrosCount}</div>
+                <div className="text-[10px] sm:text-xs font-bold text-slate-600">Connections</div>
               </div>
-              <div className="text-center p-3 bg-gradient-to-br from-[#458B9E]/10 via-[#458B9E]/5 to-transparent rounded-xl border border-[#458B9E]/20 shadow-xs">
-                <div className="text-xl font-bold text-[#458B9E]">{postsCount}</div>
-                <div className="text-xs font-medium text-gray-600">Oro Posts</div>
+              <div className="text-center p-2.5 bg-slate-50/80 rounded-xl border border-slate-200/80 shadow-2xs">
+                <div className="text-lg sm:text-xl font-extrabold text-[#458B9E]">{postsCount}</div>
+                <div className="text-[10px] sm:text-xs font-bold text-slate-600">Oro Posts</div>
               </div>
               {user.isPartner && (
-                <div className="text-center p-3 bg-gradient-to-br from-[#FFC93C]/15 via-[#FFC93C]/5 to-transparent rounded-xl border border-[#FFC93C]/30 shadow-xs">
-                  <div className="text-xl font-bold text-[#b8860b]">{user.currentTES.toFixed(0)}</div>
-                  <div className="text-xs font-medium text-gray-600">TES Score</div>
+                <div className="text-center p-2.5 bg-amber-50/80 rounded-xl border border-amber-200/80 shadow-2xs">
+                  <div className="text-lg sm:text-xl font-extrabold text-amber-900">{user.currentTES.toFixed(0)}</div>
+                  <div className="text-[10px] sm:text-xs font-bold text-amber-800">TES Score</div>
                 </div>
               )}
               {workHistory.length > 0 && (
-                <div className="text-center p-3 bg-gradient-to-br from-gray-100 to-transparent rounded-xl border border-gray-200 shadow-xs">
-                  <div className="text-xl font-bold text-gray-700">{workHistory.length}</div>
-                  <div className="text-xs font-medium text-gray-600">Positions</div>
+                <div className="text-center p-2.5 bg-slate-50/80 rounded-xl border border-slate-200/80 shadow-2xs">
+                  <div className="text-lg sm:text-xl font-extrabold text-slate-700">{workHistory.length}</div>
+                  <div className="text-[10px] sm:text-xs font-bold text-slate-600">Positions</div>
                 </div>
               )}
             </div>
@@ -294,28 +316,28 @@ export default async function OroProfilePage({
             {/* Contact Info */}
             <div className="space-y-2">
               {user.location && (
-                <div className="flex items-center p-3 bg-white rounded-xl border border-gray-200 shadow-xs">
+                <div className="flex items-center p-3 bg-slate-50/60 rounded-xl border border-slate-200/80 shadow-2xs">
                   <MapPin className="w-4 h-4 text-[#458B9E] mr-2.5 shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-gray-500">Location</p>
-                    <p className="font-semibold text-sm text-gray-900 truncate">{user.location}</p>
+                    <p className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Location</p>
+                    <p className="font-bold text-xs sm:text-sm text-slate-900 truncate">{user.location}</p>
                   </div>
                 </div>
               )}
               {user.username && (
-                <div className="flex items-center p-3 bg-white rounded-xl border border-gray-200 shadow-xs">
+                <div className="flex items-center p-3 bg-slate-50/60 rounded-xl border border-slate-200/80 shadow-2xs">
                   <AtSign className="w-4 h-4 text-[#458B9E] mr-2.5 shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-gray-500">Handle</p>
-                    <p className="font-semibold text-sm text-gray-900 truncate">@{user.username}</p>
+                    <p className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Handle</p>
+                    <p className="font-bold text-xs sm:text-sm text-slate-900 truncate">@{user.username}</p>
                   </div>
                 </div>
               )}
-              <div className="flex items-center p-3 bg-white rounded-xl border border-gray-200 shadow-xs">
+              <div className="flex items-center p-3 bg-slate-50/60 rounded-xl border border-slate-200/80 shadow-2xs">
                 <Calendar className="w-4 h-4 text-[#458B9E] mr-2.5 shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-gray-500">Joined</p>
-                  <p className="font-semibold text-sm text-gray-900">
+                  <p className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Joined</p>
+                  <p className="font-bold text-xs sm:text-sm text-slate-900">
                     {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                   </p>
                 </div>
@@ -472,7 +494,7 @@ export default async function OroProfilePage({
         </Card>
 
         {/* Main Content - Full Width Stacked Layout */}
-        <div className="space-y-4 md:space-y-6 px-4 md:px-0">
+        <div className="space-y-4 md:space-y-6 px-2.5 md:px-0">
           {/* Network Statistics - Full Width */}
           <Card padding="lg" className="shadow-md border-t-4 border-[#458B9E]">
             <div className="flex items-center mb-8">
