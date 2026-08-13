@@ -16,26 +16,17 @@ export default async function AnalyticsPage() {
   const stats = await getProfileViewStats(session.user.id);
 
   return (
-    <div className="max-w-6xl mx-auto w-full min-w-0 px-4 sm:px-6 py-4 sm:py-6 space-y-6">
+    <div className="max-w-6xl mx-auto w-full min-w-0 px-2.5 sm:px-6 py-4 sm:py-6 space-y-6">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="flex items-center justify-center w-8 h-8 rounded-2xl bg-[#458B9E]/10">
-              <BarChart3 className="w-4 h-4 text-[#458B9E]" />
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#458B9E]/10 border border-[#458B9E]/20 shrink-0">
+              <BarChart3 className="w-5 h-5 text-[#458B9E]" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Profile Analytics</h1>
-            <HelpTooltip
-              title="Profile Analytics Guide"
-              description="Private monitoring of total profile visits, visitor demographics, and recent activity."
-              tips={[
-                'Analytics are completely private to your account.',
-                'View country percentages and visitor IP locations.',
-                'Inspect the last 30 profile visits in the timeline.',
-              ]}
-            />
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Profile Analytics</h1>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500">
+          <p className="text-xs sm:text-sm text-slate-500 font-medium">
             Track views, country demographics, and engagement on your profile.
           </p>
         </div>

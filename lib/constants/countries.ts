@@ -86,5 +86,5 @@ export function countryCodeToFlag(code?: string | null): string | null {
 // and renders identically on every browser/OS.
 export function getFlagImageUrl(code?: string | null): string | null {
   if (!code || code.length !== 2) return null;
-  return `https://flagcdn.com/24x18/${code.toLowerCase()}.png`;
+  return `https://flagcdn.com/w40/${code.toLowerCase()}.png`;
 }

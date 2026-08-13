@@ -180,35 +180,31 @@ export default function ExplorePage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6">
         {session && (
-          <Link
-            href="/feed"
-            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#458B9E] hover:underline mb-4 sm:mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Feed
-          </Link>
+          <div>
+            <Link
+              href="/feed"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all shrink-0 active:scale-[0.98]"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#458B9E]" />
+              <span>Back to Feed</span>
+            </Link>
+          </div>
         )}
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 sm:mb-10 text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-center sm:text-left">
           <div>
-            <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
-              <h1 className="text-2xl sm:text-4xl font-bold text-[#333333]">
+            <div className="flex items-center justify-center sm:justify-start gap-2.5 mb-1">
+              <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#458B9E]/10 border border-[#458B9E]/20 shrink-0">
+                <Search className="w-5 h-5 text-[#458B9E]" />
+              </div>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
                 Explore Professionals
               </h1>
-              <HelpTooltip
-                title="Explore Discovery Guide"
-                description="Search and connect with verified professionals across industries worldwide."
-                tips={[
-                  'Search by name, company, or job title across the network.',
-                  'Filter by 240+ countries or browse by 22 industry categories.',
-                  'Toggle between List View and Map View to locate global talent.',
-                ]}
-              />
             </div>
-            <p className="text-xs sm:text-base text-gray-500 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-2xl leading-relaxed">
               Discover and connect with professionals across industries. Search by name, company, or browse by category.
             </p>
           </div>
@@ -219,7 +215,7 @@ export default function ExplorePage() {
         </div>
 
         {/* Search Bar */}
-        <Card className="mb-6 sm:mb-8 p-4 sm:p-6 border border-gray-200/90 rounded-2xl shadow-sm">
+        <Card className="p-4 sm:p-6 border border-slate-200/80 rounded-2xl shadow-2xs bg-white">
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-5">
             <div className="flex-1 min-w-0">
               <Input
@@ -229,7 +225,7 @@ export default function ExplorePage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button type="submit" isLoading={isSearching} className="sm:w-auto rounded-xl bg-[#458B9E] hover:bg-[#3a7585] text-white">
+            <Button type="submit" isLoading={isSearching} className="sm:w-auto rounded-xl bg-[#458B9E] hover:bg-[#397484] text-white shadow-xs active:scale-[0.98]">
               <Search className="w-4 h-4 mr-2" />
               Search
             </Button>
@@ -237,7 +233,7 @@ export default function ExplorePage() {
 
           {/* Country Filter */}
           <div className="mb-6">
-            <h3 className="text-xs sm:text-sm font-bold text-gray-700 mb-2 flex items-center">
+            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center">
               <Globe className="w-4 h-4 mr-1.5 text-[#458B9E]" />
               Filter by Country
             </h3>
@@ -245,7 +241,7 @@ export default function ExplorePage() {
               <select
                 value={selectedCountry}
                 onChange={(e) => handleCountryChange(e.target.value)}
-                className="w-full appearance-none px-3.5 py-2.5 pr-10 rounded-xl border border-gray-200 bg-gray-50/70 text-xs sm:text-sm font-medium text-gray-800 focus:outline-none focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 transition-all cursor-pointer"
+                className="w-full appearance-none px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200/90 bg-slate-50/70 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:border-[#458B9E] focus:ring-2 focus:ring-[#458B9E]/20 transition-all cursor-pointer"
               >
                 <option value="">All countries</option>
                 {COUNTRIES.map((c) => (
@@ -254,26 +250,26 @@ export default function ExplorePage() {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
           {/* Professional Categories */}
           <div>
-            <h3 className="text-xs sm:text-sm font-bold text-gray-700 mb-3 flex items-center">
+            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center">
               <Briefcase className="w-4 h-4 mr-1.5 text-[#458B9E]" />
               Browse by Category
             </h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
               {professionalCategories.map((category) => (
                 <button
                   key={category}
                   onClick={() => handleCategoryClick(category)}
                   className={`
-                    px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border
+                    px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border text-left truncate
                     ${selectedCategory === category
                       ? 'bg-[#458B9E] text-white border-[#458B9E] shadow-xs'
-                      : 'bg-gray-50 text-gray-700 border-gray-200/80 hover:bg-gray-100 hover:border-gray-300'
+                      : 'bg-slate-50/80 text-slate-700 border-slate-200/80 hover:bg-slate-100 hover:border-slate-300'
                     }
                   `}
                 >

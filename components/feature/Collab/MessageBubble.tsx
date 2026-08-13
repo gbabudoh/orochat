@@ -195,50 +195,62 @@ export default function MessageBubble({
   };
 
   return (
-    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4`}>
+    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-3`}>
       <div className={`flex items-start gap-2.5 max-w-[92%] sm:max-w-[80%] min-w-0 ${isOwn ? 'flex-row-reverse' : ''}`}>
-        <div className="w-8 h-8 rounded-full shrink-0 relative">
-          <div className="absolute inset-0 rounded-full bg-[#458B9E] flex items-center justify-center overflow-hidden">
-            {message.sender.avatar ? (
-              <img src={`/api/user/${message.sender.id}/avatar`} alt={message.sender.name} className="w-full h-full rounded-full object-cover" />
-            ) : (
-              <span className="text-white text-xs font-semibold">
-                {message.sender.name.charAt(0).toUpperCase()}
-              </span>
+        {!isOwn && (
+          <div className="w-8 h-8 rounded-full shrink-0 relative">
+            <div className="absolute inset-0 rounded-full bg-[#458B9E] flex items-center justify-center overflow-hidden">
+              {message.sender.avatar ? (
+                <img src={`/api/user/${message.sender.id}/avatar`} alt={message.sender.name} className="w-full h-full rounded-full object-cover" />
+              ) : (
+                <span className="text-white text-xs font-semibold">
+                  {message.sender.name.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            {senderPresence && (
+              <span
+                className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                  senderPresence === 'online' ? 'bg-green-500' : 'bg-gray-300'
+                }`}
+                aria-label={senderPresence}
+              />
             )}
           </div>
-          {senderPresence && (
-            <span
-              className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${
-                senderPresence === 'online' ? 'bg-green-500' : 'bg-gray-300'
-              }`}
-              aria-label={senderPresence}
-            />
-          )}
-        </div>
+        )}
 
-        <div className={`rounded-lg px-4 py-2 min-w-0 ${isOwn ? 'bg-[#458B9E] text-white' : 'bg-[#F0F3F7] text-[#333333]'}`}>
+        <div className={`rounded-2xl px-4 py-2.5 min-w-0 shadow-2xs ${
+          isOwn
+            ? 'bg-[#458B9E] text-white rounded-tr-xs'
+            : 'bg-slate-100/90 text-slate-900 border border-slate-200/60 rounded-tl-xs'
+        }`}>
           {!isOwn && (
-            <div className="text-xs font-semibold mb-1 opacity-75">{message.sender.name}</div>
+            <div className="text-[11px] font-bold mb-1 opacity-75">{message.sender.name}</div>
           )}
 
           {isCall && callRoom ? (
-            <div className="py-2 min-w-[200px] relative">
-              <div className={`flex items-center gap-1.5 font-semibold mb-3 text-left ${isOwn ? 'text-white' : 'text-[#458B9E]'}`}>
-                <Video className="w-4 h-4 shrink-0 animate-pulse" />
-                <span className="flex-1 min-w-0 truncate">Video Call by {message.sender.name}</span>
+            <div className="py-1 min-w-[220px] sm:min-w-[260px]">
+              <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-current/15">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isOwn ? 'bg-white/20 text-white' : 'bg-[#458B9E]/10 text-[#458B9E]'}`}>
+                    <Video className="w-3.5 h-3.5 animate-pulse" />
+                  </div>
+                  <span className="text-xs font-bold truncate">
+                    Video Call by {message.sender.name}
+                  </span>
+                </div>
                 {isOwn && (onArchiveCall || onDeleteCall) && (
                   <div className="relative shrink-0">
                     <button
                       type="button"
                       onClick={() => setIsCallMenuOpen((v) => !v)}
-                      className="p-0.5 rounded hover:bg-white/20 transition-colors"
+                      className="p-1 rounded-lg hover:bg-white/20 transition-colors"
                       aria-label="Call options"
                     >
                       <MoreVertical className="w-3.5 h-3.5" />
                     </button>
                     {isCallMenuOpen && (
-                      <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 text-left">
+                      <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-xl shadow-md border border-slate-200/90 py-1 z-10 text-left">
                         {onArchiveCall && callInfo?.callSessionId && (
                           <button
                             type="button"
@@ -246,9 +258,9 @@ export default function MessageBubble({
                               onArchiveCall({ messageId: message.id, callSessionId: callInfo!.callSessionId! });
                               setIsCallMenuOpen(false);
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#333333] hover:bg-[#F0F3F7] transition-colors"
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
                           >
-                            <Archive className="w-3.5 h-3.5" />
+                            <Archive className="w-3.5 h-3.5 text-slate-500" />
                             Archive
                           </button>
                         )}
@@ -259,7 +271,7 @@ export default function MessageBubble({
                               onDeleteCall({ messageId: message.id, callSessionId: callInfo?.callSessionId });
                               setIsCallMenuOpen(false);
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 transition-colors"
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             Remove
@@ -270,18 +282,19 @@ export default function MessageBubble({
                   </div>
                 )}
               </div>
+
               {isEndedCall ? (
-                <div className={`w-full py-1.5 px-4 rounded-lg text-xs font-bold text-center ${isOwn ? 'bg-white/20 text-white/80' : 'bg-gray-200 text-gray-500'}`}>
+                <div className={`w-full py-1.5 px-3 rounded-xl text-xs font-bold text-center ${isOwn ? 'bg-white/20 text-white/90' : 'bg-slate-200/80 text-slate-600'}`}>
                   Call Ended
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={() => onJoinCall && callInfo && onJoinCall(callInfo)}
-                  className={`w-full py-1.5 px-4 rounded-lg text-xs font-bold text-center transition-all cursor-pointer shadow-xs ${
+                  className={`w-full py-1.5 px-4 rounded-xl text-xs font-bold text-center transition-all cursor-pointer shadow-xs active:scale-[0.98] ${
                     isOwn
-                      ? 'bg-white text-[#458B9E] hover:bg-gray-50'
-                      : 'bg-[#458B9E] text-white hover:bg-[#3a7585]'
+                      ? 'bg-white text-[#458B9E] hover:bg-slate-50'
+                      : 'bg-[#458B9E] text-white hover:bg-[#397484]'
                   }`}
                 >
                   Join Meeting
